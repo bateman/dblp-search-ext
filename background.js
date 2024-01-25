@@ -1,9 +1,18 @@
 chrome.runtime.onInstalled.addListener(function () {
-    console.log('Dblp Search extension installed.');
+    let context = "selection"
+    let title = "Search highlighted text on dblp";
+    chrome.contextMenus.create({
+        title: title,
+        contexts: [context],
+        id: context
+    });
+    console.log('dblp search extension installed.');
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.action === 'openNewTab') {
-        chrome.tabs.create({ url: request.url });
+chrome.contextMenus.onClicked.addListener(function (info) {
+    console.log('item ' + info.menuItemId + ' was clicked');
+    if (info.menuItemId === "selection") {
+        let text = info.selectionText;
+        chrome.tabs.create({ url: 'https://dblp.org/search?q=' + encodeURIComponent(text) });
     }
 });
