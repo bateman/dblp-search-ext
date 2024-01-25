@@ -7,10 +7,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         } else {
             alert('Please enter a paper title.');
         }
-    } else if (request.action === 'getHighlightedText') {
-        var highlightedText = window.getSelection().toString();
-        console.log('highlightedText: ' + highlightedText);
-        sendResponse({ highlightedText: highlightedText });
-    }
+    } 
     return true;
 });
