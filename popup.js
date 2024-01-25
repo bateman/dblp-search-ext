@@ -1,11 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     var searchButton = document.getElementById('searchButton');
     var paperTitleInput = document.getElementById('paperTitle');
-
-    // Focus on the input field when the extension button is clicked
-    searchButton.addEventListener('click', function () {
+    if (paperTitleInput) {
         paperTitleInput.focus();
-    });
+    }
 
     // Search DBLP when the search button is clicked
     searchButton.addEventListener('click', function () {
