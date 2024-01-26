@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         table += '<td>' + result.date + '</td>';
                         table += '<td>' + result.venue + '</td>';
                         table += '<td>' + result.publisher + '</td>';
-                        table += '<td><a href="' + result.doi + '" target="_blank">' + result.doiURL + '</a></td>';
+                        table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
                         table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '">Copy</button></td>';
                         table += '</tr>';
                     });
