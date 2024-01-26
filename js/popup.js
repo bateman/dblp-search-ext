@@ -92,14 +92,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function doCORSRequest(options, printResult) {
-        var cors_api_url = 'https://corsproxy.blackmars.synology.me/';
-        var x = new XMLHttpRequest();
-        x.open(options.method, cors_api_url + options.url);
-        x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-        x.onload = x.onerror = function () {
-            printResult(x.responseText || '');
-        };
-        x.send(options.data);
+        chrome.storage.sync.get({
+            corsApiUrl: 'http://localhost:7979/'
+        }, function (items) {
+            var cors_api_url = items.corsApiUrl;
+            var x = new XMLHttpRequest();
+            x.open(options.method, cors_api_url + options.url);
+            x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            x.onload = x.onerror = function () {
+                printResult(x.responseText || '');
+            };
+            x.send(options.data);
+        });
     }
 
     function extractPublicationInfo(doc) {

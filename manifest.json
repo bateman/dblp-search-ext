@@ -19,6 +19,7 @@
         "https://*/",
         "http://*/"
     ],
+    "options_page": "options.html",
     "action": {
         "default_icon": "images/icon.png",
         "default_popup": "popup.html"
