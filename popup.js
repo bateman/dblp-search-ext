@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var searchButton = document.getElementById('searchButton');
     var paperTitleInput = document.getElementById('paperTitle');
-
     if (paperTitleInput) {
         paperTitleInput.focus();
     }
@@ -27,8 +25,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Search DBLP when the search button is clicked
-    searchButton.addEventListener('click', function () {
+    document.getElementById('searchButton').addEventListener('click', function () {
         searchDblp();
+    });
+
+    document.getElementById('openInTab').addEventListener('click', function() {
+        chrome.tabs.create({ url: 'popup.html' });
     });
 
     // Search DBLP when the user presses the Enter key
