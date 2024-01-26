@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Dblp Search",
+    "name": "dblp Search",
     "version": "1.0",
     "description": "Highlight text on a webpage, right-click, and search on dblp for the corresponding research paper.",
     "icons": {
@@ -16,7 +16,6 @@
         "clipboardWrite"
     ],
     "host_permissions": [
-        "https://dblp.org/*",
         "https://*/",
         "http://*/"
     ],
