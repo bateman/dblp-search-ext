@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function doCORSRequest(options, printResult) {
-        var cors_api_url = 'http://localhost:9999/';
+        var cors_api_url = 'https://corsproxy.blackmars.synology.me/';
         var x = new XMLHttpRequest();
         x.open(options.method, cors_api_url + options.url);
         x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');

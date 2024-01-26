@@ -4,7 +4,7 @@
     "version": "1.0",
     "description": "Highlight text on a webpage, right-click, and search on dblp for the corresponding research paper.",
     "icons": {
-        "48": "icon.png"
+        "48": "images/icon.png"
     },
     "permissions": [
         "tabs",
@@ -20,16 +20,18 @@
         "http://*/"
     ],
     "action": {
-        "default_icon": "icon.png",
+        "default_icon": "images/icon.png",
         "default_popup": "popup.html"
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "js/background.js"
     },
     "web_accessible_resources": [
         {
             "resources": [
-                "magnifier-icon.png"
+                "images/magnifier-icon.png",
+                "images/icon.png",
+                "images/dblp-logo.png"
             ],
             "matches": [
                 "<all_urls>"
