@@ -26,3 +26,7 @@ button img {
     height: 16px;
     /* Adjust the desired height */
 }
+
+#results tbody tr:hover {
+    background-color: #e3e2e2;
+}
