@@ -11,7 +11,14 @@
         "activeTab",
         "storage",
         "contextMenus",
-        "scripting"
+        "scripting",
+        "webRequest",
+        "clipboardWrite"
+    ],
+    "host_permissions": [
+        "https://dblp.org/*",
+        "https://*/",
+        "http://*/"
     ],
     "action": {
         "default_icon": "icon.png",
