@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
         searchDblp();
     });
 
-    document.getElementById('openInTab').addEventListener('click', function() {
+    document.getElementById('openInTab').addEventListener('click', function () {
         chrome.tabs.create({ url: 'popup.html' });
     });
 
@@ -56,9 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var doc = parser.parseFromString(result, 'text/html');
 
                 // extract all publication elements from the results page
-                var publicationsInfo = extractPublicationInfo(doc);
-                // add each publication contained in the publicationsInfo array
-                publicationsInfo.then(results => {
+                extractPublicationInfo(doc).then(results => {
                     // filter all the null and undefined results
                     results = results.filter(result => result != null);
 
@@ -161,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const resolvedCrossRefLinks = await Promise.all(crossRefLinks);
         var publInfos = [];
         resolvedCrossRefLinks.forEach((crossRefLink, index) => {
-            if(crossRefLink) {
+            if (crossRefLink) {
                 var pub = {};
                 pub.bibtexLink = bibtexLinks[index];
                 // exclude the Corr Abs elements
