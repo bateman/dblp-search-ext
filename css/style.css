@@ -33,6 +33,12 @@ button img {
     font-weight: bold;
 }
 
+#help {
+    color: #0a4da5;
+    font-weight: bold;
+    font-size: 16px;
+}
+
 #results {
     width: 100%;
     border-collapse: collapse;
