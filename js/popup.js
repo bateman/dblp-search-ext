@@ -161,18 +161,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const resolvedCrossRefLinks = await Promise.all(crossRefLinks);
         var publInfos = [];
         resolvedCrossRefLinks.forEach((crossRefLink, index) => {
-            var pub = {};
-            pub.bibtexLink = bibtexLinks[index];
-            // exclude the Corr Abs elements
-            if (!pub.bibtexLink.startsWith('https://dblp.org/rec/journals/corr/abs-')) {
-                pub.title = crossRefLink.title;
-                pub.authors = crossRefLink.authors;
-                pub.date = crossRefLink.date;
-                pub.venue = crossRefLink.venue;
-                pub.publisher = crossRefLink.publisher;
-                pub.doi = crossRefLink.doi;
-                pub.doiURL = crossRefLink.doiURL;
-                publInfos.push(pub);
+            if(crossRefLink) {
+                var pub = {};
+                pub.bibtexLink = bibtexLinks[index];
+                // exclude the Corr Abs elements
+                if (!pub.bibtexLink.startsWith('https://dblp.org/rec/journals/corr/abs-')) {
+                    pub.title = crossRefLink.title;
+                    pub.authors = crossRefLink.authors;
+                    pub.date = crossRefLink.date;
+                    pub.venue = crossRefLink.venue;
+                    pub.publisher = crossRefLink.publisher;
+                    pub.doi = crossRefLink.doi;
+                    pub.doiURL = crossRefLink.doiURL;
+                    publInfos.push(pub);
+                }
             }
         });
         return publInfos;
