@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Search DBLP when the search button is clicked
     document.getElementById('searchButton').addEventListener('click', function () {
+        // Update status to let user know search has started.
+        updateStatus('Searching.', 1000);
         searchDblp();
     });
 
@@ -36,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Search DBLP when the user presses the Enter key
     paperTitleInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
+            // Update status to let user know search has started.
+            updateStatus('Searching.', 1000);
             searchDblp();
         }
     });
