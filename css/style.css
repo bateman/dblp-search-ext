@@ -12,9 +12,7 @@ div {
 input {
     flex: 1;
     width: 600px;
-    /* Adjust the desired width */
     height: 20px;
-    /* Adjust the desired height */
 }
 
 button {
@@ -25,12 +23,9 @@ button {
     padding: 0;
 }
 
-/* Adjust the width and height of the magnifier icon */
 button img {
     width: 16px;
-    /* Adjust the desired width */
     height: 16px;
-    /* Adjust the desired height */
 }
 
 #status {
