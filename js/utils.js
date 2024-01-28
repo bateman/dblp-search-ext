@@ -8,3 +8,10 @@ function updateStatus(message, timeout) {
         }, timeout);
     }
 }
+
+function updateResultsCount(message) {
+    var count = document.getElementById('count');
+    if (count) {
+        count.textContent = message;
+    }
+}

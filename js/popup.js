@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // filter all the null and undefined results
                 //results = results.filter(result => result != null);
 
-                document.getElementById('count').innerHTML = 'Found ' + results.length + ' results.';
+                updateResultsCount('Found ' + results.length + ' results.');
 
                 // create a table with the results
                 var table = '<table class="table table-striped table-hover">';
