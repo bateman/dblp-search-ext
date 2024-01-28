@@ -56,37 +56,37 @@ document.addEventListener('DOMContentLoaded', function () {
                 var doc = parser.parseFromString(result, 'text/html');
 
                 // extract all publication elements from the results page
-                extractPublicationInfo(doc).then(results => {
-                    // filter all the null and undefined results
-                    results = results.filter(result => result != null);
+                var results = extractPublicationInfo(doc)
+                // filter all the null and undefined results
+                //results = results.filter(result => result != null);
 
-                    // create a table with the results
-                    var table = '<table class="table table-striped table-hover">';
-                    table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Date</th><th scope="col">Venue</th><th scope="col">Publisher</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
-                    table += '<tbody>';
-                    results.forEach((result) => {
-                        table += '<tr>';
-                        table += '<td>' + result.title + '</td>';
-                        table += '<td>' + result.authors.join(', ') + '</td>';
-                        table += '<td>' + result.date + '</td>';
-                        table += '<td>' + result.venue + '</td>';
-                        table += '<td>' + result.publisher + '</td>';
-                        table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
-                        table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '">Copy</button></td>';
-                        table += '</tr>';
-                    });
-                    table += '</tbody>';
-                    table += '</table>';
+                document.getElementById('count').innerHTML = 'Found ' + results.length + ' results.';
 
-                    // show the results into the document results div
-                    document.getElementById('results').innerHTML = table;
+                // create a table with the results
+                var table = '<table class="table table-striped table-hover">';
+                table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
+                table += '<tbody>';
+                results.forEach((result) => {
+                    table += '<tr>';
+                    table += '<td>' + result.title + '</td>';
+                    table += '<td>' + result.authors.join(', ') + '</td>';
+                    table += '<td>' + result.year + '</td>';
+                    table += '<td>' + result.venue + '</td>';
+                    table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+                    table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '"><img src="images/copy.png" alt="Copy"></button></td>';
+                    table += '</tr>';
+                });
+                table += '</tbody>';
+                table += '</table>';
 
-                    // Add the event listener for the copyBibtexButton class
-                    document.querySelectorAll('.copyBibtexButton').forEach(button => {
-                        button.addEventListener('click', function () {
-                            const url = this.getAttribute('data-url');
-                            window.copyBibtexToClipboard(url);
-                        });
+                // show the results into the document results div
+                document.getElementById('results').innerHTML = table;
+
+                // Add the event listener for the copyBibtexButton class
+                document.querySelectorAll('.copyBibtexButton').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const url = this.getAttribute('data-url');
+                        window.copyBibtexToClipboard(url);
                     });
                 });
             });
@@ -107,75 +107,142 @@ document.addEventListener('DOMContentLoaded', function () {
             x.send(options.data);
         });
     }
-
+    /*
+    <cite class="data tts-content" itemprop="headline">
+        <span itemprop="author" itemscope itemtype="http://schema.org/Person">
+            <a href="https://dblp.org/pid/171/7011.html" itemprop="url">
+                <span itemprop="name" title="C. J. Dale">C. J. Dale</span>
+            </a>
+        </span>, 
+        <span itemprop="author" itemscope itemtype="http://schema.org/Person">
+            <a href="https://dblp.org/pid/171/6993.html" itemprop="url">
+                <span itemprop="name" title="H. van der Zee">H. van der Zee</span>
+            </a>
+        </span>:
+        <br> 
+        <span class="title" itemprop="name">Software productivity metrics: who needs them?</span> 
+        <a href="https://dblp.org/db/journals/infsof/infsof34.html#DaleZ92">
+            <span itemprop="isPartOf" itemscope itemtype="http://schema.org/Periodical">
+                <span itemprop="name">Inf. Softw. Technol.</span>
+            </span> 
+            <span itemprop="isPartOf" itemscope itemtype="http://schema.org/PublicationVolume">
+                <span itemprop="volumeNumber">34</span>
+            </span>
+            (<span itemprop="isPartOf" itemscope itemtype="http://schema.org/PublicationIssue">
+                <span itemprop="issueNumber">11</span>
+            </span>)
+        </a>: 
+        ...
+    </cite>
+    */
     function extractPublicationInfo(doc) {
-        var bibtexLinks = [];
-        var bibtexLinkRefs = doc.querySelectorAll('li.drop-down div.body ul li a[href$="?view=bibtex"]');
-        // extract the bibtex link for each element in bibtexLinkRefs and replace '.html?view=bibtex' with '.bib?param=1'
-        // this allows to fetch the bibtex directly
-        if (bibtexLinkRefs) {
-            bibtexLinks = Array.from(bibtexLinkRefs).map(link => link.href.replace('.html?view=bibtex', '.bib?param=1'));
-        }
+        var results = [];
+        // find all the <cite> elements
+        var citeElements = doc.querySelectorAll('cite[class="data tts-content"][itemprop="headline"]');
 
-        // extract the crossref links from the dblp search results page
-        var crossRefLinkElements = doc.querySelectorAll('li.drop-down div.body ul li[class="wrap"] a[href^="https://api.crossref.org/works/"]');
-        var crossRefLinks = [];
-        if (crossRefLinkElements) {
-            crossRefLinks = Array.from(crossRefLinkElements).map(crossRefLinkElement => {
-                return fetch(crossRefLinkElement.href)
-                    .then(response => response.text())
-                    .then(data => {
-                        try {
-                            data = JSON.parse(data);
-                            var doiURL = data.message.URL;
-                            var doi = data.message.DOI;
-                            var type = data.message.type;
-                            var title = data.message.title[0];
-                            var date = data.message.indexed['date-time'].substring(0, 10);
-                            var venue = data.message['container-title'][0];
-                            var url = data.message.resource.primary.URL;
-                            var publisher = data.message.publisher;
-                            var authors = data.message.author.map(author => author.given + ' ' + author.family);
-                            data = { doi, doiURL, type, title, date, venue, url, publisher, authors };
-                            return data;
-                        } catch (e) {
-                            console.log('Unable to parse JSON data: ', data);
-                            return null;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching CrossRef link: ', error);
-                        return null;
-                    });
+        // iterate over all the <cite> elements
+        citeElements.forEach((citeElement) => {
+            //if its a CorrAbs publication, then skip it
+            // check for the presence of any anchor like this  <a href = "https://dblp.org/db/journals/corr/..." >
+            if (citeElement.querySelector('a[href^="https://dblp.org/db/journals/corr/"]')) {
+                return;
+            }
+
+            // extract the title
+            var title = citeElement.querySelector('span[class="title"][itemprop="name"]').textContent;
+            // extract the authors
+            var authors = [];
+            var authorElements = citeElement.querySelectorAll('span[itemprop="author"]');
+            authorElements.forEach((authorElement) => {
+                var authorName = authorElement.querySelector('span[itemprop="name"]').textContent;
+                authors.push(authorName);
             });
-        }
-
-        var publInfo = mergeInfo(bibtexLinks, crossRefLinks);
-        return publInfo;
-    }
-
-    // merge the bibtex links and the crossref links
-    async function mergeInfo(bibtexLinks, crossRefLinks) {
-        const resolvedCrossRefLinks = await Promise.all(crossRefLinks);
-        var publInfos = [];
-        resolvedCrossRefLinks.forEach((crossRefLink, index) => {
-            if (crossRefLink) {
-                var pub = {};
-                pub.bibtexLink = bibtexLinks[index];
-                // exclude the Corr Abs elements
-                if (!pub.bibtexLink.startsWith('https://dblp.org/rec/journals/corr/abs-')) {
-                    pub.title = crossRefLink.title;
-                    pub.authors = crossRefLink.authors;
-                    pub.date = crossRefLink.date;
-                    pub.venue = crossRefLink.venue;
-                    pub.publisher = crossRefLink.publisher;
-                    pub.doi = crossRefLink.doi;
-                    pub.doiURL = crossRefLink.doiURL;
-                    publInfos.push(pub);
+            // extract the year
+            var year = citeElement.querySelector('span[itemprop="datePublished"]').textContent;
+            // try to extract the venue as a conference publication
+            // if error, then extract the venue as a journal publication
+            // conference: <span itemprop="isPartOf" itemscope itemtype = "http://schema.org/BookSeries" >
+            // journals: <span itemprop="isPartOf" itemscope itemtype="http://schema.org/Periodical">
+            var venue = ''
+            try {
+                venue = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/BookSeries"]').textContent;
+                venue = venue + ' ' + year;
+            } catch (error) {
+                // extract the venue as a journal publication
+                var volume = '';
+                var issue = '';
+                if (citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]')) {
+                    // extract the venue
+                    venue = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]').textContent;
+                    // extract the volume
+                    volume = citeElement.querySelector('span[itemprop="volumeNumber"]').textContent;
+                    // extract the issue
+                    var issueElement = citeElement.querySelector('span[itemprop="issueNumber"]');
+                    var issue = issueElement ? issueElement.textContent : '';
+                    // if issue exists, add it to the venue string
+                    venue = issue ? venue + ' ' + volume + '(' + issue + ')' : venue + ' ' + volume;
                 }
             }
+            // extract the bibtexLink
+            // 1. find a with href such as "https://dblp.org/db/conf/icsqp/icsqp1994.html#LaiY94a" or "https://dblp.org/db/journals/infsof/infsof34.html#DaleZ92"
+            // 2. split at # and take both parts
+            // 3. use the second part "LaiY94a" to replace "icsqp1994", between last "/" and ".html"
+            // 4. append ?view=bibtex at the end
+            var dblpLink = citeElement.querySelector('a[href^="https://dblp.org/db/conf/"], a[href^="https://dblp.org/db/journals/"]')
+            var bibtexLink = '';
+            if (dblpLink) {
+                var dblpLinkParts = dblpLink.href.split('#');
+                var baseURL = dblpLinkParts[0];
+                var citationKey = dblpLinkParts[1];
+                // use regular expression to replace the venue part at the end of the URL (e.g., .../icsqp1994) with the citation key
+                // the baseURL starts always with https://dblp.org/db/
+                // the regular expression matches the last "/" and everything including ".html"
+                bibtexLink = baseURL.replace(/\/[^\/]*\.html$/, '/' + citationKey + '.bib?param=1');
+                // replace 'db' with 'rec' in the bibtexLink
+                bibtexLink = bibtexLink.replace('db/', 'rec/');
+            }
+            // extract the doi
+            var doi = '';
+            var doiURL = '';
+            retrieveDOI(bibtexLink).then(result => {
+                doi = result.doi;
+                doiURL = result.doiURL;
+            });
+
+            // create the publication object
+            var publication = {
+                title: title,
+                authors: authors,
+                year: year,
+                venue: venue,
+                doi: doi,
+                doiURL: doiURL,
+                bibtexLink: bibtexLink
+            };
+            // add the publication object to the results array
+            results.push(publication);
         });
-        return publInfos;
+        return results;
+    }
+
+    async function retrieveDOI(bibtexLink) {
+        var doi = '';
+        var doiURL = '';
+        if (bibtexLink) {
+            try {
+                const response = await fetch(bibtexLink);
+                const data = await response.text();
+                var doiRegex = /doi\s*=\s*\{(.*)\}/;
+                var doiMatch = data.match(doiRegex);
+                if (doiMatch && doiMatch.length > 1) {
+                    doi = doiMatch[1];
+                    doiURL = 'https://doi.org/' + doi;
+                }
+            } catch (err) {
+                console.error('Could not fetch BibTeX: ', err);
+            }
+        }
+        return { doi: doi, doiURL: doiURL };
     }
 
     window.copyBibtexToClipboard = function (url) {

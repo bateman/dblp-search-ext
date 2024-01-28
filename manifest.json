@@ -16,6 +16,7 @@
         "clipboardWrite"
     ],
     "host_permissions": [
+        "https://dblp.org/*",
         "https://*/",
         "http://*/"
     ],
@@ -32,7 +33,9 @@
             "resources": [
                 "images/magnifier-icon.png",
                 "images/icon.png",
-                "images/dblp-logo.png"
+                "images/dblp-logo.png",
+                "images/copy.png",
+                "images/spinner.gif"
             ],
             "matches": [
                 "<all_urls>"
