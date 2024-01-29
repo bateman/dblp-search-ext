@@ -1,7 +1,55 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // if the content of the popup was saved in the local storage, then restore it
+    chrome.storage.local.get({
+        paperTitle: '',
+        status: '',
+        results: []
+    }, function (items) {
+        var paperTitle = items.paperTitle;
+        var resCount = items.status;
+        var results = items.results;
+        if (paperTitle) {
+            document.getElementById('paperTitle').value = paperTitle;
+        }
+        if (results) {
+            // show results count
+            updateResultsCount(resCount);
+            // create a table with the results
+            var table = createTableRow(results);
+            // show the results into the document results div
+            document.getElementById('results').innerHTML = table;
+        }
+    });
+
     var paperTitleInput = document.getElementById('paperTitle');
     if (paperTitleInput) {
         paperTitleInput.focus();
+    }
+
+    function createTableRow(results) {
+        var table = '<table class="table table-striped table-hover">';
+        table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
+        table += '<tbody>';
+        results.forEach((result) => {
+            table += '<tr>';
+            table += '<td>' + result.title + '</td>';
+            table += '<td>' + result.authors.join(', ') + '</td>';
+            table += '<td>' + result.year + '</td>';
+            table += '<td>' + result.venue + '</td>';
+            table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+            table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '"><img src="images/copy.png" alt="Copy"></button></td>';
+            table += '</tr>';
+        });
+        table += '</tbody>';
+        table += '</table>';
+        // Add the event listener for the copyBibtexButton class
+        document.querySelectorAll('.copyBibtexButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const url = this.getAttribute('data-url');
+                window.copyBibtexToClipboard(url);
+            });
+        });
+        return table;
     }
 
     // Get the highlighted text from the current tab
@@ -32,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('openInTab').addEventListener('click', function () {
-        chrome.tabs.create({ url: 'popup.html' });
+        chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
     });
 
     // Search DBLP when the user presses the Enter key
@@ -57,37 +105,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // extract all publication elements from the results page
                 var results = extractPublicationInfo(doc)
-                // filter all the null and undefined results
-                //results = results.filter(result => result != null);
-
-                updateResultsCount('Found ' + results.length + ' results.');
-
+                
+                // show results count
+                var resCount = 'Found ' + results.length + ' results.';
+                updateResultsCount(resCount);
                 // create a table with the results
-                var table = '<table class="table table-striped table-hover">';
-                table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
-                table += '<tbody>';
-                results.forEach((result) => {
-                    table += '<tr>';
-                    table += '<td>' + result.title + '</td>';
-                    table += '<td>' + result.authors.join(', ') + '</td>';
-                    table += '<td>' + result.year + '</td>';
-                    table += '<td>' + result.venue + '</td>';
-                    table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
-                    table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '"><img src="images/copy.png" alt="Copy"></button></td>';
-                    table += '</tr>';
-                });
-                table += '</tbody>';
-                table += '</table>';
-
+                var table = createTableRow(results);
                 // show the results into the document results div
                 document.getElementById('results').innerHTML = table;
 
-                // Add the event listener for the copyBibtexButton class
-                document.querySelectorAll('.copyBibtexButton').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const url = this.getAttribute('data-url');
-                        window.copyBibtexToClipboard(url);
-                    });
+                // save the state of paperTitleInput, status, and results in the local storage
+                chrome.storage.local.set({
+                    paperTitle: paperTitle,
+                    status: resCount,
+                    results: results
                 });
             });
         }

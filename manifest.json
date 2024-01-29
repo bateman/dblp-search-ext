@@ -31,6 +31,9 @@
     "web_accessible_resources": [
         {
             "resources": [
+                "popup.html",
+                "options.html",
+                "css/style.css",
                 "images/magnifier-icon.png",
                 "images/icon.png",
                 "images/dblp-logo.png",
