@@ -1,6 +1,7 @@
 // Saves options to chrome.storage
 function save_options() {
     var corsUrl = document.getElementById('corsUrl').value;
+    
     chrome.storage.sync.set({
         corsApiUrl: corsUrl
     }, function() {
@@ -19,7 +20,8 @@ function restore_options() {
         document.getElementById('corsUrl').value = items.corsApiUrl;
     });
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveButton').addEventListener('click', save_options);
+    restore_options();
 });
-document.addEventListener('DOMContentLoaded', restore_options);
