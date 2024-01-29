@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // show results count
             updateResultsCount(resCount);
             // create a table with the results
-            var table = createTableRow(results);
+            var table = createResultsTable(results);
             // show the results into the document results div
             document.getElementById('results').innerHTML = table;
         }
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
         paperTitleInput.focus();
     }
 
-    function createTableRow(results) {
+    function createResultsTable(results) {
         var table = '<table class="table table-striped table-hover">';
         table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
         table += '<tbody>';
@@ -48,6 +48,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 const url = this.getAttribute('data-url');
                 window.copyBibtexToClipboard(url);
             });
+        });
+        // below the table add a div with a centered butto to clear the local storage
+        table += '<div><button class="clearButton"><img src="images/copy.png" alt="Clear results"></button></div>';
+        // Add the event listener for the clearButton id
+        document.addEventListener('DOMContentLoaded', function () {
+            var clearButton = document.querySelector('.clearButton');
+            if (clearButton) {
+                clearButton.addEventListener('click', function () {
+                    chrome.storage.local.set({
+                        paperTitle: '',
+                        status: '',
+                        results: []
+                    });
+                    document.getElementById('paperTitle').value = '';
+                    document.getElementById('results').innerHTML = '';
+                    updateResultsCount('');
+                });
+            }
         });
         return table;
     }
@@ -110,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var resCount = 'Found ' + results.length + ' results.';
                 updateResultsCount(resCount);
                 // create a table with the results
-                var table = createTableRow(results);
+                var table = createResultsTable(results);
                 // show the results into the document results div
                 document.getElementById('results').innerHTML = table;
 
