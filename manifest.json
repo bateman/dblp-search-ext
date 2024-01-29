@@ -13,7 +13,8 @@
         "contextMenus",
         "scripting",
         "webRequest",
-        "clipboardWrite"
+        "clipboardWrite",
+        "clipboardRead"
     ],
     "host_permissions": [
         "https://dblp.org/*",

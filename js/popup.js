@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('results').innerHTML = table;
             // add copyBibtexButton event listener
             addCopyBibtexButtonEventListener();
-            document.getElementById('actions').style.display = 'block';
         }
     });
 
@@ -52,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('paperTitle').value = '';
         document.getElementById('results').innerHTML = '';
         updateResultsCount('');
-        document.getElementById('actions').style.display = 'none';
     }
 
     function addCopyBibtexButtonEventListener() {
@@ -116,20 +114,6 @@ document.addEventListener('DOMContentLoaded', function () {
         clearResults();
     });
 
-    // Copy all the BibTex citations to the clipboard when the button is clicked
-    document.getElementById('copyAll').addEventListener('click', function () {
-        var bibtexCitations = [];
-        document.querySelectorAll('.copyBibtexButton').forEach(button => {
-            const url = button.getAttribute('data-url');
-            window.copyBibtexToClipboard(url);
-            // add the content of the clipboard to the bibtexLinks array
-            bibtexCitations.push(navigator.clipboard.readText());
-        });
-        // join all the bibtexCitations into a single string
-        var finalCliplboardText = bibtexCitations.join('\n');
-        return finalCliplboardText
-    });
-
     // Search paperTitle on DBLP 
     function searchDblp() {
         var paperTitle = paperTitleInput.value.trim();
@@ -154,8 +138,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('results').innerHTML = table;
                 // add copyBibtexButton event listener
                 addCopyBibtexButtonEventListener();
-                // show the action buttons into the document actions div
-                document.getElementById('actions').style.display = 'block';
 
                 // save the state of paperTitleInput, status, and results in the local storage
                 chrome.storage.local.set({
@@ -328,9 +310,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.text())
             .then(data => {
                 navigator.clipboard.writeText(data)
-                    .then(() => {
-                        console.log('BibTeX copied to clipboard: ', data);
-                    })
                     .catch(err => {
                         console.error('Could not copy BibTeX to clipboard: ', err);
                     });
