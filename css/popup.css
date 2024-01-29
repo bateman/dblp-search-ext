@@ -9,6 +9,14 @@ div {
     align-items: center;
 }
 
+.actions {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
 input {
     flex: 1;
     width: 600px;

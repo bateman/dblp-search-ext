@@ -38,7 +38,9 @@
                 "images/icon.png",
                 "images/dblp-logo.png",
                 "images/copy.png",
-                "images/spinner.gif"
+                "images/copyall.png",
+                "images/spinner.gif",
+                "images/clear.png"
             ],
             "matches": [
                 "<all_urls>"

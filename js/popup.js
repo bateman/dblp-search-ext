@@ -11,13 +11,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (paperTitle) {
             document.getElementById('paperTitle').value = paperTitle;
         }
-        if (results) {
+        if (results.length > 0) {
             // show results count
             updateResultsCount(resCount);
             // create a table with the results
             var table = createResultsTable(results);
             // show the results into the document results div
             document.getElementById('results').innerHTML = table;
+            // add copyBibtexButton event listener
+            addCopyBibtexButtonEventListener();
+            document.getElementById('actions').style.display = 'block';
         }
     });
 
@@ -37,11 +40,22 @@ document.addEventListener('DOMContentLoaded', function () {
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
             table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
-            table += '<td><button class="copyBibtexButton" data-url="' + result.bibtexLink + '"><img src="images/copy.png" alt="Copy"></button></td>';
+            table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
             table += '</tr>';
         });
         table += '</tbody>';
         table += '</table>';
+        return table;
+    }
+
+    function clearResults() {
+        document.getElementById('paperTitle').value = '';
+        document.getElementById('results').innerHTML = '';
+        updateResultsCount('');
+        document.getElementById('actions').style.display = 'none';
+    }
+
+    function addCopyBibtexButtonEventListener() {
         // Add the event listener for the copyBibtexButton class
         document.querySelectorAll('.copyBibtexButton').forEach(button => {
             button.addEventListener('click', function () {
@@ -49,25 +63,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.copyBibtexToClipboard(url);
             });
         });
-        // below the table add a div with a centered butto to clear the local storage
-        table += '<div><button class="clearButton"><img src="images/copy.png" alt="Clear results"></button></div>';
-        // Add the event listener for the clearButton id
-        document.addEventListener('DOMContentLoaded', function () {
-            var clearButton = document.querySelector('.clearButton');
-            if (clearButton) {
-                clearButton.addEventListener('click', function () {
-                    chrome.storage.local.set({
-                        paperTitle: '',
-                        status: '',
-                        results: []
-                    });
-                    document.getElementById('paperTitle').value = '';
-                    document.getElementById('results').innerHTML = '';
-                    updateResultsCount('');
-                });
-            }
-        });
-        return table;
     }
 
     // Get the highlighted text from the current tab
@@ -97,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
         searchDblp();
     });
 
+    // Open the popup.html in a new tab when the openInTab button is clicked
     document.getElementById('openInTab').addEventListener('click', function () {
         chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
     });
@@ -110,6 +106,31 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Clear the results when the clear button is clicked
+    document.getElementById('clearButton').addEventListener('click', function () {
+        chrome.storage.local.set({
+            paperTitle: '',
+            status: '',
+            results: []
+        });
+        clearResults();
+    });
+
+    // Copy all the BibTex citations to the clipboard when the button is clicked
+    document.getElementById('copyAll').addEventListener('click', function () {
+        var bibtexCitations = [];
+        document.querySelectorAll('.copyBibtexButton').forEach(button => {
+            const url = button.getAttribute('data-url');
+            window.copyBibtexToClipboard(url);
+            // add the content of the clipboard to the bibtexLinks array
+            bibtexCitations.push(navigator.clipboard.readText());
+        });
+        // join all the bibtexCitations into a single string
+        var finalCliplboardText = bibtexCitations.join('\n');
+        return finalCliplboardText
+    });
+
+    // Search paperTitle on DBLP 
     function searchDblp() {
         var paperTitle = paperTitleInput.value.trim();
         if (paperTitle) {
@@ -131,6 +152,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 var table = createResultsTable(results);
                 // show the results into the document results div
                 document.getElementById('results').innerHTML = table;
+                // add copyBibtexButton event listener
+                addCopyBibtexButtonEventListener();
+                // show the action buttons into the document actions div
+                document.getElementById('actions').style.display = 'block';
 
                 // save the state of paperTitleInput, status, and results in the local storage
                 chrome.storage.local.set({
@@ -142,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Send the request to the CORS proxy
     function doCORSRequest(options, printResult) {
         chrome.storage.sync.get({
             corsApiUrl: 'http://localhost:7979/'
@@ -184,6 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ...
     </cite>
     */
+   // extract all publication elements from the results page
     function extractPublicationInfo(doc) {
         var results = [];
         // find all the <cite> elements
@@ -274,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return results;
     }
 
+    // retrieve the DOI from the BibTeX link
     async function retrieveDOI(bibtexLink) {
         var doi = '';
         var doiURL = '';
@@ -294,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return { doi: doi, doiURL: doiURL };
     }
 
+    // copy the BibTeX to the clipboard
     window.copyBibtexToClipboard = function (url) {
         fetch(url)
             .then(response => response.text())
