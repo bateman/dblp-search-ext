@@ -60,6 +60,10 @@ button img {
     color: #2e7fca;
 }
 
+#results table {
+    border-bottom: 1px solid #0a4da5;
+}
+
 #results thead tr {
     background-color: #2e7fca;
     color: #fdd700;
