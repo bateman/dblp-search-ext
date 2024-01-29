@@ -66,7 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Get the highlighted text from the current tab
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         var tab = tabs[0];
-        var url = tab.url;
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             function: function () {
@@ -164,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
             x.send(options.data);
         });
     }
+
     /*
     <cite class="data tts-content" itemprop="headline">
         <span itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ...
     </cite>
     */
-   // extract all publication elements from the results page
+    // extract all publication elements from the results page
     function extractPublicationInfo(doc) {
         var results = [];
         // find all the <cite> elements
@@ -266,6 +266,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 doi = result.doi;
                 doiURL = result.doiURL;
             });
+            // FIXME result.doi and result.doiURL hold values but then doi and doiURL are empty 
+            // after the assignment 
 
             // create the publication object
             var publication = {
