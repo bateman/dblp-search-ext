@@ -14,9 +14,18 @@ label {
     font-weight: bold;
 }
 
+.options {
+    font-style: italic;
+    color: #454649;
+}
+
+.option {
+    color: #0a4da5;
+}
+
 input {
     flex: 1;
-    width: 600px;
+    width: 400px;
 }
 
 button {

@@ -9,16 +9,16 @@
 </head>
 
 <body>
-    <h1 class="options">
+    <h1>
         <img src="images/icon.png" alt="dblp Search"> 
         dblp Search - Extension Options
     </h1>
     
-    <label class="options" id="help">Ensure a trailing / is present</label>
+    <label class="options" id="help">Ensure either a trailing '/' or '/?' are present</label>
     <br>
-    <label class="option" for="corsUrl">CORS Proxy URL:</label>
+    <label class="option" for="corsUrl">CORS Proxy URL<br>(default is 'https://corsproxy.io/?'):</label>
     <input type="text" id="corsUrl">
-    <button class="options" id="saveButton">Save</button>
+    <button id="saveButton">Save</button>
     <div id="status"></div>
 </body>
 
