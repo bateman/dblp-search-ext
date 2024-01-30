@@ -7,7 +7,6 @@
         "48": "images/icon.png"
     },
     "permissions": [
-        "tabs",
         "activeTab",
         "storage",
         "contextMenus",
