@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function createResultsTable(results) {
         var table = '<table class="table table-striped table-hover">';
-        table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
+        // <th scope="col">DOI</th>
+        table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">BibTeX</th></tr></thead>';
         table += '<tbody>';
         results.forEach((result) => {
             table += '<tr>';
@@ -38,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
-            table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+            // table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
             table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
             table += '</tr>';
         });
