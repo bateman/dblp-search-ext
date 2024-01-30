@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "dblp Search",
     "version": "1.0",
-    "description": "Highlight text on a webpage and search on dblp for the corresponding research paper.",
+    "description": "Search academic publications on dblp from everywhere.",
     "icons": {
         "48": "images/icon.png"
     },
