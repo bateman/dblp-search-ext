@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Send the request to the CORS proxy
     function doCORSRequest(options, printResult) {
         chrome.storage.sync.get({
-            corsApiUrl: 'http://localhost:7979/'
+            corsApiUrl: 'https://corsproxy.io/?'
         }, function (items) {
             var cors_api_url = items.corsApiUrl;
             var x = new XMLHttpRequest();
