@@ -18,7 +18,7 @@ jobs:
 
             - name: Set tag
               id: tag
-              run: echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
+              run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
             - name: Create a Release
               uses: elgohr/Github-Release-Action@v5
