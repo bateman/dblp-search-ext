@@ -16,7 +16,7 @@ jobs:
 
             - name: Get latest tag
               id: latesttag
-              run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+              run: echo "::set-env output name=tag::$(git describe --tags --abbrev=0)"
 
             - name: Archive code
               run: zip -r release.zip .
