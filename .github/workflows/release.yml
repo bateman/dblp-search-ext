@@ -13,6 +13,9 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Create zip file
+              run: zip -r release.zip .
+
             - name: Set tag
               id: tag
               run: echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
@@ -23,3 +26,13 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
               with:
                 title: Release ${{ steps.tag.outputs.version }}
+
+            - name: Upload to Chrome Web Store
+              uses: mobilefirstllc/cws-publish@latest
+              with:
+                action: 'upload'  # one of: upload, publish, testers
+                client_id: ${{ secrets.CLIENT }}
+                client_secret: ${{ secrets.SECRET }}
+                refresh_token: ${{ secrets.TOKEN }}
+                extension_id: 'onilpcgmnpikffebghpncnnapebndpaj' 
+                zip_file: 'release.zip'
