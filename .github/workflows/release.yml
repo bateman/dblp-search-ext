@@ -26,7 +26,7 @@ jobs:
               uses: actions/create-release@v1
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
+              with:
                 tag_name: ${{ env.tag }}
                 release_name: Release ${{ github.ref }}
                 draft: false
