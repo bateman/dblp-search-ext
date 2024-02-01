@@ -4,10 +4,6 @@ on:
     push:
         tags:
             - 'v*'
-    workflow_dispatch:
-
-env:
-    TAG: echo "$(git describe --tags --abbrev=0)"
 
 jobs:
     release:
@@ -26,7 +22,7 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                tag_name: $TAG 
+                tag_name: ${{ github.ref }}
                 release_name: Release ${{ github.ref }}
                 draft: false
                 prerelease: false
@@ -36,7 +32,7 @@ jobs:
               uses: actions/upload-release-asset@v1
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
+              with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }}
                 asset_path: ./release.zip
                 asset_name: release.zip
