@@ -3,7 +3,7 @@ name: Release
 on:
     push:
         tags:
-            - '*'
+            - 'v*'
     workflow_dispatch:
 
 jobs:
@@ -12,7 +12,11 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
+
+            - name: Get latest tag
+              id: latesttag
+              run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
 
             - name: Archive code
               run: zip -r release.zip .
@@ -23,7 +27,7 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 with:
-                tag_name: ${{ github.ref }}
+                tag_name: ${{ steps.latesttag.outputs.tag }}
                 release_name: Release ${{ github.ref }}
                 draft: false
                 prerelease: false
