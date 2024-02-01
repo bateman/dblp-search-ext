@@ -16,13 +16,17 @@ jobs:
             - name: Archive code
               run: zip -r release.zip .
 
+            - name: Set tag
+              id: tag
+              run: echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
+
             - name: Create Release
               id: create_release
               uses: actions/create-release@v1
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                tag_name: ${{ github.ref }}
+                tag_name: ${{ steps.tag.outputs.version }}
                 release_name: Release ${{ github.ref }}
                 draft: false
                 prerelease: false
