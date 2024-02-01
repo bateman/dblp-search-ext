@@ -5,9 +5,6 @@ on:
         tags:
             - 'v*'
 
-env:
-    GH_TOKEN: ${{ github.token }}
-
 jobs:
     release:
         runs-on: ubuntu-latest
@@ -16,13 +13,12 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Set tag
-              id: tag
-              run: echo "::set-output name=version::${GITHUB_REF/refs\/tags\//}"
+            - name: Archive code
+              run: zip -r release.zip .
 
-            - name: Create a Release
-              uses: elgohr/Github-Release-Action@v5
-              env:
-                GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+            - uses: "marvinpinto/action-automatic-releases@latest"
               with:
-                title: Release ${{ steps.tag.outputs.version }}
+                repo_token: "${{ secrets.GITHUB_TOKEN }}"
+                prerelease: false
+                files: |
+                  release.zip
