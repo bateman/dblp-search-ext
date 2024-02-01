@@ -16,7 +16,7 @@ jobs:
 
             - name: Get latest tag
               id: latesttag
-              run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
+              run: export tag_name="$(git describe --tags --abbrev=0)"
 
             - name: Archive code
               run: zip -r release.zip .
