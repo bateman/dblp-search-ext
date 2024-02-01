@@ -16,7 +16,7 @@ jobs:
 
             - name: Get latest tag
               id: latesttag
-              run: export tag_name="$(git describe --tags --abbrev=0)"
+              run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
 
             - name: Archive code
               run: zip -r release.zip .
@@ -27,7 +27,7 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 with:
-                tag_name: echo ${tag_name}
+                tag_name: ${{ env.tag }}
                 release_name: Release ${{ github.ref }}
                 draft: false
                 prerelease: false
