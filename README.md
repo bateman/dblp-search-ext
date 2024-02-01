@@ -4,6 +4,12 @@ A simple Chromium extension to ease the process of searching papers on [dblp.org
 
 ![Screenshot of Extension](store/Screenshot-1.png)
 
+<p align="center">
+    <a href="https://chromewebstore.google.com/detail/dblp-search/onilpcgmnpikffebghpncnnapebndpaj?pli=1">
+        <img src="store/chrome-web-store.png" alt="Avaliable on the Chrome Web Store" width="200">
+    </a>
+</p>
+
 ## Features
 
 - **Search Papers**: Enter the title of the paper in the input field or highlight any text on the current web page, then click the search button. The extension will search for the paper on dblp.org and display the results.
