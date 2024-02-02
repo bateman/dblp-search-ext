@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "dblp Search",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "Search academic publications on dblp from everywhere.",
     "icons": {
         "48": "images/icon.png"

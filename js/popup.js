@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
         table += '<tbody>';
         results.forEach((result) => {
             table += '<tr>';
-            table += '<td>' + result.title + '</td>';
+            table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
@@ -248,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // 3. use the second part "LaiY94a" to replace "icsqp1994", between last "/" and ".html"
             // 4. append ?view=bibtex at the end
             var dblpLink = citeElement.querySelector('a[href^="https://dblp.org/db/conf/"], a[href^="https://dblp.org/db/journals/"]')
+            var permalink = '';
             var bibtexLink = '';
             if (dblpLink) {
                 var dblpLinkParts = dblpLink.href.split('#');
@@ -256,9 +257,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // use regular expression to replace the venue part at the end of the URL (e.g., .../icsqp1994) with the citation key
                 // the baseURL starts always with https://dblp.org/db/
                 // the regular expression matches the last "/" and everything including ".html"
-                bibtexLink = baseURL.replace(/\/[^\/]*\.html$/, '/' + citationKey + '.bib?param=1');
+                var link = baseURL.replace(/\/[^\/]*\.html$/, '/' + citationKey)
                 // replace 'db' with 'rec' in the bibtexLink
-                bibtexLink = bibtexLink.replace('db/', 'rec/');
+                link = link.replace('db/', 'rec/');
+                permalink = link + '.html';
+                bibtexLink = link + '.bib?param=1';
             }
             // extract the doi
             var doi = '';
@@ -273,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // create the publication object
             var publication = {
                 title: title,
+                permalink: permalink,
                 authors: authors,
                 year: year,
                 venue: venue,
