@@ -31,10 +31,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function createResultsTable(results) {
         var table = '<table class="table table-striped table-hover">';
         // <th scope="col">DOI</th>
-        table += '<thead><tr><th scope="col">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">BibTeX</th></tr></thead>';
+        table += '<thead><tr><th scope="col" colspan="2">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">BibTeX</th></tr></thead>';
         table += '<tbody>';
         results.forEach((result) => {
             table += '<tr>';
+            table += '<td><img class="' + result.type + '" title="' + result.type + '" src="images/pub-type.png"></td>';
             table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
@@ -218,50 +219,86 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             // extract the year
             var year = citeElement.querySelector('span[itemprop="datePublished"]').textContent;
-            // try to extract the venue as a conference publication
-            // if error, then extract the venue as a journal publication
-            // conference: <span itemprop="isPartOf" itemscope itemtype = "http://schema.org/BookSeries" >
+            // extract the venue
+            // conference/workshops: <span itemprop="isPartOf" itemscope itemtype = "http://schema.org/BookSeries" >
             // journals: <span itemprop="isPartOf" itemscope itemtype="http://schema.org/Periodical">
-            var venue = ''
-            try {
-                venue = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/BookSeries"]').textContent;
+            // books: <span itemprop="isPartOf" itemscope itemtype="http://schema.org/BookSeries">
+            // book chapters: <span itemprop="isPartOf" itemscope itemtype="http://schema.org/BookSeries">
+            // editorials: there is no <span itemprop="isPartOf" itemscope itemtype="...">
+            var venue = '';
+            var pubType = '';
+            // extract the venue as a conference/workshop, book or book chapter publication
+            var bookSeriesElement = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/BookSeries"]');
+            if (bookSeriesElement) {
+                pubType = 'incollection';
+                venue = bookSeriesElement.textContent;
                 venue = venue + ' ' + year;
-            } catch (error) {
+            } else if (citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]')) {
                 // extract the venue as a journal publication
-                var volume = '';
-                var issue = '';
-                if (citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]')) {
-                    // extract the venue
-                    venue = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]').textContent;
-                    // extract the volume
-                    volume = citeElement.querySelector('span[itemprop="volumeNumber"]').textContent;
-                    // extract the issue
-                    var issueElement = citeElement.querySelector('span[itemprop="issueNumber"]');
-                    var issue = issueElement ? issueElement.textContent : '';
-                    // if issue exists, add it to the venue string
-                    venue = issue ? venue + ' ' + volume + '(' + issue + ')' : venue + ' ' + volume;
-                }
+                pubType = 'article';
+                // extract the venue
+                venue = citeElement.querySelector('span[itemprop="isPartOf"][itemtype="http://schema.org/Periodical"]').textContent;
+                // extract the volume
+                var volume = citeElement.querySelector('span[itemprop="volumeNumber"]').textContent;
+                // extract the issue
+                var issueElement = citeElement.querySelector('span[itemprop="issueNumber"]');
+                var issue = issueElement ? issueElement.textContent : '';
+                // if issue exists, add it to the venue string
+                venue = issue ? venue + ' ' + volume + '(' + issue + ')' : venue + ' ' + volume;
+            } else if (!citeElement.querySelector('span[itemprop="isPartOf"]')) {
+                // if there is no <span itemprop="isPartOf" ...>
+                // extract the venue as editorial
+                pubType = 'editor';
+                var title = citeElement.querySelector('span[class="title"][itemprop="name"]').textContent;
+                var publisher = citeElement.querySelector('span[itemprop="publisher"]').textContent;
+                var ISBN = citeElement.querySelector('span[itemprop="isbn"]').textContent;
+                venue = title + ', ' + publisher + ', ISBN:' + ISBN;
             }
             // extract the bibtexLink
             // 1. find a with href such as "https://dblp.org/db/conf/icsqp/icsqp1994.html#LaiY94a" or "https://dblp.org/db/journals/infsof/infsof34.html#DaleZ92"
             // 2. split at # and take both parts
             // 3. use the second part "LaiY94a" to replace "icsqp1994", between last "/" and ".html"
             // 4. append ?view=bibtex at the end
-            var dblpLink = citeElement.querySelector('a[href^="https://dblp.org/db/conf/"], a[href^="https://dblp.org/db/journals/"]')
-            var permalink = '';
+            var dblpLink = citeElement.querySelector('a[href^="https://dblp.org/db/conf/"], a[href^="https://dblp.org/db/journals/"], a[href^="https://dblp.org/db/books/"]');
+            var permaLink = '';
             var bibtexLink = '';
             if (dblpLink) {
-                var dblpLinkParts = dblpLink.href.split('#');
-                var baseURL = dblpLinkParts[0];
-                var citationKey = dblpLinkParts[1];
-                // use regular expression to replace the venue part at the end of the URL (e.g., .../icsqp1994) with the citation key
-                // the baseURL starts always with https://dblp.org/db/
-                // the regular expression matches the last "/" and everything including ".html"
-                var link = baseURL.replace(/\/[^\/]*\.html$/, '/' + citationKey)
-                // replace 'db' with 'rec' in the bibtexLink
-                link = link.replace('db/', 'rec/');
-                permalink = link + '.html';
-                bibtexLink = link + '.bib?param=1';
+                if (pubType === 'editor') {
+                    var dblpLinkParts = dblpLink.href.split('db/');
+                    var baseURL = dblpLinkParts[0] + 'rec/conf/';
+                    var confPart = dblpLinkParts[1];
+                    // confPart looks like "conf/cibse/cibse2023.html"
+                    // use regular expression to match "cibse"
+                    // then remove "cibse" from "cibse2023.html"
+                    // at the end, confPart must be "conf/cibse/2023.html"
+                    var conf = confPart.match(/conf\/([^\/]*)\//)[1] + '/';
+                    var confYear = confPart.replace(conf, '').match(/\d+/)[0];
+                    var link = baseURL + conf + confYear;
+                    permaLink = link + '.html';
+                    bibtexLink = link + '.bib?param=1';
+                } else { // article or incollection
+                    var dblpLinkParts = dblpLink.href.split('#');
+                    var baseURL = dblpLinkParts[0];
+                    var citationKey = dblpLinkParts[1];
+                    // use regular expression to replace the venue part at the end of the URL (e.g., .../icsqp1994) with the citation key
+                    // the baseURL starts always with https://dblp.org/db/
+                    // the regular expression matches the last "/" and everything including ".html"
+                    var link = baseURL.replace(/\/[^\/]*\.html$/, '/' + citationKey)
+                    // replace 'db' with 'rec' in the bibtexLink
+                    link = link.replace('db/', 'rec/');
+                    permaLink = link + '.html';
+                    bibtexLink = link + '.bib?param=1';
+
+                    if (pubType === 'incollection') {
+                        // distinguish between book / book chapter and conference / workshop
+                        var id = link.replace('https://dblp.org/rec/', '');
+                        // <li class="entry inproceedings toc" id=
+                        var type =  doc.querySelector('li[class="entry inproceedings toc"][id="' + id + '"]');
+                        if (type) {
+                            pubType = 'inproceedings';
+                        }
+                    }
+                }
             }
             // extract the doi
             var doi = '';
@@ -275,8 +312,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // create the publication object
             var publication = {
+                type: pubType,
                 title: title,
-                permalink: permalink,
+                permalink: permaLink,
                 authors: authors,
                 year: year,
                 venue: venue,

@@ -103,3 +103,28 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+td>img {
+    width: 12px;
+    height: 12px;
+}
+
+td>img.book {
+    background: #f8c91f;
+}
+
+td>img.incollection {
+    background: #ef942d;
+}
+
+td>img.article {
+    background: #c32b72;
+}
+
+td>img.inproceedings {
+    background: #196ca3;
+}
+
+td>img.editor {
+    background: #33c3ba;
+}
