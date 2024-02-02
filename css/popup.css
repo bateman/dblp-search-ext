@@ -94,3 +94,12 @@ img {
 #results tbody tr:hover {
     background-color: #fdf9e7;
 }
+
+a {
+    color: #0a4da5;
+    text-decoration: none; 
+}
+
+a:hover {
+    text-decoration: underline;
+}
