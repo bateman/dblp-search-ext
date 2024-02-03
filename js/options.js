@@ -1,12 +1,14 @@
 // Saves options to chrome.storage
 function save_options() {
     var corsUrl = document.getElementById('corsUrl').value;
+    var keyRenaming = document.getElementById('renamingCheckbox').checked;
     
     chrome.storage.sync.set({
-        corsApiUrl: corsUrl
+        corsApiUrl: corsUrl,
+        keyRenaming: keyRenaming
     }, function() {
         // Update status to let user know options were saved.
-        updateStatus('Options saved.', 750);
+        updateStatus('Saving options', 750);
     });
 }
 
@@ -15,9 +17,11 @@ function save_options() {
 function restore_options() {
     // Use default value 'https://corsproxy.io/?'
     chrome.storage.sync.get({
-        corsApiUrl: 'https://corsproxy.io/?'
+        corsApiUrl: 'https://corsproxy.io/?',
+        keyRenaming: false
     }, function(items) {
         document.getElementById('corsUrl').value = items.corsApiUrl;
+        document.getElementById('renamingCheckbox').checked = items.keyRenaming;
     });
 }
 

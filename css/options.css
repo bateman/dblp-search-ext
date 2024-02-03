@@ -1,6 +1,18 @@
+div.options {
+    flex-direction: column;
+    margin: 20px;
+}
+
+div {
+    flex-direction: column;
+    margin: 20px;
+    color:#0a4da5;
+    font-weight: bold;
+}
+
 img {
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
 }
 
 h1 {
@@ -23,9 +35,13 @@ label {
     color: #0a4da5;
 }
 
-input {
+input[type="text"] {
     flex: 1;
-    width: 400px;
+    width: 250px;
+}
+
+input[type="checkbox"] {
+    vertical-align: middle;
 }
 
 button {

@@ -10,15 +10,29 @@
 
 <body>
     <h1>
-        <img src="images/icon.png" alt="dblp Search"> 
+        <img src="images/icon.png" alt="dblp Search">
         dblp Search - Extension Options
     </h1>
-    
-    <label class="optiondesc" id="help">Ensure either a trailing '/' or '/?' are present</label>
-    <br>
-    <label class="option" for="corsUrl">CORS Proxy URL<br>(default is 'https://corsproxy.io/?'):</label>
-    <input type="text" id="corsUrl">
-    <button id="saveButton">Save</button>
+
+    <div class="options">
+        <label class="optiondesc" id="help">Proxy otions (ensure either a trailing '/' or '/?' are present)</label>
+        <br>
+        <label class="option" for="corsUrl">CORS Proxy URL<br>(default is 'https://corsproxy.io/?'):</label>
+        <input type="text" id="corsUrl">
+    </div>
+
+    <div class="options">
+        <label class="optiondesc" id="help">BibTex options</label>
+        <br>
+        <label class="option" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
+        <input type="checkbox" id="renamingCheckbox">
+        <br>
+        <label class="option" for="bibtex" id="bibtexLabel">When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23"<br>becomes:</label>
+        <input type="text" id="bibtex" value="calefato2023esem" disabled>
+    </div>
+    <div class="options">
+        <button id="saveButton">Save</button>
+    </div>
     <div id="status"></div>
 </body>
 

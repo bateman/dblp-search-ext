@@ -321,10 +321,47 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(response => response.text())
             .then(data => {
-                navigator.clipboard.writeText(data)
-                    .catch(err => {
-                        console.error('Could not copy BibTeX to clipboard: ', err);
-                    });
+                // if the keyRenaming option is enabled, then rename the citation key
+                // before copying the BibTeX to the clipboard      
+                // get the keyRenaming option
+                chrome.storage.sync.get({
+                    keyRenaming: false
+                }, function (items) {
+                    var keyRenaming = items.keyRenaming;
+                    if (keyRenaming) {
+                        // rename the citation key
+                        // ^@\S+\{(DBLP:\S+\/\S+\/\S+),$
+                        var key = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/)[0];
+                        if (!key) {
+                            console.error('Could not find the citation key in the BibTeX');
+                            return;
+                        }
+                        var venue = key.split('/')[1];
+                        var name = key.split('/')[2].replace(',', '');
+                        // remove all digits from name
+                        name = name.replace(/\d+/g, '');
+                        // starting from the end, remove all Capital letters from name
+                        // stop at the first non-capital letter
+                        name = name.replace(/[A-Z]+$/, '');
+                        // extract the year from a string like this: "year = {2020},"
+                        var year = data.match(/year\s*=\s*\{(\d+)\},/)[1];
+                        var newCitationKey = name.toLowerCase() + year + venue;
+                        // replace the old citation key with the new one
+                        // specifically, replace all the text from DBLP until the first comma (excluded)
+                        // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,""
+                        // becomes "@inproceedings{calefato2023esem,"
+                        data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ',');
+                        navigator.clipboard.writeText(data)
+                            .catch(err => {
+                                console.error('Could not copy BibTeX to clipboard: ', err);
+                        });
+                    } else {
+                        navigator.clipboard.writeText(data)
+                            .catch(err => {
+                                console.error('Could not copy BibTeX to clipboard: ', err);
+                        });
+                    }
+                });
             })
             .catch(err => {
                 console.error('Could not fetch BibTeX: ', err);
