@@ -166,34 +166,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /*
-    <cite class="data tts-content" itemprop="headline">
-        <span itemprop="author" itemscope itemtype="http://schema.org/Person">
-            <a href="https://dblp.org/pid/171/7011.html" itemprop="url">
-                <span itemprop="name" title="C. J. Dale">C. J. Dale</span>
-            </a>
-        </span>, 
-        <span itemprop="author" itemscope itemtype="http://schema.org/Person">
-            <a href="https://dblp.org/pid/171/6993.html" itemprop="url">
-                <span itemprop="name" title="H. van der Zee">H. van der Zee</span>
-            </a>
-        </span>:
-        <br> 
-        <span class="title" itemprop="name">Software productivity metrics: who needs them?</span> 
-        <a href="https://dblp.org/db/journals/infsof/infsof34.html#DaleZ92">
-            <span itemprop="isPartOf" itemscope itemtype="http://schema.org/Periodical">
-                <span itemprop="name">Inf. Softw. Technol.</span>
-            </span> 
-            <span itemprop="isPartOf" itemscope itemtype="http://schema.org/PublicationVolume">
-                <span itemprop="volumeNumber">34</span>
-            </span>
-            (<span itemprop="isPartOf" itemscope itemtype="http://schema.org/PublicationIssue">
-                <span itemprop="issueNumber">11</span>
-            </span>)
-        </a>: 
-        ...
-    </cite>
-    */
     // extract all publication elements from the results page
     function extractPublicationInfo(doc) {
         var results = [];
