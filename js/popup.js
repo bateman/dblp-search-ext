@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function createResultsTable(results) {
         var table = '<table class="table table-striped table-hover">';
         // <th scope="col">DOI</th>
-        table += '<thead><tr><th scope="col" colspan="2">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">BibTeX</th></tr></thead>';
+        table += '<thead><tr><th scope="col" colspan="2">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
         table += '<tbody>';
         results.forEach((result) => {
             table += '<tr>';
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
-            // table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+            table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
             table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
             table += '</tr>';
         });
@@ -262,11 +262,13 @@ document.addEventListener('DOMContentLoaded', function () {
             var dblpLink = citeElement.querySelector('a[href^="https://dblp.org/db/conf/"], a[href^="https://dblp.org/db/journals/"], a[href^="https://dblp.org/db/books/"]');
             var permaLink = '';
             var bibtexLink = '';
+            var dblpID = '';
             if (dblpLink) {
                 if (pubType === 'editor') {
                     var dblpLinkParts = dblpLink.href.split('db/');
                     var baseURL = dblpLinkParts[0] + 'rec/conf/';
                     var confPart = dblpLinkParts[1];
+                    dblpID = confPart.replace('.html', '');
                     // confPart looks like "conf/cibse/cibse2023.html"
                     // use regular expression to match "cibse"
                     // then remove "cibse" from "cibse2023.html"
@@ -288,27 +290,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     link = link.replace('db/', 'rec/');
                     permaLink = link + '.html';
                     bibtexLink = link + '.bib?param=1';
-
+                    dblpID = link.replace('https://dblp.org/rec/', '');
                     if (pubType === 'incollection') {
+                        // it's not a jouranl article so we need to
                         // distinguish between book / book chapter and conference / workshop
-                        var id = link.replace('https://dblp.org/rec/', '');
                         // <li class="entry inproceedings toc" id=
-                        var type =  doc.querySelector('li[class="entry inproceedings toc"][id="' + id + '"]');
+                        var type = doc.querySelector('li[class="entry inproceedings toc"][id="' + dblpID + '"]');
                         if (type) {
                             pubType = 'inproceedings';
+                        } else {  // its a book or book chapter (incollection)
+                            var baseURL = 'https://dblp.org/rec/';
+                            dblpID = 'books/sp/' + year.substring(2) + '/' + dblpID.split('/')[2];
+                            link = baseURL + dblpID;
+                            permaLink = link + '.html';
+                            bibtexLink = link + '.bib?param=1';
                         }
                     }
                 }
             }
             // extract the doi
-            var doi = '';
-            var doiURL = '';
-            retrieveDOI(bibtexLink).then(result => {
-                doi = result.doi;
-                doiURL = result.doiURL;
-            });
-            // FIXME result.doi and result.doiURL hold values but then doi and doiURL are empty 
-            // after the assignment 
+            var result = retrieveDOI(dblpID, doc);
+            var doi = result.doi;
+            var doiURL = result.doiURL;
 
             // create the publication object
             var publication = {
@@ -328,22 +331,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return results;
     }
 
-    // retrieve the DOI from the BibTeX link
-    async function retrieveDOI(bibtexLink) {
+    function retrieveDOI(dblpID, doc) {
         var doi = '';
         var doiURL = '';
-        if (bibtexLink) {
-            try {
-                const response = await fetch(bibtexLink);
-                const data = await response.text();
-                var doiRegex = /doi\s*=\s*\{(.*)\}/;
-                var doiMatch = data.match(doiRegex);
-                if (doiMatch && doiMatch.length > 1) {
-                    doi = doiMatch[1];
-                    doiURL = 'https://doi.org/' + doi;
-                }
-            } catch (err) {
-                console.error('Could not fetch BibTeX: ', err);
+        if (dblpID && doc) {
+            var doiElement = doc.querySelector('li[id="' + dblpID + '"] nav[class="publ"] ul li[class="drop-down"] div[class="head"] a[href^="https://doi.org/"]');
+            if (doiElement) {
+                doiURL = doiElement.href;
+                doi = doiElement.href.replace('https://doi.org/', '');
             }
         }
         return { doi: doi, doiURL: doiURL };
