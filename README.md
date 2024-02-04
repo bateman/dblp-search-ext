@@ -1,4 +1,8 @@
 # dblp Search
+![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
+![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
+![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
+![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 
 A simple Chromium extension to ease the process of searching papers on [dblp.org](https://dblp.org) and copy BibTeX entries.
 
@@ -14,6 +18,7 @@ A simple Chromium extension to ease the process of searching papers on [dblp.org
 
 - **Search Papers**: Enter the title of the paper in the input field or highlight any text on the current web page, then click the search button. The extension will search for the paper on dblp.org and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding paper to your clipboard.
+- **Rename BibTex Citation Keys**: Replace dblp default citation keys with <first author's lastname><year><venue> (e.g., calefato2023esem).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out 
 useless CoRR Abs entries.
 - **Save Search State**: The state of the paper title input, status, and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
