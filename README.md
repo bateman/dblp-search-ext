@@ -4,7 +4,7 @@
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 
-A simple Chromium extension to ease the process of searching papers on [dblp.org](https://dblp.org) and copy BibTeX entries.
+A simple Chromium extension to ease the process of searching papers on [dblp.org](https://dblp.org) and copying BibTeX entries.
 
 ![Screenshot of Extension](store/Screenshot-1.png)
 
