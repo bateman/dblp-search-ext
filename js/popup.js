@@ -223,8 +223,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 pubType = 'editor';
                 var title = citeElement.querySelector('span[class="title"][itemprop="name"]').textContent;
                 var publisher = citeElement.querySelector('span[itemprop="publisher"]').textContent;
-                var ISBN = citeElement.querySelector('span[itemprop="isbn"]').textContent;
-                venue = title + ', ' + publisher + ', ISBN:' + ISBN;
+                venue = title + ', ' + publisher;
+                var ISBN = citeElement.querySelector('span[itemprop="isbn"]');
+                // if ISBN exists, add it to the venue string
+                venue = ISBN ? venue + ', ISBN:' + ISBN.textContent : venue;
             }
             // extract the bibtexLink
             // 1. find a with href such as "https://dblp.org/db/conf/icsqp/icsqp1994.html#LaiY94a" or "https://dblp.org/db/journals/infsof/infsof34.html#DaleZ92"
