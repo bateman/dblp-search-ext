@@ -15,8 +15,9 @@ function save_options() {
 // Restores select box and checkbox state using the preferences
 // stored in chrome.storage.
 function restore_options() {
+    var browser = window.msBrowser || window.browser || window.chrome;
     // Use default value 'https://corsproxy.io/?'
-    chrome.storage.sync.get({
+    browser.storage.local.get({
         corsApiUrl: 'https://corsproxy.io/?',
         keyRenaming: false
     }, function(items) {

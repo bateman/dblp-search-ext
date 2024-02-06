@@ -1,6 +1,9 @@
+var browser = window.msBrowser || window.browser || window.chrome;
+console.log('popup.js loaded');
+
 document.addEventListener('DOMContentLoaded', function () {
     // if the content of the popup was saved in the local storage, then restore it
-    chrome.storage.local.get({
+    browser.storage.local.get({
         paperTitle: '',
         status: '',
         results: []
@@ -70,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Clear the results when the clear button is clicked
     document.getElementById('clearButton').addEventListener('click', function () {
-        chrome.storage.local.set({
+        browser.storage.local.set({
             paperTitle: '',
             status: '',
             results: []
@@ -116,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 addCopyBibtexButtonEventListener();
 
                 // save the state of paperTitleInput, status, and results in the local storage
-                chrome.storage.local.set({
+                browser.storage.local.set({
                     paperTitle: paperTitle,
                     status: resCount,
                     results: results
@@ -127,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Send the request to the CORS proxy
     function doCORSRequest(options, printResult) {
-        chrome.storage.sync.get({
+        browser.storage.local.get({
             corsApiUrl: 'https://corsproxy.io/?'
         }, function (items) {
             var cors_api_url = items.corsApiUrl;
