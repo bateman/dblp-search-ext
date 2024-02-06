@@ -1,6 +1,8 @@
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log('popup.js loaded');
 
+// ------------------------------------- Listeners -------------------------------------
+
 document.addEventListener('DOMContentLoaded', function () {
     // if the content of the popup was saved in the local storage, then restore it
     browser.storage.local.get({
@@ -37,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var tab = tabs[0]; // Now 'tab' is defined
 
         // Define a variable 'executingScript' that will hold a function to execute in the currently active tab.
-        var executingScript = 
+        var executingScript =
             browser.tabs && browser.tabs.executeScript ?
                 // If 'browser.tabs.executeScript' is available, it means the code is running in Firefox.
                 // So, 'executingScript' is set to 'browser.tabs.executeScript'.
@@ -45,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If 'browser.tabs.executeScript' is not available, it means the code is running in Chrome.
                 // In this case, 'executingScript' is set to a new function that wraps the
                 // 'chrome.scripting.executeScript' function
-                function(details) { // Chromium
+                function (details) { // Chromium
                     // The 'chrome.scripting.executeScript' function expects an object with 'target' and 'function' properties.
                     // The 'function' property is the function to be executed in the specified target tab.
                     return chrome.scripting.executeScript({
@@ -54,9 +56,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 };
 
-        executingScript({ target: { tabId: tab.id }, function: function() {
-            return window.getSelection().toString();
-        }}).then(function (result) {
+        executingScript({
+            target: { tabId: tab.id }, function: function () {
+                return window.getSelection().toString();
+            }
+        }).then(function (result) {
             if (result && result.length > 0) {
                 paperTitleInput.value = result[0].result.trim();
             }
@@ -126,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // extract all publication elements from the results page
                 var results = extractPublicationInfo(doc)
-                
+
                 // show results count
                 var resCount = 'Found ' + results.length + ' results.';
                 updateResultsCount(resCount);
@@ -219,8 +223,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // extract the venue as editorial
                 pubType = 'editor';
                 var title = citeElement.querySelector('span[class="title"][itemprop="name"]').textContent;
-                var publisher = citeElement.querySelector('span[itemprop="publisher"]').textContent;
-                venue = title + ', ' + publisher;
+                var publisher = citeElement.querySelector('span[itemprop="publisher"]');
+                // if publisher exists, add its textContent to the venue string
+                venue = publisher ? title + ', ' + publisher.textContent : title;
                 var ISBN = citeElement.querySelector('span[itemprop="isbn"]');
                 // if ISBN exists, add it to the venue string
                 venue = ISBN ? venue + ', ISBN:' + ISBN.textContent : venue;
@@ -378,12 +383,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         navigator.clipboard.writeText(data)
                             .catch(err => {
                                 console.error('Could not copy BibTeX to clipboard: ', err);
-                        });
+                            });
                     } else {
                         navigator.clipboard.writeText(data)
                             .catch(err => {
                                 console.error('Could not copy BibTeX to clipboard: ', err);
-                        });
+                            });
                     }
                 });
             })
