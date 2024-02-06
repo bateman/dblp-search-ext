@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // if the keyRenaming option is enabled, then rename the citation key
                 // before copying the BibTeX to the clipboard      
                 // get the keyRenaming option
-                chrome.storage.sync.get({
+                browser.storage.local.get({
                     keyRenaming: false
                 }, function (items) {
                     var keyRenaming = items.keyRenaming;

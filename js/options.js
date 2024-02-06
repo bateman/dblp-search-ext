@@ -1,9 +1,11 @@
+var browser = window.msBrowser || window.browser || window.chrome;
+
 // Saves options to chrome.storage
 function save_options() {
     var corsUrl = document.getElementById('corsUrl').value;
     var keyRenaming = document.getElementById('renamingCheckbox').checked;
     
-    chrome.storage.sync.set({
+    browser.storage.local.set({
         corsApiUrl: corsUrl,
         keyRenaming: keyRenaming
     }, function() {
@@ -15,7 +17,6 @@ function save_options() {
 // Restores select box and checkbox state using the preferences
 // stored in chrome.storage.
 function restore_options() {
-    var browser = window.msBrowser || window.browser || window.chrome;
     // Use default value 'https://corsproxy.io/?'
     browser.storage.local.get({
         corsApiUrl: 'https://corsproxy.io/?',
