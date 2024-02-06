@@ -26,19 +26,23 @@ input {
 button {
     margin-left: 5px;
     cursor: pointer;
-    border: none;
+    border: 1px solid transparent;  /* Add a transparent border so buttons stay in place on mouse:hover */
     background: transparent;
     padding: 0;
     transition: background-color 0.3s ease;
 }
 
 button:hover {
-    cursor: pointer;
+    border: 1px solid rgb(222, 222, 222);
 }
 
-button img {
-    width: 16px;
-    height: 16px;
+button.copyBibtexButton:hover {
+    border: 1px solid transparent;
+}
+
+button.copyBibtexButton:active {
+    transform: scale(0.95); /* Slightly reduce the size of the button when clicked */
+    opacity: 0.6; /* Reduce the opacity when clicked */
 }
 
 #status {
