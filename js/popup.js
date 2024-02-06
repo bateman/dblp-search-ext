@@ -28,43 +28,6 @@ document.addEventListener('DOMContentLoaded', function () {
         paperTitleInput.focus();
     }
 
-    function createResultsTable(results) {
-        var table = '<table class="table table-striped table-hover">';
-        // <th scope="col">DOI</th>
-        table += '<thead><tr><th scope="col" colspan="2">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
-        table += '<tbody>';
-        results.forEach((result) => {
-            table += '<tr>';
-            table += '<td><img class="' + result.type + '" title="' + result.type + '" src="images/pub-type.png"></td>';
-            table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
-            table += '<td>' + result.authors.join(', ') + '</td>';
-            table += '<td>' + result.year + '</td>';
-            table += '<td>' + result.venue + '</td>';
-            table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
-            table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
-            table += '</tr>';
-        });
-        table += '</tbody>';
-        table += '</table>';
-        return table;
-    }
-
-    function clearResults() {
-        document.getElementById('paperTitle').value = '';
-        document.getElementById('results').innerHTML = '';
-        updateResultsCount('');
-    }
-
-    function addCopyBibtexButtonEventListener() {
-        // Add the event listener for the copyBibtexButton class
-        document.querySelectorAll('.copyBibtexButton').forEach(button => {
-            button.addEventListener('click', function () {
-                const url = this.getAttribute('data-url');
-                window.copyBibtexToClipboard(url);
-            });
-        });
-    }
-
     // Get the highlighted text from the current tab
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         var tab = tabs[0];
@@ -75,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }).then(function (result) {
             if (result && result.length > 0 && result[0].result) {
-                paperTitleInput.value = result[0].result;
+                paperTitleInput.value = result[0].result.trim();
             }
         }).catch(function (error) {
             if (!error.message.includes('Cannot access chrome:// and edge:// URLs')) {
@@ -114,6 +77,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         clearResults();
     });
+
+    function addCopyBibtexButtonEventListener() {
+        // Add the event listener for the copyBibtexButton class
+        document.querySelectorAll('.copyBibtexButton').forEach(button => {
+            button.addEventListener('click', function () {
+                const url = this.getAttribute('data-url');
+                window.copyBibtexToClipboard(url);
+            });
+        });
+    }
+
+    // ------------------------------------- Functions -------------------------------------
 
     // Search paperTitle on DBLP 
     function searchDblp() {
@@ -316,6 +291,32 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
         return { doi: doi, doiURL: doiURL };
+    }
+
+    function createResultsTable(results) {
+        var table = '<table class="table table-striped table-hover">';
+        table += '<thead><tr><th scope="col" colspan="2">Title</th><th scope="col">Authors</th><th scope="col">Year</th><th scope="col">Venue</th><th scope="col">DOI</th><th scope="col">BibTeX</th></tr></thead>';
+        table += '<tbody>';
+        results.forEach((result) => {
+            table += '<tr>';
+            table += '<td><img class="' + result.type + '" title="' + result.type + '" src="images/pub-type.png"></td>';
+            table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
+            table += '<td>' + result.authors.join(', ') + '</td>';
+            table += '<td>' + result.year + '</td>';
+            table += '<td>' + result.venue + '</td>';
+            table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+            table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
+            table += '</tr>';
+        });
+        table += '</tbody>';
+        table += '</table>';
+        return table;
+    }
+
+    function clearResults() {
+        document.getElementById('paperTitle').value = '';
+        document.getElementById('results').innerHTML = '';
+        updateResultsCount('');
     }
 
     // copy the BibTeX to the clipboard
