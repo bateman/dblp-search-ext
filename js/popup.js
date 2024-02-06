@@ -32,19 +32,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Get the highlighted text from the current tab
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        var tab = tabs[0];
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: function () {
-                return window.getSelection().toString();
-            }
-        }).then(function (result) {
-            if (result && result.length > 0 && result[0].result) {
+    // Query the active tab
+    browser.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        var tab = tabs[0]; // Now 'tab' is defined
+
+        // Define a variable 'executingScript' that will hold a function to execute in the currently active tab.
+        var executingScript = 
+            browser.tabs && browser.tabs.executeScript ?
+                // If 'browser.tabs.executeScript' is available, it means the code is running in Firefox.
+                // So, 'executingScript' is set to 'browser.tabs.executeScript'.
+                browser.tabs.executeScript : // Firefox & Safari
+                // If 'browser.tabs.executeScript' is not available, it means the code is running in Chrome.
+                // In this case, 'executingScript' is set to a new function that wraps the
+                // 'chrome.scripting.executeScript' function
+                function(details) { // Chromium
+                    // The 'chrome.scripting.executeScript' function expects an object with 'target' and 'function' properties.
+                    // The 'function' property is the function to be executed in the specified target tab.
+                    return chrome.scripting.executeScript({
+                        target: { tabId: details.target.tabId },
+                        function: details.function
+                    });
+                };
+
+        executingScript({ target: { tabId: tab.id }, function: function() {
+            return window.getSelection().toString();
+        }}).then(function (result) {
+            if (result && result.length > 0) {
                 paperTitleInput.value = result[0].result.trim();
             }
         }).catch(function (error) {
-            if (!error.message.includes('Cannot access chrome:// and edge:// URLs')) {
+            if (!error.message.includes('Cannot access chrome:// and edge:// URLs') &&
+                !error.message.includes('Cannot access about: or moz-extension: URLs') &&
+                !error.message.includes('Cannot access safari-extension: URLs')) {
                 console.error('Error executing script:', error);
             }
         });
@@ -59,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Open the popup.html in a new tab when the openInTab button is clicked
     document.getElementById('openInTab').addEventListener('click', function () {
-        chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
+        browser.tabs.create({ url: browser.runtime.getURL("popup.html") });
     });
 
     // Search DBLP when the user presses the Enter key
@@ -330,10 +349,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // if the keyRenaming option is enabled, then rename the citation key
                 // before copying the BibTeX to the clipboard      
                 // get the keyRenaming option
-                browser.storage.local.get({
-                    keyRenaming: false
-                }, function (items) {
-                    var keyRenaming = items.keyRenaming;
+                var gettingItem = browser.storage.local.get('keyRenaming');
+                gettingItem.then((res) => {
+                    var keyRenaming = res.keyRenaming || false;
                     if (keyRenaming) {
                         // rename the citation key
                         // ^@\S+\{(DBLP:\S+\/\S+\/\S+),$
