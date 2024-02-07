@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }).catch(function (error) {
             if (!error.message.includes('Cannot access chrome:// and edge:// URLs') &&
                 !error.message.includes('Cannot access about: or moz-extension: URLs') &&
-                !error.message.includes('Cannot access safari-extension: URLs')) {
+                !error.message.includes('Cannot access safari-extension: URLs') &&
+                !error.message.includes('Cannot access chrome-extension: URLs')) {
                 console.error('Error executing script:', error);
             }
         });
@@ -104,17 +105,17 @@ document.addEventListener('DOMContentLoaded', function () {
         clearResults();
     });
 
+    // ------------------------------------- Functions -------------------------------------
+
     function addCopyBibtexButtonEventListener() {
         // Add the event listener for the copyBibtexButton class
         document.querySelectorAll('.copyBibtexButton').forEach(button => {
             button.addEventListener('click', function () {
                 const url = this.getAttribute('data-url');
-                window.copyBibtexToClipboard(url);
+                copyBibtexToClipboard(url);
             });
         });
     }
-
-    // ------------------------------------- Functions -------------------------------------
 
     // Search paperTitle on DBLP 
     function searchDblp() {
@@ -380,16 +381,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,""
                         // becomes "@inproceedings{calefato2023esem,"
                         data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ',');
-                        navigator.clipboard.writeText(data)
-                            .catch(err => {
-                                console.error('Could not copy BibTeX to clipboard: ', err);
-                            });
-                    } else {
-                        navigator.clipboard.writeText(data)
-                            .catch(err => {
-                                console.error('Could not copy BibTeX to clipboard: ', err);
-                            });
                     }
+                    navigator.clipboard.writeText(data)
+                        .catch(err => {
+                            console.error('Could not copy BibTeX to clipboard: ', err);
+                        });
                 });
             })
             .catch(err => {
