@@ -1,4 +1,5 @@
 var browser = window.msBrowser || window.browser || window.chrome;
+console.log("options.js loaded");
 
 // Saves options to chrome.storage
 function save_options() {
