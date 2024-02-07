@@ -1,5 +1,6 @@
 // Use the 'browser' namespace if it's available; otherwise, fall back to 'chrome'.
 var browser = browser || chrome;
+console.log("background.js loaded");
 
 // create a context menu item to search dblp
 browser.runtime.onInstalled.addListener(function () {
