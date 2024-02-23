@@ -37,26 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Query the active tab
     browser.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         var tab = tabs[0]; // Now 'tab' is defined
-
-        // Define a variable 'executingScript' that will hold a function to execute in the currently active tab.
-        var executingScript =
-            browser.tabs && browser.tabs.executeScript ?
-                // If 'browser.tabs.executeScript' is available, it means the code is running in Firefox.
-                // So, 'executingScript' is set to 'browser.tabs.executeScript'.
-                browser.tabs.executeScript : // Firefox & Safari
-                // If 'browser.tabs.executeScript' is not available, it means the code is running in Chrome.
-                // In this case, 'executingScript' is set to a new function that wraps the
-                // 'chrome.scripting.executeScript' function
-                function (details) { // Chromium
-                    // The 'chrome.scripting.executeScript' function expects an object with 'target' and 'function' properties.
-                    // The 'function' property is the function to be executed in the specified target tab.
-                    return chrome.scripting.executeScript({
-                        target: { tabId: details.target.tabId },
-                        function: details.function
-                    });
-                };
-
-        executingScript({
+        browser.scripting.executeScript({
             target: { tabId: tab.id }, function: function () {
                 return window.getSelection().toString();
             }
