@@ -25,7 +25,7 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
               with:
-                title: Release ${{ steps.tag.outputs.version }}
+                title: dblp Search ${{ steps.tag.outputs.version }}
 
             - name: Upload to Chrome Web Store
               uses: mobilefirstllc/cws-publish@latest
