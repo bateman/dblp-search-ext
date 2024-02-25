@@ -1,4 +1,5 @@
-# dblp Search
+# dblp Search <img src="store/icons/dblp-128x128.png" width="30">
+
 ![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
