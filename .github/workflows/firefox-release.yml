@@ -1,0 +1,32 @@
+name: Firefox Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set tag
+              id: tag
+              run: echo "manifest=$(jq -c . < manifest.firefox.json)" >> $GITHUB_ENV
+              
+            - name: Create xpi
+              run: |
+                make firefox
+                mv manifest.json manifest.json.bak
+                mv manifest.firefox.json manifest.json
+
+            - name: Upload to the Firefox Add-ons Store
+              uses: wdzeng/firefox-addon@v1
+              with:
+                addon-guid: dblpSearch@fcalefato.dev
+                xpi-path: dist/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
+                self-hosted: false
+                license: MIT
+                jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
+                jwt-secret: ${{ secrets.FIREFOX_API_SECRET }}

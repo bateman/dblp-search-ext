@@ -1,0 +1,29 @@
+name: Chrome Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set tag
+              id: tag
+              run: echo "manifest=$(jq -c . < manifest.firefox.json)" >> $GITHUB_ENV
+
+            - name: Create zip
+              run: make chrome
+
+            - name: Upload to Chrome Web Store
+              uses: mobilefirstllc/cws-publish@latest
+              with:
+                action: 'upload'  # one of: upload, publish, testers
+                client_id: ${{ secrets.CLIENT }}
+                client_secret: ${{ secrets.SECRET }}
+                refresh_token: ${{ secrets.REFRESH_TOKEN }}
+                extension_id: 'apfbfjghmamodacdkkhoiabadlcgmikh' 
+                zip_file: 'dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip'

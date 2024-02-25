@@ -1,0 +1,28 @@
+name: Edge Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set tag
+              id: tag
+              run: echo "manifest=$(jq -c . < manifest.firefox.json)" >> $GITHUB_ENV
+
+            - name: Create Edge zip
+              run: make chrome
+
+            - name: Upload to the Edge Add-ons Store
+              uses: wdzeng/edge-addon@v1
+              with:
+                product-id: mgiijnhdenbgibgdffibiigpmnkgmboc
+                zip-path: dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                client-id: ${{ secrets.EDGE_CLIENT_ID }}
+                client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
+                access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
