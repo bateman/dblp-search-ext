@@ -76,6 +76,8 @@ patch:
 	# replace the version in manifest.json with the new version
 	cat manifest.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
 	mv manifest.json.tmp manifest.json
+	cat manifest.firefox.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
+	mv manifest.json.tmp manifest.firefox.json
 	#$(MAKE) tag
 
 minor:
@@ -86,6 +88,8 @@ minor:
 	# replace the version in manifest.json with the new version
 	cat manifest.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
 	mv manifest.json.tmp manifest.json
+	cat manifest.firefox.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
+	mv manifest.json.tmp manifest.firefox.json
 	#$(MAKE) tag
 
 major:
@@ -96,6 +100,8 @@ major:
 	# replace the version in manifest.json with the new version
 	cat manifest.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
 	mv manifest.json.tmp manifest.json
+	cat manifest.firefox.json | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > manifest.json.tmp
+	mv manifest.json.tmp manifest.firefox.json
 	#$(MAKE) tag
 
 tag: 
