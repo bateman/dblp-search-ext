@@ -25,25 +25,5 @@
     },
     "background": {
         "service_worker": "js/background.js"
-    },
-    "web_accessible_resources": [
-        {
-            "resources": [
-                "popup.html",
-                "options.html",
-                "css/style.css",
-                "images/magnifier-icon.png",
-                "images/icon.png",
-                "images/open-in-tab.png",
-                "images/copy.png",
-                "images/copyall.png",
-                "images/spinner.gif",
-                "images/clear.png",
-                "images/pub-type.png"
-            ],
-            "matches": [
-                "<all_urls>"
-            ]
-        }
-    ]
+    }
 }
