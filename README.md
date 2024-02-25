@@ -6,17 +6,19 @@
 
 A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
 
-![Screenshot of Extension](store/screenshots/Screenshot-1.png)
+<p align="center">
+    <img src="store/screenshots/Screenshot-1.png">
+</p>
 
 <p align="center">
     <a href="https://chromewebstore.google.com/detail/dblp-search/onilpcgmnpikffebghpncnnapebndpaj?pli=1">
-        <img src="store/images/chrome-web-store.png" alt="Avaliable on the Chrome Web Store" width="200">
+        <img src="store/images/chrome-web-store.png" alt="Avaliable in the Chrome Web Store" width="200">
     </a>
     <a href="https://addons.mozilla.org/addon/dblpsearch">
         <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
     </a>
     <a href="">
-        <img src="store/images/microsoft-store.png" alt="Avaliable on the Microsoft Edge Add-ons Store" width="200">
+        <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200">
     </a>
 </p>
 
