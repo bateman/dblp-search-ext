@@ -58,7 +58,7 @@ chrome:
 	@echo "Building Chrome extension"
 	$(eval version=$(shell jq -r .version manifest.json))
 	mkdir -p ./dist/chrome > /dev/null
-	zip -r -FS ./dist/chrome/$(APPNAME)-$(version).zip . --exclude "*.git*" "Makefile" "README.md" "dist/*" ".DS_Store" ".vscode/*" "store/*" "images/.DS_Store"
+	zip -r -FS ./dist/chrome/$(APPNAME)-ext-$(version).zip . --exclude "*.git*" "Makefile" "README.md" "dist/*" ".DS_Store" ".vscode/*" "store/*" "images/.DS_Store"
 
 clean:
 	@echo "Cleaning up dist/ directory..."
