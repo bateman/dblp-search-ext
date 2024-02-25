@@ -27,12 +27,40 @@ jobs:
               with:
                 title: dblp Search ${{ steps.tag.outputs.version }}
 
+            - name: Create zip
+              run: make chrome
+
             - name: Upload to Chrome Web Store
               uses: mobilefirstllc/cws-publish@latest
               with:
-                action: 'upload'  # one of: upload, publish, testers
+                action: 'publish'  # one of: upload, publish, testers
                 client_id: ${{ secrets.CLIENT }}
                 client_secret: ${{ secrets.SECRET }}
                 refresh_token: ${{ secrets.TOKEN }}
                 extension_id: 'onilpcgmnpikffebghpncnnapebndpaj' 
-                zip_file: 'release.zip'
+                zip_file: 'dist/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip'
+
+            - name: Create xpi
+              run: |
+                make firefox
+                mv manifest.json manifest.json.bak
+                mv manifest.firefox.json manifest.json
+
+            - name: Upload to the Firefox Add-ons Store
+              uses: wdzeng/firefox-addon@v1
+              with:
+                addon-guid: dblpSearch@fcalefato.dev
+                xpi-path: dist/firefox/dblpSearch-addon-${{ steps.tag.outputs.version }}.xpi
+                self-hosted: false
+                license: MIT
+                jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
+                jwt-secret: ${{ secrets.FIREFOX_API_SECRET }}
+
+            - name: Upload to the Edge Add-ons Store
+              uses: wdzeng/edge-addon@v1
+              with:
+                product-id: mgiijnhdenbgibgdffibiigpmnkgmboc
+                zip-path: dist/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
+                client-id: ${{ secrets.EDGE_CLIENT_ID }}
+                client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
+                access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
