@@ -1,0 +1,35 @@
+{
+    "manifest_version": 3,
+    "name": "dblp Search",
+    "version": "1.0.23",
+    "description": "Search academic publications on dblp from everywhere.",
+    "icons": {
+        "48": "images/icon.png"
+    },
+    "permissions": [
+        "activeTab",
+        "storage",
+        "contextMenus",
+        "scripting",
+        "clipboardWrite"
+    ],
+    "host_permissions": [
+        "https://dblp.org/*",
+        "https://*/",
+        "http://*/"
+    ],
+    "options_page": "options.html",
+    "action": {
+        "default_icon": "images/icon.png",
+        "default_popup": "popup.html"
+    },
+    "background": {
+        "scripts": ["js/background.js"],
+        "persistent": false
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "dblpSearch@fcalefato.dev"
+        }
+    }
+}
