@@ -4,13 +4,19 @@
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
 
-A simple Chromium extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
+A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
 
-![Screenshot of Extension](store/Screenshot-1.png)
+![Screenshot of Extension](store/screenshots/Screenshot-1.png)
 
 <p align="center">
     <a href="https://chromewebstore.google.com/detail/dblp-search/onilpcgmnpikffebghpncnnapebndpaj?pli=1">
-        <img src="store/chrome-web-store.png" alt="Avaliable on the Chrome Web Store" width="200">
+        <img src="store/images/chrome-web-store.png" alt="Avaliable on the Chrome Web Store" width="200">
+    </a>
+    <a href="https://addons.mozilla.org/addon/dblpsearch">
+        <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
+    </a>
+    <a href="">
+        <img src="store/images/microsoft-store.png" alt="Avaliable on the Microsoft Edge Add-ons Store" width="200">
     </a>
 </p>
 
@@ -36,4 +42,4 @@ Contributions are welcome! Please submit a pull request or create an issue to co
 
 ## License
 
-This project is licensed under the terms of the MIT License. This means you are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software or portions of it, given that you include the following copyright notice and permission notice in all copies or substantial portions of the software:
+This project is licensed under the MIT license, see the [LICENSE](LICENSE) file.

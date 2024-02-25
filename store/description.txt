@@ -1,6 +1,6 @@
 Features:
-- Highlight text on any page, click on the extension button and get matching research paper.
-- Copy the BibTeX to clipboard for each result.
+- Highlight text on any page, click on the extension button, and get matching research papers.
+- Copy the BibTeX to the clipboard for each result.
 
 Note:
 - The extension uses the services corsproxy.io. A custom CORS proxy can be configured using the options page.
