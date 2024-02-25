@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "dblp Search",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "description": "Search academic publications on dblp from everywhere.",
     "icons": {
         "48": "images/icon.png"
@@ -18,7 +18,10 @@
         "https://*/",
         "http://*/"
     ],
-    "options_page": "options.html",
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
     "action": {
         "default_icon": "images/icon.png",
         "default_popup": "popup.html"
