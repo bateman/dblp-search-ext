@@ -15,7 +15,7 @@ A simple cross-browser extension to ease the process of searching publications o
     <a href="https://chromewebstore.google.com/detail/dblp-search/onilpcgmnpikffebghpncnnapebndpaj?pli=1">
         <img src="store/images/chrome-web-store.png" alt="Avaliable in the Chrome Web Store" width="200">
     </a>
-    <a href="https://addons.mozilla.org/addon/dblpsearch">
+    <a href="https://addons.mozilla.org/addon/dblp-search">
         <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
     </a>
     <a href="">
