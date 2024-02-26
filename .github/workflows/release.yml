@@ -3,7 +3,7 @@ name: Release
 on:
     push:
         tags:
-            - 'v*'
+            - '*'
 
 jobs:
     release:
@@ -29,16 +29,16 @@ jobs:
 
             - name: Create zip
               run: make chrome
-
+              
             - name: Upload to Chrome Web Store
-              uses: mobilefirstllc/cws-publish@latest
+              uses: wdzeng/chrome-extension@v1
               with:
-                action: 'publish'  # one of: upload, publish, testers
-                client_id: ${{ secrets.CLIENT }}
-                client_secret: ${{ secrets.SECRET }}
-                refresh_token: ${{ secrets.TOKEN }}
-                extension_id: 'onilpcgmnpikffebghpncnnapebndpaj' 
-                zip_file: 'dist/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip'
+                extension-id: onilpcgmnpikffebghpncnnapebndpaj
+                zip-path: dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                client-id: ${{ secrets.CHROME_CLIENT_ID }}
+                client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+                refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+                upload-only: false  # Optional, default is false, menas upload and publish
 
             - name: Create xpi
               run: |
