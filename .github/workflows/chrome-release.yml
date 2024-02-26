@@ -25,5 +25,5 @@ jobs:
                 client_id: ${{ secrets.CLIENT }}
                 client_secret: ${{ secrets.SECRET }}
                 refresh_token: ${{ secrets.REFRESH_TOKEN }}
-                extension_id: 'apfbfjghmamodacdkkhoiabadlcgmikh' 
+                extension_id: 'onilpcgmnpikffebghpncnnapebndpaj' 
                 zip_file: 'dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip'
