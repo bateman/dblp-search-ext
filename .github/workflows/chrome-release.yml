@@ -19,11 +19,11 @@ jobs:
               run: make chrome
 
             - name: Upload to Chrome Web Store
-              uses: mobilefirstllc/cws-publish@latest
+              uses: wdzeng/chrome-extension@v1
               with:
-                action: 'upload'  # one of: upload, publish, testers
-                client_id: ${{ secrets.CLIENT }}
-                client_secret: ${{ secrets.SECRET }}
-                refresh_token: ${{ secrets.REFRESH_TOKEN }}
-                extension_id: 'onilpcgmnpikffebghpncnnapebndpaj' 
-                zip_file: 'dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip'
+                extension-id: onilpcgmnpikffebghpncnnapebndpaj
+                zip-path: dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                client-id: ${{ secrets.CLIENT }}
+                client-secret: ${{ secrets.SECRET }}
+                refresh-token: ${{ secrets.REFRESH_TOKEN }}
+                upload-only: true
