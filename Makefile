@@ -152,20 +152,20 @@ tag/delete:  ## Delete the tag for the current version
 
 dep_chrome:
 	@echo "Checking if Google Chrome is installed..."
-	@ls /Applications | grep "Google Chrome.app" || "echo 'Google Chrome is not installed'"
+	@ls /Applications | grep "Google Chrome.app" || "echo 'Google Chrome is not installed.'"
 
 dep_firefox:
 	@echo "Checking if Firefox Developer Edition is installed..."
-	@ls /Applications | grep "Firefox Developer Edition.app" || "echo 'Firefox Developer Edition is not installed'"
+	@ls /Applications | grep "Firefox Developer Edition.app" || "echo 'Firefox Developer Edition is not installed.'"
 	@echo "Checking if web-ext is installed..."
-	@web-ext --version || "echo 'web-ext is not installed'"
+	@web-ext --version || "echo 'web-ext is not installed'."
 
 dep_edge:
 	@echo "Checking if Microsoft Edge is installed..."
-	@ls /Applications | grep "Microsoft Edge.app" || "echo 'Microsoft Edge is not installed'"
+	@ls /Applications | grep "Microsoft Edge.app" || "echo 'Microsoft Edge is not installed.'"
 
 run/chrome: dep_chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo "Running Chrome extension (make sure Chrome is not already running)"
+	@echo "Running Chrome extension (make sure Chrome is not already running)."
 	@open -a "Google Chrome" --args \
 		--auto-open-devtools-for-tabs \
 		--force-dev-mode-highlighting \
@@ -185,8 +185,8 @@ run/chrome: dep_chrome  ## Run Chrome extension in development mode (use DEFAULT
 		$(DEFAULT_URL)
 
 run/edge: dep_edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
-	@echo "Opening Edge browser (note: Edge does not support development mode for extensions)"
-	@open -a "Microsoft Edge.app" --args \
+	@echo "Opening Edge browser (Make sure Edge is not already running. Note: Edge does not support development mode for extensions)."
+	@open -a "Microsoft Edge" --args \
 		--force-dev-mode-highlighting \
 		--no-first-run \
 		--no-default-browser-check \
