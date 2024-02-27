@@ -8,8 +8,8 @@
 ![Mozilla Add-on Version](https://img.shields.io/amo/v/dblp-search?style=for-the-badge)
 ![Mozilla Add-on Users](https://img.shields.io/amo/users/dblp-search?style=for-the-badge)
 ![Mozilla Add-on Downloads](https://img.shields.io/amo/dw/dblp-search?style=for-the-badge)
-![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search%40fcalefato.dev?style=for-the-badge)
-![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search%40fcalefato.dev?style=for-the-badge)
+![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=for-the-badge)
+![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=for-the-badge)
 
 A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
 
