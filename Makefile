@@ -25,7 +25,7 @@ SAFARI_DEV_ID := dev.fcalefato.$(APPNAME)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help clean tag/release tag/delete dep_macos dep_chrome dep_firefox dep_edge run/chrome run/edge run/firefox
+.PHONY: help clean tag/release tag/tag dep/chrome dep/firefox dep/edge dep/macos run/chrome run/edge run/firefox
 
 #-- Help
 
@@ -37,7 +37,7 @@ help:  ## Show this help message
 
 #-- Build targets
 
-build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and JS sources
+build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo "Building Firefox addon"
 	$(eval version=$(shell jq -r .version manifest.json))
@@ -55,7 +55,7 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	mv manifest.json.tmp manifest.json
 	touch $(FIREFOX_BUILD_TIMESTAMP)
 
-build/safari: $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
+build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
 $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo "Building Safari extension"
 	$(eval version=$(shell jq -r .version manifest.json))
@@ -112,19 +112,19 @@ define update_version
 	touch $(RELEASE_TIMESTAMP)
 endef
 
-update/patch:  ## Bump patch version in manifest*.json
+update/patch:  ## Bump patch semantic version in manifest*.json
 	$(eval version=$(shell jq -r .version manifest.json))
 	# increment the patch version (e.g., 1.0.0 -> 1.0.1)
 	$(eval new_version=$(shell echo $(version) | awk -F. -v OFS=. '{$$NF++; print $$0}'))
 	$(call update_version)
 
-update/minor:  ## Bump minor version in manifest*.json
+update/minor:  ## Bump minor semantic version in manifest*.json
 	$(eval version=$(shell jq -r .version manifest.json))
 	# increment the minor version (e.g., 1.0.0 -> 1.1.0)
 	$(eval new_version=$(shell echo $(version) | awk -F. -v OFS=. '{$$(NF-1)++; $$NF=0; print $$0}'))
 	$(call update_version)
 
-update/major:  ## Bump major version in manifest*.json
+update/major:  ## Bump major semantic version in manifest*.json
 	$(eval version=$(shell jq -r .version manifest.json))
 	# increment the major version (e.g., 1.0.0 -> 2.0.0)
 	$(eval new_version=$(shell echo $(version) | awk -F. -v OFS=. '{$$1++; $$2=0; $$3=0; print $$0}'))
@@ -150,25 +150,25 @@ tag/delete:  ## Delete the tag for the current version
 
 #-- Run
 
-dep_macos:
+dep/macos:
 	@echo "Checking if OS is MacOS..."
 	@uname -s | grep "Darwin" || "echo 'Run targets are only available on MacOS.'"
 
-dep_chrome: dep_macos
+dep/chrome: dep/macos
 	@echo "Checking if Google Chrome is installed..."
 	@ls /Applications | grep "Google Chrome.app" || "echo 'Google Chrome is not installed.'"
 
-dep_firefox: dep_macos
+dep/firefox: dep/macos
 	@echo "Checking if Firefox Developer Edition is installed..."
 	@ls /Applications | grep "Firefox Developer Edition.app" || "echo 'Firefox Developer Edition is not installed.'"
 	@echo "Checking if web-ext is installed..."
 	@web-ext --version || "echo 'web-ext is not installed'."
 
-dep_edge: dep_macos
+dep/edge: dep/macos
 	@echo "Checking if Microsoft Edge is installed..."
 	@ls /Applications | grep "Microsoft Edge.app" || "echo 'Microsoft Edge is not installed.'"
 
-run/chrome: dep_chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
+run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo "Running Chrome extension (make sure Chrome is not already running)."
 	@open -a "Google Chrome" --args \
 		--auto-open-devtools-for-tabs \
@@ -188,7 +188,7 @@ run/chrome: dep_chrome  ## Run Chrome extension in development mode (use DEFAULT
 		--load-extension=$(WORK_DIR) \
 		$(DEFAULT_URL)
 
-run/edge: dep_edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
+run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
 	@echo "Opening Edge browser (Make sure Edge is not already running. Note: Edge does not support development mode for extensions)."
 	@open -a "Microsoft Edge" --args \
 		--force-dev-mode-highlighting \
@@ -207,7 +207,7 @@ run/edge: dep_edge   ## Run Edge extension (use DEFAULT_URL="..." to set the ope
 		--load-extension=$(WORK_DIR) \
 		$(DEFAULT_URL)
 
-run/firefox: dep_firefox build/firefox ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
+run/firefox: dep/firefox build/firefox ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo "Running Firefox addon"
 	$(eval version=$(shell jq -r .version manifest.firefox.json))
 	@cd $(BUILD_DIR)/firefox/src && web-ext run --firefox="/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox" \
