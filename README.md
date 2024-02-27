@@ -19,7 +19,7 @@ A simple cross-browser extension to ease the process of searching publications o
         <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
     </a>
     <a href="">
-        <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200">
+        <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200" style="margin-bottom: 10px;margin-left:18px;">
     </a>
 </p>
 
