@@ -25,7 +25,7 @@ SAFARI_DEV_ID := dev.fcalefato.$(APPNAME)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help clean tag/release tag/delete
+.PHONY: help clean tag/release tag/delete dep_macos dep_chrome dep_firefox dep_edge run/chrome run/edge run/firefox
 
 #-- Help
 
@@ -150,17 +150,21 @@ tag/delete:  ## Delete the tag for the current version
 
 #-- Run
 
-dep_chrome:
+dep_macos:
+	@echo "Checking if OS is MacOS..."
+	@uname -s | grep "Darwin" || "echo 'Run targets are only available on MacOS.'"
+
+dep_chrome: dep_macos
 	@echo "Checking if Google Chrome is installed..."
 	@ls /Applications | grep "Google Chrome.app" || "echo 'Google Chrome is not installed.'"
 
-dep_firefox:
+dep_firefox: dep_macos
 	@echo "Checking if Firefox Developer Edition is installed..."
 	@ls /Applications | grep "Firefox Developer Edition.app" || "echo 'Firefox Developer Edition is not installed.'"
 	@echo "Checking if web-ext is installed..."
 	@web-ext --version || "echo 'web-ext is not installed'."
 
-dep_edge:
+dep_edge: dep_macos
 	@echo "Checking if Microsoft Edge is installed..."
 	@ls /Applications | grep "Microsoft Edge.app" || "echo 'Microsoft Edge is not installed.'"
 
