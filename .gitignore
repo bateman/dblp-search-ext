@@ -1,5 +1,5 @@
 **/.DS_Store
 *.stamp
-dist/
+build/
 store/auth/
 scripts/
