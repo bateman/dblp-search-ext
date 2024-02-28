@@ -85,6 +85,9 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
 	zip -r -FS $(BUILD_DIR)/chrome/$(APPNAME)-ext-$(version).zip $(SRC) -x \*.DS_Store
 	touch $(CHROME_BUILD_TIMESTAMP)
 
+buid/edge:  ## Build Edge extension zip (same as Chrome)
+	$(MAKE) build/chrome
+
 build/clean:  # Clean up build directory and remove build timestamps
 	@echo "Cleaning up $(BUILD_DIR) directory..."
 	rm -rf $(BUILD_DIR)/firefox
@@ -150,6 +153,10 @@ tag/delete:  ## Delete the tag for the current version
 
 #-- Run
 
+dep/xcode:
+	@echo "Checking if Xcode is installed..."
+	@xcode-select -p || "echo 'Xcode is not installed.'"
+
 dep/macos:
 	@echo "Checking if OS is MacOS..."
 	@uname -s | grep "Darwin" || "echo 'Run targets are only available on MacOS.'"
@@ -167,6 +174,10 @@ dep/firefox: dep/macos
 dep/edge: dep/macos
 	@echo "Checking if Microsoft Edge is installed..."
 	@ls /Applications | grep "Microsoft Edge.app" || "echo 'Microsoft Edge is not installed.'"
+
+dep/safari: dep/macos
+	@echo "Checking if Safari is installed..."
+	@ls /Applications | grep "Safari.app" || "echo 'Safari is not installed.'"
 
 run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo "Running Chrome extension (make sure Chrome is not already running)."
@@ -213,3 +224,9 @@ run/firefox: dep/firefox build/firefox ## Run Firefox addon in development mode 
 	@cd $(BUILD_DIR)/firefox/src && web-ext run --firefox="/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox" \
 		--source-dir=$(APPNAME)-addon-$(version) \
 		--start-url=$(DEFAULT_URL)
+
+run/safari: dep/safari build/safari  ## Run Safari app-extension 
+	@echo "Running Safari app-extension"
+	@echo "\033[0;31mNote that the extension is not signed, you need to go Settings > Select 'Developer' tab > Check the 'Allow unsigned extensions' box\033[0m"
+	$(eval version=$(shell jq -r .version manifest.firefox.json))
+	@open -a $(BUILD_DIR)/safari/$(APPNAME)/build/Release/$(APPNAME).app
