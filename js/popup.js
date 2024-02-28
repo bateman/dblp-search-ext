@@ -308,13 +308,13 @@ document.addEventListener('DOMContentLoaded', function () {
         table += '<tbody>';
         results.forEach((result) => {
             table += '<tr>';
-            table += '<td><img class="' + result.type + '" title="' + result.type + '" src="images/pub-type.png"></td>';
+            table += '<td><img class="' + result.type + '" title="' + result.type + '" src="../images/pub-type.png"></td>';
             table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
             table += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
-            table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="images/copy.png"></button></td>';
+            table += '<td><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="../images/copy.png"></button></td>';
             table += '</tr>';
         });
         table += '</tbody>';
