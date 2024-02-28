@@ -11,6 +11,16 @@
 ![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=for-the-badge)
 ![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=for-the-badge)
 
+![GitHub manifest version](https://img.shields.io/github/manifest-json/v/bateman/dblp-search-ext?style=for-the-badge&label=MANIFEST)
+![GitHub Release](https://img.shields.io/github/v/release/bateman/dblp-search-ext?style=for-the-badge)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/release.yml?style=for-the-badge)
+
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bateman/dblp-search-ext?style=for-the-badge)
+![GitHub language count](https://img.shields.io/github/languages/count/bateman/dblp-search-ext?style=for-the-badge)
+![GitHub top language](https://img.shields.io/github/languages/top/bateman/dblp-search-ext?style=for-the-badge)
+![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=for-the-badge)
+
+
 A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
 
 <p align="center">
@@ -25,7 +35,7 @@ A simple cross-browser extension to ease the process of searching publications o
         <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
     </a>
     <a href="">
-        <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200" style="margin-bottom: 10px;margin-left:18px;">
+        <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200">
     </a>
 </p>
 
