@@ -17,7 +17,7 @@ jobs:
               
             - name: Create xpi
               run: |
-                make firefox
+                make build/firefox
                 mv manifest.json manifest.json.bak
                 mv manifest.firefox.json manifest.json
 

@@ -28,7 +28,7 @@ jobs:
                 title: dblp Search ${{ steps.tag.outputs.version }}
 
             - name: Create zip
-              run: make chrome
+              run: make build/chrome
               
             - name: Upload to Chrome Web Store
               uses: wdzeng/chrome-extension@v1
@@ -42,7 +42,7 @@ jobs:
 
             - name: Create xpi
               run: |
-                make firefox
+                make build/firefox
                 mv manifest.json manifest.json.bak
                 mv manifest.firefox.json manifest.json
 
