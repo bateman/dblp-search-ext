@@ -16,10 +16,7 @@ jobs:
               run: echo "manifest=$(jq -c . < manifest.firefox.json)" >> $GITHUB_ENV
               
             - name: Create xpi
-              run: |
-                make build/firefox
-                mv manifest.json manifest.json.bak
-                mv manifest.firefox.json manifest.json
+              run: make build/firefox
 
             - name: Upload to the Firefox Add-ons Store
               uses: wdzeng/firefox-addon@v1
