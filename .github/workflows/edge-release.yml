@@ -22,7 +22,7 @@ jobs:
               uses: wdzeng/edge-addon@v1
               with:
                 product-id: mgiijnhdenbgibgdffibiigpmnkgmboc
-                zip-path: dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
                 client-id: ${{ secrets.EDGE_CLIENT_ID }}
                 client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
                 access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}

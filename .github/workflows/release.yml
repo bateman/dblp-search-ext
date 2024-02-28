@@ -34,7 +34,7 @@ jobs:
               uses: wdzeng/chrome-extension@v1
               with:
                 extension-id: onilpcgmnpikffebghpncnnapebndpaj
-                zip-path: dist/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
                 client-id: ${{ secrets.CHROME_CLIENT_ID }}
                 client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
                 refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
@@ -47,7 +47,7 @@ jobs:
               uses: wdzeng/firefox-addon@v1
               with:
                 addon-guid: dblpSearch@fcalefato.dev
-                xpi-path: dist/firefox/dblpSearch-addon-${{ steps.tag.outputs.version }}.xpi
+                xpi-path: build/firefox/dblpSearch-addon-${{ steps.tag.outputs.version }}.xpi
                 self-hosted: false
                 license: MIT
                 jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
@@ -57,7 +57,7 @@ jobs:
               uses: wdzeng/edge-addon@v1
               with:
                 product-id: mgiijnhdenbgibgdffibiigpmnkgmboc
-                zip-path: dist/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
                 client-id: ${{ secrets.EDGE_CLIENT_ID }}
                 client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
                 access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}

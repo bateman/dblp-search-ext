@@ -22,7 +22,7 @@ jobs:
               uses: wdzeng/firefox-addon@v1
               with:
                 addon-guid: dblpSearch@fcalefato.dev
-                xpi-path: dist/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
+                xpi-path: build/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
                 self-hosted: false
                 license: MIT
                 jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
