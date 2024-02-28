@@ -180,7 +180,8 @@ dep/safari: dep/macos
 	@ls /Applications | grep "Safari.app" || "echo 'Safari is not installed.'"
 
 run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo "Running Chrome extension (make sure Chrome is not already running)."
+	@echo "Running Chrome extension"
+	@echo "\033[0;31mMake sure Chrome is not already running.\033[0m"
 	@open -a "Google Chrome" --args \
 		--auto-open-devtools-for-tabs \
 		--force-dev-mode-highlighting \
@@ -200,7 +201,8 @@ run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT
 		$(DEFAULT_URL)
 
 run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
-	@echo "Opening Edge browser (Make sure Edge is not already running. Note: Edge does not support development mode for extensions)."
+	@echo "Opening Edge extension"
+	@echo "\033[0;31mMake sure Edge is not already running. (Note: Edge does not support development mode for extensions).\033[0m"
 	@open -a "Microsoft Edge" --args \
 		--force-dev-mode-highlighting \
 		--no-first-run \
