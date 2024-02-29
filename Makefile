@@ -13,6 +13,9 @@ DEFAULT_URL ?= "https://scholar.google.com"
 
 WORK_DIR := $(CURDIR)
 BUILD_DIR := $(WORK_DIR)/build
+SAFARI_DIR := safari
+CHROME_DIR := chrome
+FIREFOX_DIR := firefox
 CSS := css
 JS := js
 IMAGES := images
@@ -28,6 +31,11 @@ FIREFOX_BUILD_TIMESTAMP := .firefox.stamp
 SAFARI_BUILD_TIMESTAMP := .safari.stamp
 
 SAFARI_DEV_ID := dev.fcalefato.$(APPNAME)
+
+CHROME_APP := Google Chrome.app
+FIREFOX_APP := Firefox Developer Edition.app
+EDGE_APP := Microsoft Edge.app
+SAFARI_APP := Safari.app
 
 .DEFAULT_GOAL := help
 
@@ -52,16 +60,13 @@ help:  ## Show this help message
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/firefox/src/$(APPNAME)-addon-$(VERSION) > /dev/null
-	# rename default manifest.json
+	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APPNAME)-addon-$(VERSION) > /dev/null
 	@mv $(MANIFEST) $(MANIFEST_TMP)
-	# create a new manifest.json for Firefox
 	@mv $(MANIFEST_FIREFOX) $(MANIFEST)
-	@zip -r -FS $(BUILD_DIR)/firefox/$(APPNAME)-addon-$(VERSION).xpi $(SRC) -x \*.DS_Store
-	@zip -r -FS $(BUILD_DIR)/firefox/$(APPNAME)-addon-$(VERSION)-sources.zip $(JS_FILES)
-	@cp -r $(SRC) $(BUILD_DIR)/firefox/src/$(APPNAME)-addon-$(VERSION)
-	@cp $(MANIFEST) $(BUILD_DIR)/firefox/src/$(APPNAME)-addon-$(VERSION)
-	# restore default manifest.json
+	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APPNAME)-addon-$(VERSION).xpi $(SRC) -x \*.DS_Store
+	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APPNAME)-addon-$(VERSION)-sources.zip $(JS_FILES)
+	@cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APPNAME)-addon-$(VERSION)
+	@cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APPNAME)-addon-$(VERSION)
 	@mv $(MANIFEST) $(MANIFEST_FIREFOX)
 	@mv $(MANIFEST_TMP) $(MANIFEST)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
@@ -70,30 +75,30 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
 $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/safari > /dev/null
-	@mkdir -p $(BUILD_DIR)/safari/build > /dev/null
-	@mkdir -p $(BUILD_DIR)/safari/src > /dev/null
-	@mkdir -p $(BUILD_DIR)/safari/pkg > /dev/null
-	@cp $(MANIFEST) $(BUILD_DIR)/safari/src 
-	@cp -r $(HTML) $(BUILD_DIR)/safari/src 
-	@cp -r $(IMAGES) $(BUILD_DIR)/safari/src 
-	@cp -r $(JS) $(BUILD_DIR)/safari/src 
-	@cp -r $(CSS) $(BUILD_DIR)/safari/src 
-	@xcrun safari-web-extension-converter $(BUILD_DIR)/safari/src --app-name "$(APPNAME)" --bundle-identifier "dev.fcalefato.$(APPNAME)" --project-location $(BUILD_DIR)/safari --no-prompt --no-open --force --macos-only
-	#cd $(BUILD_DIR)/safari/$(APPNAME) && xcodebuild -scheme $(APPNAME) -archivePath $(BUILD_DIR)/safari/build/$(APPNAME).xcarchive build
-	#cd $(BUILD_DIR)/safari/$(APPNAME) && xcodebuild archive -scheme $(APPNAME) -archivePath $(BUILD_DIR)/safari/build/$(APPNAME).xcarchive
-	#cd $(BUILD_DIR)/safari/$(APPNAME) && xcodebuild -exportArchive -archivePath $(BUILD_DIR)/safari/build/$(APPNAME).xcarchive -exportPath $(BUILD_DIR)/safari/pkg/$(APPNAME).pkg -exportOptionsPlist ExportOptions.plist
-	@cd $(BUILD_DIR)/safari/$(APPNAME) &&  xcodebuild -target $(APPNAME) -configuration Release clean build
-	#cd $(BUILD_DIR)/safari/$(APPNAME) &&  pkgbuild --root build/Release --identifier "$(SAFARI_DEV_ID)" --version $(VERSION) ../pkg/$(APPNAME)-$(VERSION).pkg
-	@zip $(BUILD_DIR)/safari/$(APPNAME)-appex-$(VERSION).zip $(BUILD_DIR)/safari/$(APPNAME)/build/Release/$(APPNAME).app
+	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR) > /dev/null
+	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
+	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/src > /dev/null
+	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/pkg > /dev/null
+	@cp $(MANIFEST) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@cp -r $(HTML) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@cp -r $(IMAGES) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@cp -r $(JS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@cp -r $(CSS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@xcrun safari-web-extension-converter $(BUILD_DIR)/$(SAFARI_DIR)/src --app-name "$(APPNAME)" --bundle-identifier "dev.fcalefato.$(APPNAME)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
+	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME) && xcodebuild -scheme $(APPNAME) -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APPNAME).xcarchive build
+	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME) && xcodebuild archive -scheme $(APPNAME) -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APPNAME).xcarchive
+	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME) && xcodebuild -exportArchive -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APPNAME).xcarchive -exportPath $(BUILD_DIR)/$(SAFARI_DIR)/pkg/$(APPNAME).pkg -exportOptionsPlist ExportOptions.plist
+	@cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME) &&  xcodebuild -target $(APPNAME) -configuration Release clean build
+	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME) &&  pkgbuild --root build/Release --identifier "$(SAFARI_DEV_ID)" --version $(VERSION) ../pkg/$(APPNAME)-$(VERSION).pkg
+	@zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME)-appex-$(VERSION).zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME)/build/Release/$(APPNAME).app
 	@touch $(SAFARI_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
 $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/chrome > /dev/null
-	@zip -r -FS $(BUILD_DIR)/chrome/$(APPNAME)-ext-$(VERSION).zip $(SRC) -x \*.DS_Store
+	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
+	@zip -r -FS $(BUILD_DIR)/$(CHROME_DIR)/$(APPNAME)-ext-$(VERSION).zip $(SRC) -x \*.DS_Store
 	@touch $(CHROME_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done$(RESET)"
 
@@ -103,9 +108,9 @@ buid/edge:  ## Build Edge extension zip (same as Chrome)
 .PHONY: clean
 build/clean:  # Clean up build directory and remove build timestamps
 	@echo -e "$(CYAN)\nCleaning up $(BUILD_DIR) directory...$(RESET)"
-	@rm -rf $(BUILD_DIR)/firefox
-	@rm -rf $(BUILD_DIR)/safari
-	@rm -rf $(BUILD_DIR)/chrome
+	@rm -rf $(BUILD_DIR)/$(FIREFOX_DIR)
+	@rm -rf $(BUILD_DIR)/$(SAFARI_DIR)
+	@rm -rf $(BUILD_DIR)/$(CHROME_DIR)
 	@rm -f $(FIREFOX_BUILD_TIMESTAMP)
 	@rm -f $(SAFARI_BUILD_TIMESTAMP)
 	@rm -f $(CHROME_BUILD_TIMESTAMP)
@@ -175,30 +180,30 @@ dep/macos:
 .PHONY: dep/chrome
 dep/chrome: dep/macos
 	@echo -e "$(CYAN)\nChecking if Google Chrome is installed...$(RESET)"
-	@ls /Applications | grep "Google Chrome.app" || echo -e "$(RED)Google Chrome is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(CHROME_APP)" || echo -e "$(RED)Google Chrome is not installed.$(RESET)"
 
 .PHONY: dep/firefox
 dep/firefox: dep/macos
 	@echo -e "$(CYAN)\nChecking if Firefox Developer Edition is installed...$(RESET)"
-	@ls /Applications | grep "Firefox Developer Edition.app" || echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(FIREFOX_APP)" || echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"
 	@echo -e "$(CYAN)\nChecking if web-ext is installed...$(RESET)"
 	@web-ext --version || echo -e "$(RED)web-ext is not installed.$(RESET)"
 
 .PHONY: dep/edge
 dep/edge: dep/macos
 	@echo -e "$(CYAN)\nChecking if Microsoft Edge is installed...$(RESET)"
-	@ls /Applications | grep "Microsoft Edge.app" || echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(EDGE_APP)" || echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"
 
 .PHONY:  dep/safari
 dep/safari: dep/macos
 	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
-	@ls /Applications | grep "Safari.app" || echo -e "$(RED)Safari is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(SAFARI_APP)" || echo -e "$(RED)Safari is not installed.$(RESET)"
 
 .PHONY: run/chrome
 run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Chrome extension...$(RESET)"
 	@echo -e "${ORANGE}Make sure Chrome is not already running.${RESET}"
-	@open -a "Google Chrome" --args \
+	@open -a "$(CHROME_APP)" --args \
 		--auto-open-devtools-for-tabs \
 		--force-dev-mode-highlighting \
 		--no-first-run \
@@ -220,7 +225,7 @@ run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT
 run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nOpening Edge extension...$(RESET)"
 	@echo -e "${ORANGE}Make sure Edge is not already running. (Note: Edge does not support development mode for extensions).${RESET}"
-	@open -a "Microsoft Edge" --args \
+	@open -a "$(EDGE_APP)" --args \
 		--force-dev-mode-highlighting \
 		--no-first-run \
 		--no-default-browser-check \
@@ -240,7 +245,7 @@ run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the ope
 .PHONY: run/firefox
 run/firefox: dep/firefox build/firefox ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Firefox addon...$(RESET)"
-	@cd $(BUILD_DIR)/firefox/src && web-ext run --firefox="/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox" \
+	@cd $(BUILD_DIR)/$(FIREFOX_DIR)/src && web-ext run --firefox="/Applications/$(FIREFOX_APP)/Contents/MacOS/firefox" \
 		--source-dir=$(APPNAME)-addon-$(VERSION) \
 		--start-url=$(DEFAULT_URL)
 
@@ -248,4 +253,4 @@ run/firefox: dep/firefox build/firefox ## Run Firefox addon in development mode 
 run/safari: dep/safari build/safari  ## Run Safari app-extension 
 	@echo -e "$(CYAN)\nRunning Safari app-extension...$(RESET)"
 	@echo -e "${ORANGE}Note that the extension is not signed, you need to go to 'Settings' > Select 'Developer' tab > Check the 'Allow unsigned extensions' box.${RESET}"
-	@open -a $(BUILD_DIR)/safari/$(APPNAME)/build/Release/$(APPNAME).app
+	@open -a $(BUILD_DIR)/$(SAFARI_DIR)/$(APPNAME)/build/Release/$(APPNAME).app
