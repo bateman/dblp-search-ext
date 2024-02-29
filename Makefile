@@ -51,7 +51,7 @@ help:  ## Show this help message
 
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
-	@echo -e "$(CYAN)Building Firefox addon...$(RESET)"
+	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/firefox/src/$(APPNAME)-addon-$(VERSION) > /dev/null
 	# rename default manifest.json
 	@mv $(MANIFEST) $(MANIFEST_TMP)
@@ -69,7 +69,7 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 
 build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
 $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
-	@echo -e "$(CYAN)Building Safari app extension...$(RESET)"
+	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/safari > /dev/null
 	@mkdir -p $(BUILD_DIR)/safari/build > /dev/null
 	@mkdir -p $(BUILD_DIR)/safari/src > /dev/null
@@ -91,7 +91,7 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
 $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
-	@echo -e "$(CYAN)Building Chrome extension...$(RESET)"
+	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/chrome > /dev/null
 	@zip -r -FS $(BUILD_DIR)/chrome/$(APPNAME)-ext-$(VERSION).zip $(SRC) -x \*.DS_Store
 	@touch $(CHROME_BUILD_TIMESTAMP)
@@ -102,7 +102,7 @@ buid/edge:  ## Build Edge extension zip (same as Chrome)
 
 .PHONY: clean
 build/clean:  # Clean up build directory and remove build timestamps
-	@echo -e "$(CYAN)Cleaning up $(BUILD_DIR) directory...$(RESET)"
+	@echo -e "$(CYAN)\nCleaning up $(BUILD_DIR) directory...$(RESET)"
 	@rm -rf $(BUILD_DIR)/firefox
 	@rm -rf $(BUILD_DIR)/safari
 	@rm -rf $(BUILD_DIR)/chrome
@@ -112,7 +112,7 @@ build/clean:  # Clean up build directory and remove build timestamps
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 build/all:  ## Build all extensions
-	@echo -e "$(CYAN)Building all extensions...$(RESET)"
+	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
 	$(MAKE) build/chrome 
 	$(MAKE) build/firefox 
 	$(MAKE) build/safari
@@ -120,7 +120,7 @@ build/all:  ## Build all extensions
 #-- Update version
 
 define update_version
-	@echo -e "$(CYAN)Bump version from $(VERSION) to $(new_version).$(RESET)"
+	@echo -e "$(CYAN)\nBump version from $(VERSION) to $(new_version).$(RESET)"
 	@cat $(MANIFEST) | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > $(MANIFEST_TMP)
 	@mv $(MANIFEST_TMP) $(MANIFEST)
 	@cat $(MANIFEST_FIREFOX) | sed -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(new_version)\"/" > $(MANIFEST_TMP)
@@ -145,7 +145,7 @@ update/major:  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 
 .PHONY: tag/release 
 tag/release: $(RELEASE_TIMESTAMP) ## Tag the current version and push to origin
 $(RELEASE_TIMESTAMP): $(MANIFEST)
-	@echo -e "$(CYAN)Tagging version $(VERSION) and pushing to origin...$(RESET)"
+	@echo -e "$(CYAN)\nTagging version $(VERSION) and pushing to origin...$(RESET)"
 	@git tag $(VERSION)
 	@git push origin $(VERSION)
 	@echo -e "$(GREEN)Done.$(RESET)"
@@ -154,7 +154,7 @@ $(RELEASE_TIMESTAMP): $(MANIFEST)
 tag/delete:  ## Delete the tag for the current version
 	$(eval tag_exists=$(shell git rev-parse $(VERSION) >/dev/null 2>&1 && echo 1 || echo 0))
 	@if [ "$(tag_exists)" = "1" ]; then \
-		@echo -e "$(CYAN)Deleting tag $(VERSION).$(RESET)"; \
+		@echo -e "$(CYAN)\nDeleting tag $(VERSION).$(RESET)"; \
 		git tag -d $(VERSION) 2>/dev/null && git push origin :refs/tags/$(VERSION); \
 	else \
 		@echo -e "$(ORANGE)Current $(VERSION) is not tagged.$(RESET)"; \
@@ -164,39 +164,39 @@ tag/delete:  ## Delete the tag for the current version
 
 .PHONY: dep/xcode
 dep/xcode:
-	@echo -e "$(CYAN)Checking if Xcode is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if Xcode is installed...$(RESET)"
 	@xcode-select -p || "echo 'Xcode is not installed.'"
 
 .PHONY: dep/macos
 dep/macos:
-	@echo -e "$(CYAN)Checking if OS is MacOS...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if OS is MacOS...$(RESET)"
 	@uname -s | grep "Darwin" || "echo 'Run targets are only available on MacOS.'"
 
 .PHONY: dep/chrome
 dep/chrome: dep/macos
-	@echo -e "$(CYAN)Checking if Google Chrome is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if Google Chrome is installed...$(RESET)"
 	@ls /Applications | grep "Google Chrome.app" || echo -e "$(RED)Google Chrome is not installed.$(RESET)"
 
 .PHONY: dep/firefox
 dep/firefox: dep/macos
-	@echo -e "$(CYAN)Checking if Firefox Developer Edition is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if Firefox Developer Edition is installed...$(RESET)"
 	@ls /Applications | grep "Firefox Developer Edition.app" || echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"
-	@echo -e "$(CYAN)Checking if web-ext is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if web-ext is installed...$(RESET)"
 	@web-ext --version || echo -e "$(RED)web-ext is not installed.$(RESET)"
 
 .PHONY: dep/edge
 dep/edge: dep/macos
-	@echo -e "$(CYAN)Checking if Microsoft Edge is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if Microsoft Edge is installed...$(RESET)"
 	@ls /Applications | grep "Microsoft Edge.app" || echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"
 
 .PHONY:  dep/safari
 dep/safari: dep/macos
-	@echo -e "$(CYAN)Checking if Safari is installed...$(RESET)"
+	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
 	@ls /Applications | grep "Safari.app" || echo -e "$(RED)Safari is not installed.$(RESET)"
 
 .PHONY: run/chrome
 run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)Running Chrome extension...$(RESET)"
+	@echo -e "$(CYAN)\nRunning Chrome extension...$(RESET)"
 	@echo -e "${ORANGE}Make sure Chrome is not already running.${RESET}"
 	@open -a "Google Chrome" --args \
 		--auto-open-devtools-for-tabs \
@@ -218,7 +218,7 @@ run/chrome: dep/chrome  ## Run Chrome extension in development mode (use DEFAULT
 
 .PHONY: run/edge
 run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)Opening Edge extension...$(RESET)"
+	@echo -e "$(CYAN)\nOpening Edge extension...$(RESET)"
 	@echo -e "${ORANGE}Make sure Edge is not already running. (Note: Edge does not support development mode for extensions).${RESET}"
 	@open -a "Microsoft Edge" --args \
 		--force-dev-mode-highlighting \
@@ -239,13 +239,13 @@ run/edge: dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the ope
 
 .PHONY: run/firefox
 run/firefox: dep/firefox build/firefox ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)Running Firefox addon...$(RESET)"
+	@echo -e "$(CYAN)\nRunning Firefox addon...$(RESET)"
 	@cd $(BUILD_DIR)/firefox/src && web-ext run --firefox="/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox" \
 		--source-dir=$(APPNAME)-addon-$(VERSION) \
 		--start-url=$(DEFAULT_URL)
 
 .PHONY: run/safari
 run/safari: dep/safari build/safari  ## Run Safari app-extension 
-	@echo -e "$(CYAN)Running Safari app-extension...$(RESET)"
+	@echo -e "$(CYAN)\nRunning Safari app-extension...$(RESET)"
 	@echo -e "${ORANGE}Note that the extension is not signed, you need to go to 'Settings' > Select 'Developer' tab > Check the 'Allow unsigned extensions' box.${RESET}"
 	@open -a $(BUILD_DIR)/safari/$(APPNAME)/build/Release/$(APPNAME).app
