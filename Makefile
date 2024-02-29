@@ -11,10 +11,10 @@ DEFAULT_URL ?= "https://scholar.google.com"
 
 WORK_DIR := $(CURDIR)
 BUILD_DIR := $(WORK_DIR)/build
-CSS := $(WORK_DIR)/css
-JS := $(WORK_DIR)/js
-IMAGES := $(WORK_DIR)/images
-HTML := $(WORK_DIR)/html
+CSS := css
+JS := js
+IMAGES := images
+HTML := html
 
 SRC := $(CSS) $(JS) $(IMAGES) $(HTML) $(MANIFEST)
 SRC_FILES := $(shell find $(SRC) -type f)
