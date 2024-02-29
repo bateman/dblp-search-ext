@@ -6,7 +6,7 @@ MAKEFLAGS += --no-builtin-rules
 
 APPNAME := dblpSearch
 MANIFEST := manifest.json
-VERSION := $(eval version=$(shell jq -r .version $(MANIFEST)))
+VERSION := $(shell jq -r .version $(MANIFEST))
 DEFAULT_URL ?= "https://scholar.google.com"
 
 WORK_DIR := $(CURDIR)
@@ -104,7 +104,7 @@ build/clean:  # Clean up build directory and remove build timestamps
 	@rm -f $(SAFARI_BUILD_TIMESTAMP)
 	@rm -f $(CHROME_BUILD_TIMESTAMP)
 
-build/all: build/clean  ## Build all extensions
+build/all:  ## Build all extensions
 	$(MAKE) build/chrome 
 	$(MAKE) build/firefox 
 	$(MAKE) build/safari
