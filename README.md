@@ -34,7 +34,7 @@ A simple cross-browser extension to ease the process of searching publications o
     <a href="https://addons.mozilla.org/addon/dblp-search">
         <img src="store/images/firefox-addons.png" alt="Avaliable as a Firefox Add-on" width="200">
     </a>
-    <a href="">
+    <a href="https://microsoftedge.microsoft.com/addons/detail/dblp-search/pgaajpodajaanapcpehobkdmkjpbhobd">
         <img src="store/images/microsoft-store.png" alt="Avaliable in the Microsoft Edge Add-ons Store" width="200">
     </a>
 </p>
