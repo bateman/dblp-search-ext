@@ -21,7 +21,7 @@ jobs:
             - name: Upload to the Edge Add-ons Store
               uses: wdzeng/edge-addon@v1
               with:
-                product-id: mgiijnhdenbgibgdffibiigpmnkgmboc
+                product-id: ${{ secrets.EDGE_PRODUCT_ID }}
                 zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
                 client-id: ${{ secrets.EDGE_CLIENT_ID }}
                 client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
