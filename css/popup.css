@@ -108,9 +108,17 @@ a:hover {
     text-decoration: underline;
 }
 
+td.center {
+    text-align: center;
+}
+
 td>img {
     width: 12px;
     height: 12px;
+}
+
+td>img.access {
+    height: 16px;
 }
 
 td>img.book {
@@ -131,4 +139,12 @@ td>img.inproceedings {
 
 td>img.editor {
     background: #33c3ba;
+}
+
+td>img.misc {
+    background: #606b70;
+}
+
+td>img.refwork {
+    background: #96ad2d;
 }
