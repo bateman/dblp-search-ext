@@ -15,20 +15,18 @@
     </h1>
 
     <div class="options">
-        <label class="optiondesc" id="help">Proxy otions (ensure either a trailing '/' or '/?' are present)</label>
+        <label class="optiondesc" id="helpMaxResults">Maximum number of search results (hits) to return, default is 30.<br>For
+            bandwidth reasons, this number is capped at 1000.</label>
         <br>
-        <label class="option" for="corsUrl">CORS Proxy URL<br>(default is 'https://corsproxy.io/?'):</label>
-        <input type="text" id="corsUrl">
+        <label class="option" for="maxResults">Number of results to return:</label>
+        <input type="number" id="maxResults" min="1" max="1000" value="30">
     </div>
 
     <div class="options">
-        <label class="optiondesc" id="help">BibTex options</label>
+        <label class="optiondesc" id="helpRenamingCheckbox">BibTeX key format.<br>When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23" becomes "calefato2023esem".</label>
         <br>
         <label class="option" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
-        <input type="checkbox" id="renamingCheckbox">
-        <br>
-        <label class="option" for="bibtex" id="bibtexLabel">When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23"<br>becomes:</label>
-        <input type="text" id="bibtex" value="calefato2023esem" disabled>
+        <input type="checkbox" id="renamingCheckbox" checked>
     </div>
     <div class="options">
         <button id="saveButton">Save</button>
