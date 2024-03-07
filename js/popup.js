@@ -4,6 +4,13 @@ console.log('popup.js loaded');
 // ------------------------------------- Listeners -------------------------------------
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Display extension version in the footer
+    fetch('../manifest.json')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('version').textContent = data.version;
+        });
+        
     // if the content of the popup was saved in the local storage, then restore it
     browser.storage.local.get({
         'search': {
