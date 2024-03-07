@@ -12,9 +12,6 @@ document.addEventListener('DOMContentLoaded', function () {
             results: []
         }
     }, function (items) {
-        console.log('paperTitle: ', paperTitle);
-        console.log('resCount: ', resCount);
-        console.log('results: ', results);
         if (paperTitle) {
             document.getElementById('paperTitle').value = paperTitle;
         }
@@ -145,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function () {
     async function doApiRequest(options, printResult) {
         var url = 'https://dblp.org/search/publ/api?q="' + options.query + '"&format=json';
         url = await getUrlWithMaxResults(url);
-        console.log('doApiRequest: ', url);
         fetch(url)
             .then(response => response.json())
             .then(data => {
