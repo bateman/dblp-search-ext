@@ -6,13 +6,15 @@ console.log('popup.js loaded');
 document.addEventListener('DOMContentLoaded', function () {
     // if the content of the popup was saved in the local storage, then restore it
     browser.storage.local.get({
-        paperTitle: '',
-        status: '',
-        results: []
+        'search': {
+            paperTitle: '',
+            status: '',
+            results: []
+        }
     }, function (items) {
-        var paperTitle = items.paperTitle;
-        var resCount = items.status;
-        var results = items.results;
+        console.log('paperTitle: ', paperTitle);
+        console.log('resCount: ', resCount);
+        console.log('results: ', results);
         if (paperTitle) {
             document.getElementById('paperTitle').value = paperTitle;
         }
@@ -37,28 +39,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // Query the active tab
     browser.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         var tab = tabs[0]; // Now 'tab' is defined
-        browser.scripting.executeScript({
-            target: { tabId: tab.id }, func: function () {
-                return window.getSelection().toString();
-            }
-        }).then(function (result) {
-            if (result && result.length > 0) {
-                paperTitleInput.value = result[0].result.trim();
-            }
-        }).catch(function (error) {
-            if (!error.message.includes('Cannot access chrome:// and edge:// URLs') &&
-                !error.message.includes('Cannot access about: or moz-extension: URLs') &&
-                !error.message.includes('Cannot access safari-extension: URLs') &&
-                !error.message.includes('Cannot access chrome-extension: URLs')) {
+        if (tab.url.startsWith('http://') || tab.url.startsWith('https://')) {
+            browser.scripting.executeScript({
+                target: { tabId: tab.id }, func: function () {
+                    return window.getSelection().toString();
+                }
+            }).then(function (result) {
+                if (result && result.length > 0) {
+                    const highlightedText = result[0].result.trim();
+                    if (highlightedText) {
+                        paperTitleInput.value = highlightedText;
+                    }
+                }
+            }).catch(function (error) {
                 console.error('Error executing script:', error);
-            }
-        });
+            });
+        }
     });
 
     // Search DBLP when the search button is clicked
     document.getElementById('searchButton').addEventListener('click', function () {
+        // Clear existing results
+        clearResults(false);
         // Update status to let user know search has started.
-        updateStatus('Searching.', 1000);
+        updateStatus('Searching...', 2000);
         searchDblp();
     });
 
@@ -70,8 +74,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Search DBLP when the user presses the Enter key
     paperTitleInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
+            // Clear existing results
+            clearResults(false);
             // Update status to let user know search has started.
-            updateStatus('Searching.', 1000);
+            updateStatus('Searching...', 2000);
             searchDblp();
         }
     });
@@ -79,11 +85,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Clear the results when the clear button is clicked
     document.getElementById('clearButton').addEventListener('click', function () {
         browser.storage.local.set({
-            paperTitle: '',
-            status: '',
-            results: []
+            'search': { 
+                paperTitle: '',
+                status: '',
+                results: []
+            }
         });
-        clearResults();
+        clearResults(true);
     });
 
     // ------------------------------------- Functions -------------------------------------
@@ -123,23 +131,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // save the state of paperTitleInput, status, and results in the local storage
                 browser.storage.local.set({
-                    paperTitle: paperTitle,
-                    status: resCount,
-                    results: results
+                    'search': {
+                        paperTitle: paperTitle,
+                        status: resCount,
+                        results: results
+                    }
                 });
             });
         }
     }
 
     // Send the request to the DBLP API
-    function doApiRequest(options, printResult) {
-        const dblpApiUrl = 'https://dblp.org/search/publ/api?q=';
-        fetch(dblpApiUrl + '"' + options.query + '"&format=json')
+    async function doApiRequest(options, printResult) {
+        var url = 'https://dblp.org/search/publ/api?q="' + options.query + '"&format=json';
+        url = await getUrlWithMaxResults(url);
+        console.log('doApiRequest: ', url);
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 printResult(data);                
             })
-            .catch((error) => console.error('Error:', error));
+            .catch((error) => {
+                console.error('Error:', error);
+                updateResultsCount('Error: ' + error.message);
+            });
+    }
+
+    function getUrlWithMaxResults(baseUrl) {
+        return new Promise((resolve, reject) => {
+            browser.storage.local.get({
+                'options': {
+                    maxResults: 30
+                }
+            }, function(items) {
+                var maxResults = items.options.maxResults;
+                maxResults = Math.min(Math.max(maxResults, 1), 1000);
+                var url = baseUrl + '&h=' + maxResults;
+                resolve(url);
+            });
+        });
     }
 
     // extract all publication elements from the results object
@@ -151,7 +181,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     continue;
                 }
                 const access = resultHits[i].info.access;
-                const doi = resultHits[i].info.doi;
+                var doi = resultHits[i].info.doi;
+                if (doi === undefined) {
+                    doi = 'N/A';
+                }
                 const doiURL = resultHits[i].info.ee;
                 
                 var authors = [];
@@ -253,24 +286,28 @@ document.addEventListener('DOMContentLoaded', function () {
         return table;
     }
 
-    function clearResults() {
-        document.getElementById('paperTitle').value = '';
+    function clearResults(clearTitle = true) {
+        if (clearTitle) {
+            document.getElementById('paperTitle').value = '';
+        }
         document.getElementById('results').innerHTML = '';
         updateResultsCount('');
     }
 
     // copy the BibTeX to the clipboard
     window.copyBibtexToClipboard = function (url) {
-        console.log('copyBibtexToClipboard: ', url); //https://dblp.org/rec/journals/sis/GironRMCDV23.bib?param=1
         fetch(url)
             .then(response => response.text())
             .then(data => {
                 // if the keyRenaming option is enabled, then rename the citation key
                 // before copying the BibTeX to the clipboard      
                 // get the keyRenaming option
-                var gettingItem = browser.storage.local.get('keyRenaming');
-                gettingItem.then((res) => {
-                    var keyRenaming = res.keyRenaming || false;
+                browser.storage.local.get({
+                    'options': {
+                        keyRenaming: true
+                    }
+                }, function(items) {
+                    var keyRenaming = items.options.keyRenaming;
                     if (keyRenaming) {
                         // rename the citation key
                         // ^@\S+\{(DBLP:\S+\/\S+\/\S+),$
@@ -291,8 +328,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         var newCitationKey = name.toLowerCase() + year + venue;
                         // replace the old citation key with the new one
                         // specifically, replace all the text from DBLP until the first comma (excluded)
-                        // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,""
-                        // becomes "@inproceedings{calefato2023esem,"
+                        // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."
+                        // becomes "@inproceedings{calefato2023esem,..."
                         data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ',');
                     }
                     navigator.clipboard.writeText(data)

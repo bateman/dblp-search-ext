@@ -30,13 +30,17 @@ label {
     font-weight: bold;
 }
 
-.optiondesc {
-    font-style: italic;
-    color: #454649;
-}
-
 .option {
     color: #0a4da5;
+}
+
+.optiondesc {
+    font-style: italic;
+    color: #6e6f74;
+}
+
+.optionval {
+    color: #000000;
 }
 
 input[type="text"] {

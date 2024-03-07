@@ -7,8 +7,10 @@ function save_options() {
     var keyRenaming = document.getElementById('renamingCheckbox').checked;
     
     browser.storage.local.set({
-        maxResults: maxResults,
-        keyRenaming: keyRenaming
+        'options': {
+            maxResults: maxResults,
+            keyRenaming: keyRenaming
+        }
     }, function() {
         // Update status to let user know options were saved.
         updateStatus('Saving options', 750);
@@ -19,11 +21,13 @@ function save_options() {
 // stored in chrome.storage.
 function restore_options() {
     browser.storage.local.get({
-        maxResults: 30,
-        keyRenaming: true
+        'options': {
+            maxResults: 30,
+            keyRenaming: true
+        }
     }, function(items) {
-        document.getElementById('maxResults').value = items.maxResults;
-        document.getElementById('renamingCheckbox').checked = items.keyRenaming;
+        document.getElementById('maxResults').value = items.options.maxResults;
+        document.getElementById('renamingCheckbox').checked = items.options.keyRenaming;
     });
 }
 
