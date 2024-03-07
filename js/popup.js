@@ -37,22 +37,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // Query the active tab
     browser.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         var tab = tabs[0]; // Now 'tab' is defined
-        browser.scripting.executeScript({
-            target: { tabId: tab.id }, func: function () {
-                return window.getSelection().toString();
-            }
-        }).then(function (result) {
-            if (result && result.length > 0) {
-                paperTitleInput.value = result[0].result.trim();
-            }
-        }).catch(function (error) {
-            if (!error.message.includes('Cannot access chrome:// and edge:// URLs') &&
-                !error.message.includes('Cannot access about: or moz-extension: URLs') &&
-                !error.message.includes('Cannot access safari-extension: URLs') &&
-                !error.message.includes('Cannot access chrome-extension: URLs')) {
+        if (tab.url.startsWith('http://') || tab.url.startsWith('https://')) {
+            browser.scripting.executeScript({
+                target: { tabId: tab.id }, func: function () {
+                    return window.getSelection().toString();
+                }
+            }).then(function (result) {
+                if (result && result.length > 0) {
+                    const highlightedText = result[0].result.trim();
+                    if (highlightedText) {
+                        paperTitleInput.value = highlightedText;
+                    }
+                }
+            }).catch(function (error) {
                 console.error('Error executing script:', error);
-            }
-        });
+            });
+        }
     });
 
     // Search DBLP when the search button is clicked
