@@ -41,17 +41,18 @@ A simple cross-browser extension to ease the process of searching publications o
 
 ## Features
 
-- **Search Papers**: Enter the title of the paper in the input field or highlight any text on the current web page, then click the search button. The extension will search for matching publications on dblp.org and display the results.
+- **Search Papers**: Enter the paper's title in the input field or highlight any text on the current web page, then click the search button. The extension will search for matching publications on dblp.org and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
 - **Rename BibTex Citation Keys**: Replace dblp default citation keys with `<first author's lastname>`   `<year>` `<venue>` (e.g.,  `calefato2023esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
+- **API**: Version 2 is faster and more reliable as it relies on the official DBLP.org API to execute the queries.
 
 ## Usage
 
-1. Install the extension to your Chromium browser (e.g., Chrome, Edge, ...).
+1. Install the extension to your Chromium browser (e.g., Chrome, Edge, ...), Firefox, or Safari.
 2. Click on the extension icon to open the popup.
-3. Enter the title of the paper you want to search for in the input field. Alternatively, highlight some text in the current web page.
+3. Enter the title of the paper you want to search for in the input field. Alternatively, highlight some text on the current web page.
 4. Click the 'Search' button to start the search.
 5. The search results will be displayed in the popup. Click the 'Copy BibTeX' button next to a result to copy its BibTeX entry to your clipboard.
 
@@ -64,7 +65,7 @@ Contributions are welcome! Please submit a pull request or create an issue to co
 #### Building the extension
 
 1. Open your terminal to the project directory.
-2. Run the `make all` command to build the extension for Chrome, Firefox, and Safari. This will create each build in the `build/` directory.
+2. Run the `make all` command to build Chrome, Firefox, and Safari extensions. This will create each build in the `build/` directory.
 
 Note:
 * Safari build will start only on macOS, if XCode is installed.
@@ -85,9 +86,9 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 
 **Firefox** 
 
-1. Open Firefox and navigate to about:debugging.
+1. Open Firefox and navigate to `about:debugging`.
 
-2. Click "This Firefox" and then "Load Temporary Add-on...".
+2. Click "This Firefox" and "Load Temporary Add-on...".
 
 3. Navigate to the `build/firefox` directory in your project folder and select it.
 
