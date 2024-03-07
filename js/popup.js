@@ -13,13 +13,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }, function (items) {
         if (paperTitle) {
-            document.getElementById('paperTitle').value = paperTitle;
+            document.getElementById('paperTitle').value = items.search.paperTitle;
         }
-        if (results.length > 0) {
+        if (items.search.results.length > 0) {
             // show results count
-            updateResultsCount(resCount);
+            updateResultsCount(items.search.status);
             // create a table with the results
-            var table = createResultsTable(results);
+            var table = createResultsTable(items.search.results);
             // show the results into the document results div
             document.getElementById('results').innerHTML = table;
             // add copyBibtexButton event listener
