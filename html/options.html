@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <title>dblp Search - Extension Options</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="../css/options.css">
     <script src="../js/utils.js"></script>
     <script src="../js/options.js"></script>
@@ -15,20 +16,21 @@
     </h1>
 
     <div class="options">
-        <label class="optiondesc" id="help">Proxy otions (ensure either a trailing '/' or '/?' are present)</label>
+        <label class="option">Maximum number of search results (hits) to return</label>
         <br>
-        <label class="option" for="corsUrl">CORS Proxy URL<br>(default is 'https://corsproxy.io/?'):</label>
-        <input type="text" id="corsUrl">
+        <label class="optiondesc">Default is 30. For bandwidth reasons, this number is capped at 1000.</label>
+        <br>
+        <label class="optionval" for="maxResults">Number of results to return:</label>
+        <input type="number" id="maxResults" min="1" max="1000">
     </div>
 
     <div class="options">
-        <label class="optiondesc" id="help">BibTex options</label>
+        <label class="option">BibTeX key format</label>
         <br>
-        <label class="option" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
+        <label class="optiondesc">When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23" becomes "calefato2023esem".</label>
+        <br>
+        <label class="optionval" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
         <input type="checkbox" id="renamingCheckbox">
-        <br>
-        <label class="option" for="bibtex" id="bibtexLabel">When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23"<br>becomes:</label>
-        <input type="text" id="bibtex" value="calefato2023esem" disabled>
     </div>
     <div class="options">
         <button id="saveButton">Save</button>

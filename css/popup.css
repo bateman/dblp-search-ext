@@ -26,7 +26,8 @@ input {
 button {
     margin-left: 5px;
     cursor: pointer;
-    border: 1px solid transparent;  /* Add a transparent border so buttons stay in place on mouse:hover */
+    border: 1px solid transparent;
+    /* Add a transparent border so buttons stay in place on mouse:hover */
     background: transparent;
     padding: 0;
     transition: background-color 0.3s ease;
@@ -41,8 +42,10 @@ button.copyBibtexButton:hover {
 }
 
 button.copyBibtexButton:active {
-    transform: scale(0.95); /* Slightly reduce the size of the button when clicked */
-    opacity: 0.6; /* Reduce the opacity when clicked */
+    transform: scale(0.95);
+    /* Slightly reduce the size of the button when clicked */
+    opacity: 0.6;
+    /* Reduce the opacity when clicked */
 }
 
 #status {
@@ -101,16 +104,24 @@ img {
 
 a {
     color: #0a4da5;
-    text-decoration: none; 
+    text-decoration: none;
 }
 
 a:hover {
     text-decoration: underline;
 }
 
+td.center {
+    text-align: center;
+}
+
 td>img {
     width: 12px;
     height: 12px;
+}
+
+td>img.access {
+    height: 16px;
 }
 
 td>img.book {
@@ -131,4 +142,30 @@ td>img.inproceedings {
 
 td>img.editor {
     background: #33c3ba;
+}
+
+td>img.misc {
+    background: #606b70;
+}
+
+td>img.refwork {
+    background: #96ad2d;
+}
+
+div.footer-gh {
+    font-size: 8px;
+    position: relative;
+    top: 10px;
+    bottom: 1px;
+    opacity: 0.5;
+    margin-left: 2px;
+}
+
+a.footer-gh {
+    padding-bottom: 2px;
+}
+
+img.footer-gh {
+    width: 8px;
+    height: 8px;
 }
