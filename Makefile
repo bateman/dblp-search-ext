@@ -4,8 +4,8 @@ SHELL := /bin/bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-APPNAME := dblpSearch
 MANIFEST := manifest.json
+APPNAME := $(shell jq -r .name $(MANIFEST) | tr -d '[:space:]' | tr -d '"')
 MANIFEST_FIREFOX := manifest.firefox.json
 MANIFEST_TMP := manifest.json.tmp
 VERSION := $(shell jq -r .version $(MANIFEST))
@@ -50,7 +50,8 @@ CYAN := \033[0;36m
 
 .PHONY: help
 help:  ## Show this help message
-	@echo -e "\nUsage: make [target]\n"
+	@echo -e "\n$(MAGENTA)$(APPNAME) v$(VERSION) Makefile$(RESET)"
+	@echo -e "\n$(MAGENTA)Usage:\n$(RESET) make $(CYAN)[target]$(RESET)\n"
 	@grep -E '^[0-9a-zA-Z_-]+(/?[0-9a-zA-Z_-]*)*:.*?## .*$$|(^#--)' $(MAKEFILE_LIST) \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m %-15s\033[0m %s\n", $$1, $$2}' \
 	| sed -e 's/\[36m #-- /\[35m/'
