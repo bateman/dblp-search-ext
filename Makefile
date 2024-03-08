@@ -150,6 +150,7 @@ update/major:  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 
 .PHONY: tag/release 
 tag/release: $(RELEASE_TIMESTAMP) ## Tag the current version and push to origin
 $(RELEASE_TIMESTAMP): $(MANIFEST)
+	@git push origin main
 	@echo -e "$(CYAN)\nTagging version $(VERSION) and pushing to origin...$(RESET)"
 	@git tag $(VERSION)
 	@git push origin $(VERSION)
