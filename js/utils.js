@@ -9,9 +9,14 @@ function updateStatus(message, timeout) {
     }
 }
 
-function updateResultsCount(message) {
+function updateResultsCount(message, type = 'info') {
     var count = document.getElementById('count');
     if (count) {
         count.textContent = message;
+        if (type === 'error') {
+            count.classList.add('error');
+        } else {
+            count.classList.remove('error');
+        }
     }
 }

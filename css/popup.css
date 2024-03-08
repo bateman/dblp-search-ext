@@ -70,8 +70,12 @@ img {
 }
 
 #count {
-    font-weight: bold;
-    color: #2e7fca;
+    font-weight: bold; 
+    color: #2e7fca; /* this is for the info message in the count div */
+}
+
+#count.error {
+    color: #b91a2d; /* this is for the error message in the count div */
 }
 
 #results table {

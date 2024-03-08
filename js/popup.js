@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             document.getElementById('version').textContent = data.version;
         });
-        
+
     // if the content of the popup was saved in the local storage, then restore it
     browser.storage.local.get({
         'search': {
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Clear the results when the clear button is clicked
     document.getElementById('clearButton').addEventListener('click', function () {
         browser.storage.local.set({
-            'search': { 
+            'search': {
                 paperTitle: '',
                 status: '',
                 results: []
@@ -119,19 +119,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'GET',
                 query: q
             }, function printResult(resultObj) {
-                console.log(resultObj); 
-                // extract all publication elements from the json object 
-                var results = extractPublicationInfo(resultObj.result.hits.hit);
-
+                console.log(resultObj);
                 // show results count
-                var resCount = 'Found ' + results.length + ' results.';
+                const resCount = 'Showing ' + resultObj.result.hits['@sent'] + ' out of ' + resultObj.result.hits['@total'] + ' results found.';
                 updateResultsCount(resCount);
-                // create a table with the results
-                var table = createResultsTable(results);
-                // show the results into the document results div
-                document.getElementById('results').innerHTML = table;
-                // add copyBibtexButton event listener
-                addCopyBibtexButtonEventListener();
+                var results = [];
+                if (resultObj.result.hits['@total'] !== '0') {
+                    // extract all publication elements from the json object 
+                    results = extractPublicationInfo(resultObj.result.hits.hit);
+                    // create a table with the results
+                    const table = createResultsTable(results);
+                    // show the results into the document results div
+                    document.getElementById('results').innerHTML = table;
+                    // add copyBibtexButton event listener
+                    addCopyBibtexButtonEventListener();
+                }
 
                 // save the state of paperTitleInput, status, and results in the local storage
                 browser.storage.local.set({
@@ -152,11 +154,11 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                printResult(data);                
+                printResult(data);
             })
             .catch((error) => {
                 console.error('Error:', error);
-                updateResultsCount('Error: ' + error.message);
+                updateResultsCount('Error: ' + error.message, type = 'error');
             });
     }
 
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'options': {
                     maxResults: 30
                 }
-            }, function(items) {
+            }, function (items) {
                 var maxResults = items.options.maxResults;
                 maxResults = Math.min(Math.max(maxResults, 1), 1000);
                 var url = baseUrl + '&h=' + maxResults;
@@ -180,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var results = [];
         if (resultHits) {
             for (var i = 0; i < resultHits.length; i++) {
-                if (resultHits[i].info.key.includes('corr/abs-')){
+                if (resultHits[i].info.key.includes('corr/abs-')) {
                     continue;
                 }
                 const access = resultHits[i].info.access;
@@ -189,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     doi = 'N/A';
                 }
                 const doiURL = resultHits[i].info.ee;
-                
+
                 var authors = [];
                 // if there is only one author, then the author field is an object
                 // if there are more than one authors, then the author field is an array of objects
@@ -212,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         venue += '(' + resultHits[i].info.number + ')';
                     }
                 }
-                
-                const pages = resultHits[i].info.pages;                
+
+                const pages = resultHits[i].info.pages;
                 const permaLink = resultHits[i].info.url;
                 const bibtexLink = resultHits[i].info.url + '.bib?param=1';
 
@@ -309,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'options': {
                         keyRenaming: true
                     }
-                }, function(items) {
+                }, function (items) {
                     var keyRenaming = items.options.keyRenaming;
                     if (keyRenaming) {
                         // rename the citation key
