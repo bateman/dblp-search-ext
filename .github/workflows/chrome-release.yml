@@ -13,7 +13,7 @@ jobs:
 
             - name: Set tag
               id: tag
-              run: echo "manifest=$(jq -c . < manifest.firefox.json)" >> $GITHUB_ENV
+              run: echo "manifest=$(jq -c . < manifest.json)" >> $GITHUB_ENV
 
             - name: Create zip
               run: make build/chrome
