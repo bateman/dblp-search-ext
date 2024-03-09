@@ -34,11 +34,11 @@ jobs:
               uses: wdzeng/chrome-extension@v1
               with:
                 extension-id: onilpcgmnpikffebghpncnnapebndpaj
-                zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
                 client-id: ${{ secrets.CHROME_CLIENT_ID }}
                 client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
                 refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
-                upload-only: false  # Optional, default is false, menas upload and publish
+                upload-only: false
 
             - name: Create xpi
               run: make build/firefox
