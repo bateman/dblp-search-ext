@@ -3,7 +3,7 @@ name: Release
 on:
     push:
         tags:
-            - '*'
+            - 'v*'
 
 jobs:
     release:
@@ -20,6 +20,10 @@ jobs:
               id: tag
               run: echo "version=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
 
+            - name: Set version
+              id: version
+              run: echo "manifest=$(jq -c . < manifest.json)" >> $GITHUB_ENV
+
             - name: Create a Release
               uses: elgohr/Github-Release-Action@v5
               env:
@@ -34,7 +38,7 @@ jobs:
               uses: wdzeng/chrome-extension@v1
               with:
                 extension-id: onilpcgmnpikffebghpncnnapebndpaj
-                zip-path: build/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
                 client-id: ${{ secrets.CHROME_CLIENT_ID }}
                 client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
                 refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
@@ -47,7 +51,7 @@ jobs:
               uses: wdzeng/firefox-addon@v1
               with:
                 addon-guid: dblpSearch@fcalefato.dev
-                xpi-path: build/firefox/dblpSearch-addon-${{ steps.tag.outputs.version }}.xpi
+                xpi-path: build/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
                 self-hosted: false
                 license: MIT
                 jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
@@ -57,7 +61,7 @@ jobs:
               uses: wdzeng/edge-addon@v1
               with:
                 product-id: ${{ secrets.EDGE_PRODUCT_ID }}
-                zip-path: build/chrome/dblpSearch-ext-${{ steps.tag.outputs.version }}.zip
+                zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
                 client-id: ${{ secrets.EDGE_CLIENT_ID }}
                 client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
                 access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
