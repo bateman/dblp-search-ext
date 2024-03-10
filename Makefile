@@ -13,6 +13,9 @@ SED_INPLACE := $(shell if $(SED) --version >/dev/null 2>&1; then echo "$(SED) -i
 AWK := $(shell command -v awk 2> /dev/null)
 GIT := $(shell command -v git 2> /dev/null)
 GIT_VERSION := $(shell $(GIT) --version 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
+XCRUN := $(shell command -v xcrun 2> /dev/null)
+XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
+XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
 
 # Apps
 CHROME_APP := Google Chrome.app
@@ -79,12 +82,14 @@ help:  ## Show this help message
 	| $(SED) -e 's/\[36m #-- /\[35m/'
 
 .PHONY: info
-info: ## Show development environment info
+info:  ## Show development environment info
 	@echo -e "$(MAGENTA)\nSystem:$(RESET)"
 	@echo -e "  $(CYAN)OS:$(RESET) $(shell uname -s)"
 	@echo -e "  $(CYAN)Shell:$(RESET) $(SHELL) - $(shell $(SHELL) --version | head -n 1)"
 	@echo -e "  $(CYAN)Make:$(RESET) $(MAKE_VERSION)"
 	@echo -e "  $(CYAN)Git:$(RESET) $(GIT_VERSION)"
+	@echo -e "  $(CYAN)xcrun:$(RESET) $(XCRUN_VERSION)"
+	@echo -e "  $(CYAN)xcodebuild:$(RESET) $(XCODEBUILD)"
 	@echo -e "$(MAGENTA)Project:$(RESET)"
 	@echo -e "  $(CYAN)Project name:$(RESET) $(APP_NAME)"
 	@echo -e "  $(CYAN)Project description:$(RESET) $(APP_DESCRIPTION)"
@@ -162,12 +167,8 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 	@cp -r $(IMAGES) $(BUILD_DIR)/$(SAFARI_DIR)/src 
 	@cp -r $(JS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
 	@cp -r $(CSS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
-	@xcrun safari-web-extension-converter $(BUILD_DIR)/$(SAFARI_DIR)/src --app-name "$(APP_NAME)" --bundle-identifier "dev.fcalefato.$(APP_NAME)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
-	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && xcodebuild -scheme $(APP_NAME) -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APP_NAME).xcarchive build
-	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && xcodebuild archive -scheme $(APP_NAME) -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APP_NAME).xcarchive
-	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && xcodebuild -exportArchive -archivePath $(BUILD_DIR)/$(SAFARI_DIR)/build/$(APP_NAME).xcarchive -exportPath $(BUILD_DIR)/$(SAFARI_DIR)/pkg/$(APP_NAME).pkg -exportOptionsPlist ExportOptions.plist
-	@cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) &&  xcodebuild -target $(APP_NAME) -configuration Release clean build
-	#cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) &&  pkgbuild --root build/Release --identifier "$(SAFARI_DEV_ID)" --version $(APP_VERSION) ../pkg/$(APP_NAME)-$(APP_VERSION).pkg
+	@$(XCRUN) safari-web-extension-converter $(BUILD_DIR)/$(SAFARI_DIR)/src --app-name "$(APP_NAME)" --bundle-identifier "dev.fcalefato.$(APP_NAME)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
+	@cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && $(XCODEBUILD) -quiet -target $(APP_NAME) -configuration Release clean build
 	@zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)-appex-$(APP_VERSION).zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app
 	@touch $(SAFARI_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
@@ -335,3 +336,4 @@ run/safari: | dep/safari build/safari  ## Run Safari app-extension
 	@echo -e "$(CYAN)\nRunning Safari app-extension...$(RESET)"
 	@echo -e "${ORANGE}Note that the extension is not signed, you need to go to 'Settings' > Select 'Developer' tab > Check the 'Allow unsigned extensions' box.${RESET}"
 	@open -a $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app
+	
