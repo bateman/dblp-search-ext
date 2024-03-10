@@ -24,14 +24,17 @@ jobs:
               id: version
               run: echo "manifest=$(jq -c . < manifest.json)" >> $GITHUB_ENV
 
-            - name: Create a Release
-              uses: elgohr/Github-Release-Action@v5
+            - name: Create Release
+              id: create_release
+              uses: softprops/action-gh-release@v1
               env:
-                GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+                GITHUB_TOKEN: '${{ secrets.RELEASE_TOKEN }}'
               with:
-                title: dblp Search ${{ steps.tag.outputs.version }}
+                name: dblp Search ${{ steps.tag.outputs.version }}'
+                generate_release_notes: null
+                files: release.zip   
 
-            - name: Create zip
+            - name: Create extension zip
               run: make build/chrome
               
             - name: Upload to Chrome Web Store
@@ -44,7 +47,7 @@ jobs:
                 refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
                 upload-only: false
 
-            - name: Create xpi
+            - name: Create addon xpi
               run: make build/firefox
 
             - name: Upload to the Firefox Add-ons Store
