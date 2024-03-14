@@ -47,7 +47,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Rename BibTex Citation Keys**: Replace dblp default citation keys with `<first author's lastname>`   `<year>` `<venue>` (e.g.,  `calefato2023esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
-- **API**: Version 2 is faster and more reliable as it relies on the official DBLP.org API to execute the queries.
+- **API**: Versions 2+ is faster and more reliable as it relies on the official DBLP.org API to execute the queries.
 
 ## Usage
 
