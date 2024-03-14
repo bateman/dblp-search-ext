@@ -142,7 +142,7 @@ dep/safari: | dep/macos
 
 .PHONY: build/firefox
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
-$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) manifest.firefox.json
+$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
 	@mv $(MANIFEST) $(MANIFEST_TMP)
@@ -158,7 +158,7 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) manifest.firefox.json
 
 .PHONY: build/safari
 build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
-$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) manifest.json
+$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR) > /dev/null
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
@@ -177,7 +177,7 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) manifest.json
 
 .PHONY: build/chrome
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
-$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) manifest.json
+$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
 	@zip -r -FS $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(SRC) -x \*.DS_Store
