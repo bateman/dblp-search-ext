@@ -140,8 +140,9 @@ dep/safari: | dep/macos
 
 #-- Build targets
 
+.PHONY: build/firefox
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
-$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
+$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) manifest.firefox.json
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
 	@mv $(MANIFEST) $(MANIFEST_TMP)
@@ -155,8 +156,9 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
+.PHONY: build/safari
 build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
-$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
+$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) manifest.json
 	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR) > /dev/null
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
@@ -173,14 +175,16 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 	@touch $(SAFARI_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
+.PHONY: build/chrome
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
-$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
+$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) manifest.json
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
 	@zip -r -FS $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(SRC) -x \*.DS_Store
 	@touch $(CHROME_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done$(RESET)"
 
+.PHONY: build/edge
 buid/edge:  ## Build Edge extension zip (same as Chrome)
 	$(MAKE) build/chrome
 
@@ -193,6 +197,7 @@ build/clean:  # Clean up build directory and remove all timestamps
 	@rm -f $(STAMP_FILES)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
+.PHONY: build/all
 build/all:  ## Build all extensions
 	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
 	$(MAKE) build/chrome 

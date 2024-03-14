@@ -1,8 +1,16 @@
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 
+// ------------------------------------- Listeners -------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('saveButton').addEventListener('click', saveOptions);
+    restoreOptions();
+});
+
+// ------------------------------------- Functions -------------------------------------
+
 // Saves options to chrome.storage
-function save_options() {
+function saveOptions() {
     var maxResults = document.getElementById('maxResults').value;
     var keyRenaming = document.getElementById('renamingCheckbox').checked;
     
@@ -17,9 +25,8 @@ function save_options() {
     });
 }
 
-// Restores select box and checkbox state using the preferences
-// stored in chrome.storage.
-function restore_options() {
+// Restores select box and checkbox state using the preferences stored in local storag
+function restoreOptions() {
     browser.storage.local.get({
         'options': {
             maxResults: 30,
@@ -30,8 +37,3 @@ function restore_options() {
         document.getElementById('renamingCheckbox').checked = items.options.keyRenaming;
     });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('saveButton').addEventListener('click', save_options);
-    restore_options();
-});
