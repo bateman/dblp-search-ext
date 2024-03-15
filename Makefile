@@ -260,15 +260,15 @@ tag/major: | tag staging  ## Bump major semantic version in manifest files (e.g.
 
 .PHONY: tag/push
 tag/push: | dep/git  ## Push the tag to origin - triggers the release action
-	@$(eval TAG := $(shell $(GIT) describe --tags --abbrev=0))
+	@$(eval TAG := $(shell echo v$(APP_VERSION)))
 	@$(eval REMOTE_TAGS := $(shell $(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'))
 	@if echo $(REMOTE_TAGS) | grep -q $(TAG); then \
 		echo -e "$(ORANGE)\nNothing to push: tag $(TAG) already exists on origin.$(RESET)"; \
 	else \
 		echo -e "$(CYAN)\nPushing pending commits to origin...$(RESET)" ; \
 		$(GIT) push origin main ; \
-		echo -e "$(CYAN)\nTagging version $(APP_VERSION) and pushing to origin...$(RESET)" ; \
-		$(GIT) tag v$(APP_VERSION) ; \
+		echo -e "$(CYAN)\nTagging version $(TAG) and pushing to origin...$(RESET)" ; \
+		$(GIT) tag $(TAG) ; \
 		$(GIT) push origin --tags ; \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
