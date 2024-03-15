@@ -269,7 +269,7 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action
 		$(GIT) push origin main ; \
 		echo -e "$(CYAN)\nTagging version $(TAG) and pushing to origin...$(RESET)" ; \
 		$(GIT) tag $(TAG) ; \
-		$(GIT) push origin --tags ; \
+		$(GIT) push origin $(TAG) ; \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
 
