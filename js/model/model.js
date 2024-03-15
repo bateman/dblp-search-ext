@@ -37,7 +37,7 @@ export class PublicationModel {
     }
 
     async getUrlWithMaxResults(baseUrl) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             browser.storage.local.get({
                 'options': {
                     maxResults: 30
@@ -54,7 +54,6 @@ export class PublicationModel {
     parsePublications(pubsInfo) {
         var results = [];
         // extract all publication elements from the json object 
-        //results = extractPublicationInfo(resultObj.result.hits.hit);
         for (var i = 0; i < pubsInfo.length; i++) {
             const pub = pubsInfo[i].info;
 
