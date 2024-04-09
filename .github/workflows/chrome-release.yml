@@ -1,6 +1,9 @@
 name: Chrome Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -26,4 +29,4 @@ jobs:
                 client-id: ${{ secrets.CHROME_CLIENT_ID }}
                 client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
                 refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
-                upload-only: true
+                upload-only: false
