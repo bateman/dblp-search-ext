@@ -1,25 +1,27 @@
 # dblp Search <img src="store/icons/dblp-128x128.png" width="30">
 
-![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
-![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
-![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
-![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=for-the-badge)
+![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
+![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
+![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
+![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
 
-![Mozilla Add-on Version](https://img.shields.io/amo/v/dblp-search?style=for-the-badge)
-![Mozilla Add-on Users](https://img.shields.io/amo/users/dblp-search?style=for-the-badge)
-![Mozilla Add-on Downloads](https://img.shields.io/amo/dw/dblp-search?style=for-the-badge)
-![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=for-the-badge)
-![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=for-the-badge)
+![Mozilla Add-on Version](https://img.shields.io/amo/v/dblp-search?style=flat-square)
+![Mozilla Add-on Users](https://img.shields.io/amo/users/dblp-search?style=flat-square)
+![Mozilla Add-on Downloads](https://img.shields.io/amo/dw/dblp-search?style=flat-square)
+![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=flat-square)
+![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=flat-square)
 
-![GitHub manifest version](https://img.shields.io/github/manifest-json/v/bateman/dblp-search-ext?style=for-the-badge&label=MANIFEST)
-![GitHub Release](https://img.shields.io/github/v/release/bateman/dblp-search-ext?style=for-the-badge)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/release.yml?style=for-the-badge)
+![GitHub manifest version](https://img.shields.io/github/manifest-json/v/bateman/dblp-search-ext?style=flat-square&label=MANIFEST)
+![GitHub Release](https://img.shields.io/github/v/release/bateman/dblp-search-ext?style=flat-square&label=GitHub%20release)
+![Chrome Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/chrome-release.yml?style=flat-square&label=Chrome%20release)
+![Edge Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/edge-release.yml?style=flat-square&label=Edge%20release)
+![Firefox Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/firefox-release.yml?style=flat-square&label=Firefox%20release)
 
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bateman/dblp-search-ext?style=for-the-badge)
-![GitHub language count](https://img.shields.io/github/languages/count/bateman/dblp-search-ext?style=for-the-badge)
-![GitHub top language](https://img.shields.io/github/languages/top/bateman/dblp-search-ext?style=for-the-badge)
-![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability/bateman/dblp-search-ext?style=for-the-badge)
-![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=for-the-badge)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bateman/dblp-search-ext?style=flat-square)
+![GitHub language count](https://img.shields.io/github/languages/count/bateman/dblp-search-ext?style=flat-square)
+![GitHub top language](https://img.shields.io/github/languages/top/bateman/dblp-search-ext?style=flat-square)
+![Code Climate maintainability](https://img.shields.io/codeclimate/maintainability/bateman/dblp-search-ext?style=flat-square)
+![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=flat-square)
 
 
 A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
