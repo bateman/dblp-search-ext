@@ -1,0 +1,34 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: echo "manifest=$(jq -c . < manifest.json)" >> $GITHUB_ENV
+
+      - name: Create zip file
+        run: zip -r release.zip .
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: '${{ secrets.RELEASE_TOKEN }}'
+        with:
+          name: 'TPscanner ${{ fromJson(env.manifest).version }}'
+          tag_name: '${{ fromJson(env.manifest).version }}'
+          generate_release_notes: null
+          files: release.zip  
