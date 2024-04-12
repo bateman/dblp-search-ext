@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ secrets.RELEASE_TOKEN }}'
         with:
-          name: 'TPscanner ${{ fromJson(env.manifest).version }}'
+          name: ${{ fromJson(env.manifest).version }}
           tag_name: '${{ fromJson(env.manifest).version }}'
           generate_release_notes: null
           files: release.zip  
