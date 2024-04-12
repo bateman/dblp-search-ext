@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Open the popup.html in a new tab when the openInTab button is clicked
     document.getElementById('openInTab').addEventListener('click', function () {
-        browser.tabs.create({ url: browser.runtime.getURL("popup.html") });
+        browser.tabs.create({ url: browser.runtime.getURL("html/popup.html") });
     });
 
     // Clear the results when the clear button is clicked
