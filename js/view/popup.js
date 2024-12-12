@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 status: '',
                 totalHits: 0,
                 sentHits: 0,
+                excludedCount: 0,
                 results: []
             }
         });
@@ -77,11 +78,11 @@ document.addEventListener('DOMContentLoaded', function () {
     browser.runtime.onMessage.addListener((message) => {
         console.log(`Popup.js received message from '${message.script}': ${message.type}`);
         if (message.type === 'RESPONSE_SEARCH_PUBLICATIONS') {
-            console.log('Popup.js updating publications count: ', message.responseStatus, message.totalHits, message.sentHits);
-            updatePublicationsCount(message.responseStatus, message.totalHits, message.sentHits);
+            console.log('Popup.js updating publications count: ', message.responseStatus, message.totalHits, message.sentHits, message.excludedCount);
+            updatePublicationsCount(message.responseStatus, message.totalHits, message.sentHits, message.excludedCount);
             console.log('Popup.js updating publications table.');
             updatePublicationsTable(message.resultsTable);
-            saveResultsToStorage(queryInputField.value, message.responseStatus, message.totalHits, message.sentHits, message.resultsTable);
+            saveResultsToStorage(queryInputField.value, message.responseStatus, message.totalHits, message.sentHits, message.excludedCount, message.resultsTable);
         }
     });
 
@@ -112,12 +113,12 @@ function requestClearResults(clearTitle = true) {
     if (clearTitle) {
         document.getElementById('paperTitle').value = '';
     }
-    updatePublicationsCount('RESET', 0, 0);
+    updatePublicationsCount('RESET', 0, 0, 0);
     updatePublicationsTable('');
 }
 
 // Update the count of publications found
-function updatePublicationsCount(responseStatus, totalHits, sentHits) {
+function updatePublicationsCount(responseStatus, totalHits, sentHits, excludedCount) {
     var count = document.getElementById('count');
     if (count) {
         var message = '';
@@ -126,7 +127,7 @@ function updatePublicationsCount(responseStatus, totalHits, sentHits) {
             count.classList.remove('error');
         }
         else {
-            message = `Query ${responseStatus}: found ${totalHits}, showing ${sentHits}`;
+            message = `Query ${responseStatus}: found ${totalHits}, shown ${sentHits - excludedCount} (Note: ${excludedCount} CoRR abs entries are ingored)`;
             if (responseStatus !== 'OK') {
                 count.classList.add('error');
             } else {
@@ -156,12 +157,13 @@ function restoreResultsFromStorage() {
             status: '',
             totalHits: 0,
             sentHits: 0,
+            excludedCount: 0,
             resultsTable: ''
         }
     }, function (items) {
         console.log('Restoring results from storage: ', items);
         if (items.search.resultsTable !== '') {
-            updatePublicationsCount(items.search.status, items.search.totalHits, items.search.sentHits);
+            updatePublicationsCount(items.search.status, items.search.totalHits, items.search.sentHits, items.search.excludedCount);
             updatePublicationsTable(items.search.resultsTable);
             paperTitle.value = items.search.paperTitle;
             paperTitle.focus();
@@ -170,14 +172,15 @@ function restoreResultsFromStorage() {
 }
 
 // Save the results to the local storage
-function saveResultsToStorage(paperTitle, status, totalHits, sentHits, resultsTable) {
-    console.log('Saving results to storage: ', paperTitle, status, totalHits, sentHits);
+function saveResultsToStorage(paperTitle, status, totalHits, sentHits, excludedCount, resultsTable) {
+    console.log('Saving results to storage: ', paperTitle, status, totalHits, sentHits, excludedCount);
     browser.storage.local.set({
         'search': {
             paperTitle: paperTitle,
             status: status,
             totalHits: totalHits,
             sentHits: sentHits,
+            excludedCount: excludedCount,
             resultsTable: resultsTable
         }
     });

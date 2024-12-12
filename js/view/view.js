@@ -8,7 +8,7 @@ export class PublicationView {
     }
 
     // Callback function for controller to notify to update the view
-    update(responseStatus, publications, totalHits, sentHits) {
+    update(responseStatus, publications, totalHits, sentHits, excludedCount) {
         if(totalHits > 0) {
             console.log(`Building table with ${sentHits} publications.`);
             this.table = this.buildTable(publications);
@@ -16,13 +16,14 @@ export class PublicationView {
             console.log('Warning: No publications found. Clearing the table.');
             this.table = '';
         }
-        console.log(`Sending reponse to popup.js to display results : ${responseStatus}, ${totalHits}, ${sentHits}`);
+        console.log(`Sending reponse to popup.js to display results : ${responseStatus}, ${totalHits}, ${sentHits}, ${excludedCount}`);
         browser.runtime.sendMessage({
             script: 'view.js',
             type: 'RESPONSE_SEARCH_PUBLICATIONS',
             responseStatus: responseStatus,
             totalHits: totalHits,
             sentHits: sentHits,
+            excludedCount: excludedCount,
             resultsTable: this.table
         });
     }

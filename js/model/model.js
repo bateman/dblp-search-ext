@@ -9,6 +9,7 @@ export class PublicationModel {
         this.status = '';
         this.totalHits = 0;
         this.sentHits = 0;
+        this.excludedCount = 0;
     }
 
     async searchPublications(query) {
@@ -25,7 +26,10 @@ export class PublicationModel {
             this.totalHits = data.result.hits['@total'];
             this.sentHits = data.result.hits['@sent'];
             if (this.totalHits > 0) {
-                this.publications = this.parsePublications(data.result.hits.hit);
+                //this.publications = this.parsePublications(data.result.hits.hit);
+                const result = this.parsePublications(data.result.hits.hit);
+                this.publications = result.publications;
+                this.excludedCount = result.excludedCount;
             }
         } catch (error) {
             console.error('There was a problem with the fetch operation: ', error);
@@ -53,11 +57,13 @@ export class PublicationModel {
 
     parsePublications(pubsInfo) {
         var results = [];
+        var excludedCount = 0;
         // extract all publication elements from the json object 
         for (var i = 0; i < pubsInfo.length; i++) {
             const pub = pubsInfo[i].info;
 
             if (pub.key.includes('corr/abs-')) {
+                excludedCount++;
                 continue;
             }
 
@@ -98,7 +104,11 @@ export class PublicationModel {
             results.push(publication);
         }
 
-        return results;
+        //return results;
+        return {
+            publications: results,
+            excludedCount: excludedCount
+        };
     }
 
     transformType(type) {
