@@ -35,7 +35,7 @@ export class PublicationView {
         publications.forEach((result) => {
             table += '<tr>';
             table += '<td><img class="' + result.type + '" title="' + result.type + '" src="../images/pub-type.png"></td>';
-            table += '<td><a href="' + result.permalink + '" target="_blank">' + result.title + '</a></td>';
+            table += '<td><a href="' + result.permaLink + '" target="_blank" title="' + result.permalink + '">' + result.title + '</a></td>';
             table += '<td>' + result.authors.join(', ') + '</td>';
             table += '<td>' + result.year + '</td>';
             table += '<td>' + result.venue + '</td>';
