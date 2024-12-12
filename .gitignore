@@ -3,3 +3,4 @@
 build/
 store/auth/
 scripts/
+.vscode/
