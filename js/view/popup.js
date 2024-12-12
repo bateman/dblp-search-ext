@@ -127,7 +127,7 @@ function updatePublicationsCount(responseStatus, totalHits, sentHits, excludedCo
             count.classList.remove('error');
         }
         else {
-            message = `Query ${responseStatus}: found ${totalHits}, shown ${sentHits - excludedCount} (Note: ${excludedCount} CoRR abs entries are ingored)`;
+            message = `Query ${responseStatus}: found ${totalHits}, shown ${sentHits - excludedCount} (${excludedCount} CoRR abs entries ingored)`;
             if (responseStatus !== 'OK') {
                 count.classList.add('error');
             } else {
