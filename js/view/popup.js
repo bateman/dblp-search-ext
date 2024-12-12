@@ -233,6 +233,10 @@ window.copyBibtexToClipboard = function (url) {
                     // becomes "@inproceedings{calefato2023esem,..."
                     data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ',');
                 }
+                // Remove newlines and extra spaces from the title content
+                data = data.replace(/title(\s+)=(\s+)\{([^}]*)\}/g, function (match) {
+                    return match.replace(/\s+/g, ' ');
+                });
                 navigator.clipboard.writeText(data)
                     .catch(err => {
                         console.error('Could not copy BibTeX to clipboard: ', err);
