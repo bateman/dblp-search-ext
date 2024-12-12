@@ -50,6 +50,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
+- **Remove duplicats**: Useless, duplicated CoRR abs entries are filtered out.
 
 ## Usage
 
