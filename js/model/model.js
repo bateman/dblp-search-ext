@@ -62,6 +62,7 @@ export class PublicationModel {
         for (var i = 0; i < pubsInfo.length; i++) {
             const pub = pubsInfo[i].info;
 
+            // exclude duplicated publications marked with 'corr/abs-' in their key
             if (pub.key.includes('corr/abs-')) {
                 excludedCount++;
                 continue;
@@ -78,6 +79,8 @@ export class PublicationModel {
                 }
             }
             var venue = pub.venue;
+
+            // if the publication type is article, then add volume and number to the venue
             var type = this.transformType(pub.type);
             if (type === 'article') {
                 if (pub.volume !== undefined) {
