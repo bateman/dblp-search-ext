@@ -13,11 +13,13 @@ document.addEventListener('DOMContentLoaded', function () {
 function saveOptions() {
     var maxResults = document.getElementById('maxResults').value;
     var keyRenaming = document.getElementById('renamingCheckbox').checked;
+    var removeTimestampBiburlBibsource = document.getElementById('removeTimestampBiburlBibsource').checked;
     
     browser.storage.local.set({
         'options': {
             maxResults: maxResults,
-            keyRenaming: keyRenaming
+            keyRenaming: keyRenaming,
+            removeTimestampBiburlBibsource: removeTimestampBiburlBibsource
         }
     }, function() {
         // Update status to let user know options were saved.
@@ -30,10 +32,12 @@ function restoreOptions() {
     browser.storage.local.get({
         'options': {
             maxResults: 30,
-            keyRenaming: true
+            keyRenaming: true,
+            removeTimestampBiburlBibsource: true
         }
     }, function(items) {
         document.getElementById('maxResults').value = items.options.maxResults;
         document.getElementById('renamingCheckbox').checked = items.options.keyRenaming;
+        document.getElementById('removeTimestampBiburlBibsource').checked = items.options.removeTimestampBiburlBibsource;
     });
 }

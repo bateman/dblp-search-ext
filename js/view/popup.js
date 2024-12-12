@@ -104,7 +104,7 @@ function requestSearchDblp(q) {
     // Clear existing results, but not the paperTitle
     requestClearResults(false);
     // Send nmessage to background.js
-    sendMessage({script: 'popup.js', type: 'REQUEST_SEARCH_PUBLICATIONS', query: q });
+    sendMessage({ script: 'popup.js', type: 'REQUEST_SEARCH_PUBLICATIONS', query: q });
 }
 
 // Ask background script to clear the count message
@@ -194,16 +194,15 @@ function addCopyBibtexButtonEventListener() {
             copyBibtexToClipboard(url);
         });
     });
-} 
+}
 
 // Copy the BibTeX to the clipboard
 window.copyBibtexToClipboard = function (url) {
     fetch(url)
         .then(response => response.text())
         .then(data => {
-            // if the keyRenaming option is enabled, then rename the citation key
+            // If the keyRenaming option is enabled, then rename the citation key
             // before copying the BibTeX to the clipboard      
-            // get the keyRenaming option
             browser.storage.local.get({
                 'options': {
                     keyRenaming: true
@@ -211,7 +210,7 @@ window.copyBibtexToClipboard = function (url) {
             }, function (items) {
                 var keyRenaming = items.options.keyRenaming;
                 if (keyRenaming) {
-                    // rename the citation key
+                    // Rename the citation key
                     var key = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/)[0];
                     if (!key) {
                         console.error('Could not find the citation key in the BibTeX');
@@ -219,24 +218,31 @@ window.copyBibtexToClipboard = function (url) {
                     }
                     var venue = key.split('/')[1];
                     var name = key.split('/')[2].replace(',', '');
-                    // remove all digits from name
+                    // Remove all digits from name
                     name = name.replace(/\d+/g, '');
-                    // starting from the end, remove all Capital letters from name
+                    // Starting from the end, remove all Capital letters from name
                     // stop at the first non-capital letter
                     name = name.replace(/[A-Z]+$/, '');
                     // extract the year from a string like this: "year = {2020},"
                     var year = data.match(/year\s*=\s*\{(\d+)\},/)[1];
                     var newCitationKey = name.toLowerCase() + year + venue;
-                    // replace the old citation key with the new one
+                    // Replace the old citation key with the new one:
                     // specifically, replace all the text from DBLP until the first comma (excluded)
                     // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."
                     // becomes "@inproceedings{calefato2023esem,..."
                     data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ',');
                 }
-                // Remove newlines and extra spaces from the title content
-                data = data.replace(/title(\s+)=(\s+)\{([^}]*)\}/g, function (match) {
-                    return match.replace(/\s+/g, ' ');
-                });
+                // Remove timestamp, biburl, and bibsource fields including trailing comma and whitespace
+                var removeTimestampBiburlBibsource = items.options.removeTimestampBiburlBibsource;
+                if (removeTimestampBiburlBibsource) {
+                    data = data.replace(/\s*timestamp\s*=\s*\{[^}]*\},[\s\n]*/g, '');
+                    data = data.replace(/\s*biburl\s*=\s*\{[^}]*\},[\s\n]*/g, '');
+                    data = data.replace(/\s*bibsource\s*=\s*\{[^}]*\}[\s\n,]*/g, '');
+                }
+                // Remove trailing comma from last field and add newline before closing brace
+                data = data.replace(/,(\s*})\s*$/, '\n}');
+                // Fix any remaining multiple newlines
+                data = data.replace(/\n\s*\n/g, '\n');
                 navigator.clipboard.writeText(data)
                     .catch(err => {
                         console.error('Could not copy BibTeX to clipboard: ', err);
