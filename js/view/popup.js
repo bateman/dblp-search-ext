@@ -139,13 +139,44 @@ function updatePublicationsCount(responseStatus, totalHits, sentHits, excludedCo
 }
 
 // Update the table with the found publications
-function updatePublicationsTable(table) {
-    var results = document.getElementById('results');
-    if (results) {
-        results.innerHTML = table;
-        if (table !== '') {
-            addCopyBibtexButtonEventListener();
-        }
+function updatePublicationsTable(tableHTML) {
+    const results = document.getElementById('results');
+    if (!results) return;
+
+    if (tableHTML === '') {
+        results.textContent = '';
+        return;
+    }
+
+    // Create a temporary container to safely parse the HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(tableHTML, 'text/html');
+
+    // Clear existing content
+    results.textContent = '';
+
+    // Safely transfer the table content
+    const parsedTable = doc.body.firstChild;
+    if (parsedTable) {
+        // Create a new table element and copy over safe attributes
+        const safeTable = document.createElement(parsedTable.tagName);
+
+        // Copy safe attributes
+        const safeAttributes = ['class', 'id', 'role'];
+        safeAttributes.forEach(attr => {
+            if (parsedTable.hasAttribute(attr)) {
+                safeTable.setAttribute(attr, parsedTable.getAttribute(attr));
+            }
+        });
+
+        // Safely clone the table content
+        safeTable.appendChild(parsedTable.cloneNode(true));
+
+        // Add the safe table to the document
+        results.appendChild(safeTable);
+
+        // Add event listeners if needed
+        addCopyBibtexButtonEventListener();
     }
 }
 
