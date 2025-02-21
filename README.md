@@ -20,8 +20,8 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bateman/dblp-search-ext?style=flat-square)
 ![GitHub language count](https://img.shields.io/github/languages/count/bateman/dblp-search-ext?style=flat-square)
 ![GitHub top language](https://img.shields.io/github/languages/top/bateman/dblp-search-ext?style=flat-square)
-![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/bateman/dblp-search-ext?style=flat-square)
-![Codacy grade](https://img.shields.io/codacy/grade/507a40898dd34cf49c538edff519c588?style=flat-square)
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/bateman/dblp-search-ext?style=flat-square&label=CodeFactor%20grade)
+![Codacy grade](https://img.shields.io/codacy/grade/507a40898dd34cf49c538edff519c588?style=flat-square&label=Codacy%20grade)
 ![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=flat-square)
 
 
