@@ -1,6 +1,6 @@
- // view.js
+// view.js
 console.log("view.js loaded");
-var browser = browser || chrome;
+var browser = window.msBrowser || window.browser || window.chrome;
 
 export class PublicationView {
     constructor() {
