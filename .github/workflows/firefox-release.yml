@@ -22,7 +22,7 @@ jobs:
               run: make build/firefox
 
             - name: Upload to the Firefox Add-ons Store
-              uses: wdzeng/firefox-addon@a6c520c479eb79861995faf3fa3e271c1b277820
+              uses: wdzeng/firefox-addon@1c933bcfc899dad45719bc23ec8c607d51bf8c06
               with:
                 addon-guid: dblpSearch@fcalefato.dev
                 xpi-path: build/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
