@@ -73,8 +73,8 @@ Contributions are welcome! Please submit a pull request or create an issue to co
 1. Open your terminal to the project directory.
 2. Run the `make all` command to build Chrome, Firefox, and Safari extensions. This will create each build in the `build/` directory.
 
-Note:
-* Safari build will start only on macOS, if XCode is installed.
+> [!NOTE] 
+> Safari build will start only on macOS, if XCode is installed.
 
 ### Manual installation
 
@@ -106,9 +106,9 @@ Make sure your browser is not running before executing any of these commands.
 * **Edge**: `make run/edge`
 * **Firefox**: `make run/firefox`
 
-Note:
-* Unlike Chrome, Edge does not run in development mode
-* For Firefox, the script assumes you have "Firefox Developer Edition" installed. You can easily change the name to "Firefox" in the `make` script; it also requires `web-ext` to be installed. 
+> [!NOTE]
+> * Unlike Chrome, Edge does not run in development mode
+> * For Firefox, the script assumes you have [Firefox Developer Edition](https://www.mozilla.org/it/firefox/developer) installed. You can easily change the name to `Firefox` in the `make` script; it also requires `web-ext` to be installed. 
 
 ## Donations
 
