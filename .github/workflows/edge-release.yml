@@ -22,7 +22,7 @@ jobs:
               run: make build/chrome
 
             - name: Upload to the Edge Add-ons Store
-              uses: wdzeng/edge-addon@v2
+              uses: wdzeng/edge-addon@06369b959ad46c147bcd550ce79acda53a9e16f8
               with:
                 product-id: ${{ secrets.EDGE_PRODUCT_ID }}
                 zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
