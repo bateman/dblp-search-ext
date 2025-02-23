@@ -227,7 +227,7 @@ function addCopyBibtexButtonEventListener() {
     document.querySelectorAll('.copyBibtexButton').forEach(button => {
         button.addEventListener('click', function () {
             const url = this.getAttribute('data-url');
-            copyBibtexToClipboard(url);
+            window.copyBibtexToClipboard(url);
         });
     });
 }
