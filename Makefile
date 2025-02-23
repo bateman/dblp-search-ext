@@ -227,11 +227,13 @@ staging: | dep/git
 	echo -e "  $(CYAN)Staging area empty:$(RESET) $$(cat $(STAGING_STAMP))"
 
 define update_version
-	echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1).$(RESET)" ; \
-	cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) ; \
-	mv $(MANIFEST_TMP) $(MANIFEST) ; \
-	cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) ; \
-	mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX)
+    echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1)$(RESET)" && \
+    cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
+    mv $(MANIFEST_TMP) $(MANIFEST) && \
+    cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
+    mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
+    $(GIT) add $(MANIFEST) $(MANIFEST_FIREFOX) && \
+    $(GIT) commit -m "Bump version to $(1)"
 endef
 
 .PHONY: tag/patch
