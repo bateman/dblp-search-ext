@@ -61,8 +61,8 @@ export class PublicationModel {
         var results = [];
         var excludedCount = 0;
         // extract all publication elements from the json object 
-        for (var i = 0; i < pubsInfo.length; i++) {
-            const pub = pubsInfo[i].info;
+        for (const pubInfo of pubsInfo) {
+            const pub = pubInfo.info;
 
             // exclude duplicated publications marked with 'corr/abs-' in their key
             if (pub.key.includes('corr/abs-')) {
@@ -76,8 +76,8 @@ export class PublicationModel {
             if (pub.authors.author.length === undefined) {
                 authors.push(pub.authors.author.text);
             } else {
-                for (var j = 0; j < pub.authors.author.length; j++) {
-                    authors.push(pub.authors.author[j].text);
+                for (const author of pub.authors.author) {
+                    authors.push(author.text);
                 }
             }
             var venue = pub.venue;
