@@ -196,8 +196,11 @@ function restoreResultsFromStorage() {
         if (items.search.resultsTable !== '') {
             updatePublicationsCount(items.search.status, items.search.totalHits, items.search.sentHits, items.search.excludedCount);
             updatePublicationsTable(items.search.resultsTable);
-            paperTitle.value = items.search.paperTitle;
-            paperTitle.focus();
+            var queryInputField = document.getElementById('paperTitle');
+            if (queryInputField) {
+                queryInputField.value = items.search.paperTitle;
+                queryInputField.focus();
+            }
         }
     });
 }

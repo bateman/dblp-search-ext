@@ -1,4 +1,6 @@
- // view.js
+/*global chrome*/
+
+// view.js
 console.log("view.js loaded");
 var browser = browser || chrome;
 

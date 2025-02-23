@@ -1,3 +1,5 @@
+/* global chrome */
+
 // model.js
 console.log("model.js loaded");
 var browser = browser || chrome;
