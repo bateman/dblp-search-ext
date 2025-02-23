@@ -1,3 +1,6 @@
+// options.js
+import { updateStatus } from './commons.js';
+
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 

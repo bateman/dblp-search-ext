@@ -1,7 +1,7 @@
 // commons.js
 console.log("commons.js loaded");
 
-function updateStatus(message, timeout = 2000, id = 'status') {
+export function updateStatus(message, timeout = 2000, id = 'status') {
     // `${message}&nbsp;<img class="status" src="../images/spinner.gif" />&nbsp;`
     const statusElement = document.getElementById(id);
     if (statusElement) {

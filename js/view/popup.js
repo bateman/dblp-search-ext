@@ -1,4 +1,6 @@
 // popup.js
+import { updateStatus } from './commons.js';
+
 console.log('popup.js loaded');
 var browser = window.msBrowser || window.browser || window.chrome;
 
