@@ -71,7 +71,7 @@ Contributions are welcome! Please submit a pull request or create an issue to co
 #### Building the extension
 
 1. Open your terminal to the project directory.
-2. Run the `make all` command to build Chrome, Firefox, and Safari extensions. This will create each build in the `build/` directory.
+2. Run the `make build/all` command to build Chrome, Firefox, and Safari extensions. This will create each build in the `build/` directory.
 
 > [!NOTE] 
 > Safari build will start only on macOS, if XCode is installed.
