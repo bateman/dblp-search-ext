@@ -58,64 +58,76 @@ export class PublicationModel {
     }
 
     parsePublications(pubsInfo) {
-        var results = [];
-        var excludedCount = 0;
-        // extract all publication elements from the json object 
+        const results = [];
+        let excludedCount = 0;
+
         for (const pubInfo of pubsInfo) {
             const pub = pubInfo.info;
 
-            // exclude duplicated publications marked with 'corr/abs-' in their key
-            if (pub.key.includes('corr/abs-')) {
+            if (this.isExcludedPublication(pub)) {
                 excludedCount++;
                 continue;
             }
 
-            var authors = [];
-            // if there is only one author, then the author field is an object
-            // if there are more than one authors, then the author field is an array of objects
-            if (pub.authors.author.length === undefined) {
-                authors.push(pub.authors.author.text);
-            } else {
-                for (const author of pub.authors.author) {
-                    authors.push(author.text);
-                }
-            }
-            var venue = pub.venue;
+            const authors = this.extractAuthors(pub.authors);
+            const venue = this.constructVenue(pub);
+            const publication = this.createPublication(pub, authors, venue);
 
-            // if the publication type is article, then add volume and number to the venue
-            var type = this.transformType(pub.type);
-            if (type === 'article') {
-                if (pub.volume !== undefined) {
-                    venue += ' ' + pub.volume;
-                }
-                if (pub.number !== undefined) {
-                    venue += '(' + pub.number + ')';
-                }
-            }
-
-            var publication = {
-                type: type,
-                title: pub.title,
-                permaLink: pub.url,
-                authors: authors,
-                year: pub.year,
-                venue: venue,
-                pages: pub.pages,
-                doi: pub.doi ? pub.doi : 'N/A',
-                doiURL: pub.ee,
-                bibtexLink: pub.url + '.bib?param=1',
-                access: pub.access
-            };
             results.push(publication);
         }
 
-        //return results;
         return {
             publications: results,
             excludedCount: excludedCount
         };
     }
 
+    isExcludedPublication(pub) {
+        return pub.key.includes('corr/abs-');
+    }
+
+    extractAuthors(authorsInfo) {
+        const authors = [];
+        if (authorsInfo.author.length === undefined) {
+            authors.push(authorsInfo.author.text);
+        } else {
+            for (const author of authorsInfo.author) {
+                authors.push(author.text);
+            }
+        }
+        return authors;
+    }
+
+    constructVenue(pub) {
+        let venue = pub.venue;
+        const type = this.transformType(pub.type);
+        if (type === 'article') {
+            if (pub.volume !== undefined) {
+                venue += ' ' + pub.volume;
+            }
+            if (pub.number !== undefined) {
+                venue += '(' + pub.number + ')';
+            }
+        }
+        return venue;
+    }
+
+    createPublication(pub, authors, venue) {
+        return {
+            type: this.transformType(pub.type),
+            title: pub.title,
+            permaLink: pub.url,
+            authors: authors,
+            year: pub.year,
+            venue: venue,
+            pages: pub.pages,
+            doi: pub.doi ? pub.doi : 'N/A',
+            doiURL: pub.ee,
+            bibtexLink: pub.url + '.bib?param=1',
+            access: pub.access
+        };
+    }
+    
     transformType(type) {
         var _type;
         switch (type) {
