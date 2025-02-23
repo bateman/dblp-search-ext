@@ -1,4 +1,6 @@
-// Use the 'browser' namespace if it's available; otherwise, fall back to 'chrome'.
+/*global chrome*/
+
+// background.js
 var browser = browser || chrome;
 console.log("background.js loaded");
 
