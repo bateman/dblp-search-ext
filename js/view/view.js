@@ -30,18 +30,6 @@ export class PublicationView {
         });
     }
 
-     // Helper method to escape HTML special characters
-    escapeHTML(str) {
-        if (!str) 
-            return '';
-        else return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
     // Build the table with the new data
     buildTable(publications) {
         var htmlTable = '<table id="results-table" class="table table-striped table-hover">';
@@ -49,14 +37,14 @@ export class PublicationView {
         htmlTable += '<tbody>';
         publications.forEach((result) => {
             htmlTable += '<tr>';
-            htmlTable += '<td><img class="' + this.escapeHTML(result.type) + '" title="' + this.escapeHTML(result.type) + '" src="../images/pub-type.png"></td>';
-            htmlTable += '<td><a href="' + this.escapeHTML(result.permaLink) + '" target="_blank" title="' + this.escapeHTML(result.permalink) + '">' + this.escapeHTML(result.title) + '</a></td>';
-            htmlTable += '<td>' + this.escapeHTML(result.authors.join(', ')) + '</td>';
-            htmlTable += '<td>' + this.escapeHTML(result.year) + '</td>';
-            htmlTable += '<td>' + this.escapeHTML(result.venue) + '</td>';
-            htmlTable += '<td><a href="' + this.escapeHTML(result.doiURL) + '" target="_blank">' + this.escapeHTML(result.doi) + '</a></td>';
-            htmlTable += '<td class="center"><img class="access" src="../images/' + this.escapeHTML(result.access) + '-access.png" title="This publication is ' + this.escapeHTML(result.access) + ' access"></td>';
-            htmlTable += '<td class="center"><button class="copyBibtexButton" title="Copy BibTex" data-url="' + this.escapeHTML(result.bibtexLink) + '"><img src="../images/copy.png"></button></td>';
+            htmlTable += '<td><img class="' + result.type + '" title="' + result.type + '" src="../images/pub-type.png"></td>';
+            htmlTable += '<td><a href="' + result.permaLink + '" target="_blank" title="' + result.permalink + '">' + result.title + '</a></td>';
+            htmlTable += '<td>' + result.authors.join(', ') + '</td>';
+            htmlTable += '<td>' + result.year + '</td>';
+            htmlTable += '<td>' + result.venue + '</td>';
+            htmlTable += '<td><a href="' + result.doiURL + '" target="_blank">' + result.doi + '</a></td>';
+            htmlTable += '<td class="center"><img class="access" src="../images/' + result.access + '-access.png" title="This publication is ' + result.access + ' access"></td>';
+            htmlTable += '<td class="center"><button class="copyBibtexButton" title="Copy BibTex" data-url="' + result.bibtexLink + '"><img src="../images/copy.png"></button></td>';
             htmlTable += '</tr>';
         });
         htmlTable += '</tbody>';
