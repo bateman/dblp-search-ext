@@ -87,12 +87,13 @@ export class PublicationModel {
     }
 
     extractAuthors(authorsInfo) {
+        // Fix: dblp api sometimes return '0001' next to authors' names
         const authors = [];
         if (authorsInfo.author.length === undefined) {
-            authors.push(authorsInfo.author.text);
+            authors.push(authorsInfo.author.text.replace(' 0001', ''));
         } else {
             for (const author of authorsInfo.author) {
-                authors.push(author.text);
+                authors.push(author.text.replace(' 0001', ''));
             }
         }
         return authors;
