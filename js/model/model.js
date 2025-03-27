@@ -92,13 +92,14 @@ export class PublicationModel {
   }
 
   extractAuthors(authorsInfo) {
-    // Fix: dblp api sometimes return '0001' next to authors' names
+    // Fix: dblp api sometimes returns '000n' next to authors' names
     const authors = [];
+    const regex = / 000\d+$/; // Matches ' 000' followed by one or more digits at the end of the string
     if (authorsInfo.author.length === undefined) {
-      authors.push(authorsInfo.author.text.replace(" 0001", ""));
+      authors.push(authorsInfo.author.text.replace(regex, ""));
     } else {
       for (const author of authorsInfo.author) {
-        authors.push(author.text.replace(" 0001", ""));
+        authors.push(author.text.replace(regex, ""));
       }
     }
     return authors;
