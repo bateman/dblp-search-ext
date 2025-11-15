@@ -8,10 +8,20 @@ var browser = window.msBrowser || window.browser || window.chrome;
 
 document.addEventListener("DOMContentLoaded", function () {
   // Display extension version in the footer
-  fetch("../manifest.json")
-    .then((response) => response.json())
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+  fetch("../manifest.json", { signal: controller.signal })
+    .then((response) => {
+      clearTimeout(timeoutId);
+      return response.json();
+    })
     .then((data) => {
       document.getElementById("version").textContent = data.version;
+    })
+    .catch((error) => {
+      clearTimeout(timeoutId);
+      console.error("Could not load manifest version:", error);
     });
 
   // if the content of the popup was saved in the local storage, then restore it
@@ -126,9 +136,16 @@ document.addEventListener("DOMContentLoaded", function () {
 // Send a message to the background script and log the response
 function sendMessage(dictObject) {
   browser.runtime.sendMessage(dictObject, function (response) {
-    console.log(
-      `Popup.js received a response from '${response.script}': ${response}`
-    );
+    if (response && response.success === false) {
+      console.error(
+        `Popup.js received an error from '${response.script}': ${response.error}`
+      );
+      updateStatus(`Error: ${response.error}`, 5000);
+    } else {
+      console.log(
+        `Popup.js received a response from '${response.script}': ${response.response}`
+      );
+    }
   });
 }
 
@@ -172,7 +189,7 @@ function updatePublicationsCount(
     } else {
       message = `Query ${responseStatus}: found ${totalHits}, shown ${
         sentHits - excludedCount
-      } (${excludedCount} CoRR abs entries ingored)`;
+      } (${excludedCount} CoRR abs entries ignored)`;
       if (responseStatus !== "OK") {
         count.classList.add("error");
       } else {
@@ -299,8 +316,14 @@ function addCopyBibtexButtonEventListener() {
 
 // Copy the BibTeX to the clipboard
 window.copyBibtexToClipboard = function (url) {
-  fetch(url)
-    .then((response) => response.text())
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  fetch(url, { signal: controller.signal })
+    .then((response) => {
+      clearTimeout(timeoutId);
+      return response.text();
+    })
     .then((data) => {
       // If the keyRenaming option is enabled, then rename the citation key
       // before copying the BibTeX to the clipboard
@@ -314,11 +337,13 @@ window.copyBibtexToClipboard = function (url) {
           var keyRenaming = items.options.keyRenaming;
           if (keyRenaming) {
             // Rename the citation key
-            var key = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/)[0];
-            if (!key) {
+            var keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
+            if (!keyMatch || keyMatch.length < 1) {
               console.error("Could not find the citation key in the BibTeX");
+              updateStatus("Error: Invalid BibTeX format", 3000);
               return;
             }
+            var key = keyMatch[0];
             var venue = key.split("/")[1];
             var name = key.split("/")[2].replace(",", "");
             // Remove all digits from name
@@ -327,7 +352,13 @@ window.copyBibtexToClipboard = function (url) {
             // stop at the first non-capital letter
             name = name.replace(/[A-Z]+$/, "");
             // extract the year from a string like this: "year = {2020},"
-            var year = data.match(/year\s*=\s*\{(\d+)\},/)[1];
+            var yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
+            if (!yearMatch || yearMatch.length < 2) {
+              console.error("Could not find the year in the BibTeX");
+              updateStatus("Error: Invalid BibTeX format (missing year)", 3000);
+              return;
+            }
+            var year = yearMatch[1];
             var newCitationKey = name.toLowerCase() + year + venue;
             // Replace the old citation key with the new one:
             // specifically, replace all the text from DBLP until the first comma (excluded)
@@ -354,6 +385,13 @@ window.copyBibtexToClipboard = function (url) {
       );
     })
     .catch((err) => {
-      console.error("Could not fetch BibTeX: ", err);
+      clearTimeout(timeoutId);
+      if (err.name === "AbortError") {
+        console.error("Request timeout: Could not fetch BibTeX in time");
+        updateStatus("Error: BibTeX request timeout", 3000);
+      } else {
+        console.error("Could not fetch BibTeX: ", err);
+        updateStatus("Error: Could not fetch BibTeX", 3000);
+      }
     });
 };

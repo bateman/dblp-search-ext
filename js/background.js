@@ -27,6 +27,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           );
           sendResponse({
             script: "background.js",
+            success: true,
             response: `Search for '${message.query}' completed.`,
           });
         })
@@ -36,6 +37,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           );
           sendResponse({
             script: "background.js",
+            success: false,
+            error: error.message || "Unknown error occurred",
             response: `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`,
           });
         });
@@ -45,7 +48,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.error(
       `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
     );
+    sendResponse({
+      script: "background.js",
+      success: false,
+      error: error.message || "Unknown error occurred",
+    });
   }
+  return false;
 });
 
 // Create a context menu item to search dblp

@@ -21,7 +21,13 @@ export class PublicationModel {
     )}&format=json`;
     url = await this.getUrlWithMaxResults(url);
     try {
-      const response = await fetch(url);
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       this.status = response.statusText;
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${this.status}`);
@@ -30,13 +36,18 @@ export class PublicationModel {
       this.totalHits = data.result.hits["@total"];
       this.sentHits = data.result.hits["@sent"];
       if (this.totalHits > 0) {
-        //this.publications = this.parsePublications(data.result.hits.hit);
         const result = this.parsePublications(data.result.hits.hit);
         this.publications = result.publications;
         this.excludedCount = result.excludedCount;
       }
     } catch (error) {
-      console.error("There was a problem with the fetch operation: ", error);
+      if (error.name === "AbortError") {
+        console.error("Request timeout: The dblp API did not respond in time");
+        this.status = "Request Timeout";
+      } else {
+        console.error("There was a problem with the fetch operation: ", error);
+        this.status = "Error";
+      }
     }
     if (this.notify) {
       // Notify the view through controller that the model has changed
