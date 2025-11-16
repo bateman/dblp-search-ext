@@ -342,8 +342,8 @@ window.copyBibtexToClipboard = function (url) {
               title = title.replace(/[{}\\]/g, "");
               // Extract first significant word (skip common articles)
               var words = title.split(/\s+/).filter(w => w.length > 0);
-              for (var i = 0; i < words.length; i++) {
-                var word = words[i].toLowerCase();
+              for (const wordItem of words) {
+                var word = wordItem.toLowerCase();
                 // Skip common articles and prepositions
                 if (word !== "a" && word !== "an" && word !== "the" &&
                     word !== "on" && word !== "in" && word !== "at" &&
