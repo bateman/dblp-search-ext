@@ -308,10 +308,12 @@ window.copyBibtexToClipboard = function (url) {
         {
           options: {
             keyRenaming: true,
+            citationKeyPattern: "author-year-venue",
           },
         },
         function (items) {
           var keyRenaming = items.options.keyRenaming;
+          var citationKeyPattern = items.options.citationKeyPattern;
           if (keyRenaming) {
             // Rename the citation key
             var key = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/)[0];
@@ -328,7 +330,48 @@ window.copyBibtexToClipboard = function (url) {
             name = name.replace(/[A-Z]+$/, "");
             // extract the year from a string like this: "year = {2020},"
             var year = data.match(/year\s*=\s*\{(\d+)\},/)[1];
-            var newCitationKey = name.toLowerCase() + year + venue;
+
+            // Extract first word of title (for author-year-title pattern)
+            var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
+            var firstTitleWord = "";
+            if (titleMatch) {
+              // Get the title text, remove special characters and get first word
+              var title = titleMatch[1];
+              // Remove LaTeX commands and special characters
+              title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
+              title = title.replace(/[{}\\]/g, "");
+              // Extract first significant word (skip common articles)
+              var words = title.split(/\s+/).filter(w => w.length > 0);
+              for (var i = 0; i < words.length; i++) {
+                var word = words[i].toLowerCase();
+                // Skip common articles and prepositions
+                if (word !== "a" && word !== "an" && word !== "the" &&
+                    word !== "on" && word !== "in" && word !== "at" &&
+                    word.length > 2) {
+                  firstTitleWord = word.replace(/[^a-z0-9]/g, "");
+                  break;
+                }
+              }
+            }
+
+            // Generate citation key based on selected pattern
+            var newCitationKey;
+            switch (citationKeyPattern) {
+              case "author-year-title":
+                newCitationKey = name.toLowerCase() + year + firstTitleWord;
+                break;
+              case "venue-author-year":
+                newCitationKey = venue + name.toLowerCase() + year;
+                break;
+              case "year-author-venue":
+                newCitationKey = year + name.toLowerCase() + venue;
+                break;
+              case "author-year-venue":
+              default:
+                newCitationKey = name.toLowerCase() + year + venue;
+                break;
+            }
+
             // Replace the old citation key with the new one:
             // specifically, replace all the text from DBLP until the first comma (excluded)
             // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."

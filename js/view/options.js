@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function saveOptions() {
   var maxResults = document.getElementById("maxResults").value;
   var keyRenaming = document.getElementById("renamingCheckbox").checked;
+  var citationKeyPattern = document.getElementById("citationKeyPattern").value;
   var removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
@@ -25,6 +26,7 @@ function saveOptions() {
       options: {
         maxResults: maxResults,
         keyRenaming: keyRenaming,
+        citationKeyPattern: citationKeyPattern,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
       },
     },
@@ -42,6 +44,7 @@ function restoreOptions() {
       options: {
         maxResults: 30,
         keyRenaming: true,
+        citationKeyPattern: "author-year-venue",
         removeTimestampBiburlBibsource: true,
       },
     },
@@ -49,6 +52,8 @@ function restoreOptions() {
       document.getElementById("maxResults").value = items.options.maxResults;
       document.getElementById("renamingCheckbox").checked =
         items.options.keyRenaming;
+      document.getElementById("citationKeyPattern").value =
+        items.options.citationKeyPattern;
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
     }
