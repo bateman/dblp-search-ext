@@ -7,6 +7,8 @@ var browser = browser || chrome;
 export class PublicationView {
   constructor() {
     this.table = "";
+    this.currentOffset = 0;
+    this.maxResults = 30;
   }
 
   // Callback function for controller to notify to update the view
@@ -29,7 +31,16 @@ export class PublicationView {
       sentHits: sentHits,
       excludedCount: excludedCount,
       resultsTable: this.table,
+      currentOffset: this.currentOffset,
     });
+  }
+
+  setCurrentOffset(offset) {
+    this.currentOffset = offset;
+  }
+
+  setMaxResults(maxResults) {
+    this.maxResults = maxResults;
   }
 
   // Build the table with the new data

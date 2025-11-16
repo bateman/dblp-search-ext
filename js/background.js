@@ -19,11 +19,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "REQUEST_SEARCH_PUBLICATIONS") {
       // handleSearch returns a promise, so we need to return true to indicate
       // that the response will be sent asynchronously
+      const offset = message.offset || 0;
       controller
-        .handleSearch(message.query)
+        .handleSearch(message.query, offset)
         .then(() => {
           console.log(
-            `Background.js completed a request to search for '${message.query}' sent by '${message.script}'.`
+            `Background.js completed a request to search for '${message.query}' (offset: ${offset}) sent by '${message.script}'.`
           );
           sendResponse({
             script: "background.js",
@@ -40,6 +41,42 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
         });
       return true; // Will respond asynchronously
+    } else if (message.type === "REQUEST_NEXT_PAGE") {
+      controller
+        .handleNextPage(message.query, message.currentOffset, message.maxResults)
+        .then(() => {
+          console.log(
+            `Background.js completed request for next page of '${message.query}'.`
+          );
+          sendResponse({
+            script: "background.js",
+            response: "Next page loaded.",
+          });
+        })
+        .catch((error) => {
+          console.error(
+            `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
+          );
+        });
+      return true;
+    } else if (message.type === "REQUEST_PREVIOUS_PAGE") {
+      controller
+        .handlePreviousPage(message.query, message.currentOffset, message.maxResults)
+        .then(() => {
+          console.log(
+            `Background.js completed request for previous page of '${message.query}'.`
+          );
+          sendResponse({
+            script: "background.js",
+            response: "Previous page loaded.",
+          });
+        })
+        .catch((error) => {
+          console.error(
+            `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
+          );
+        });
+      return true;
     }
   } catch (error) {
     console.error(
