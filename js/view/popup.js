@@ -350,16 +350,14 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
         hasNextPage,
         currentPage,
         totalPages,
-        totalHits,
-        true
+        totalHits
       );
       const paginationControlsBottom = createPaginationControls(
         hasPrevPage,
         hasNextPage,
         currentPage,
         totalPages,
-        totalHits,
-        false
+        totalHits
       );
 
       // Clear and update both pagination areas
@@ -380,8 +378,7 @@ function createPaginationControls(
   hasNextPage,
   currentPage,
   totalPages,
-  totalHits,
-  isTop
+  totalHits
 ) {
   const container = document.createElement("div");
   container.className = "pagination-controls";
