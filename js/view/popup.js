@@ -344,36 +344,77 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
       const hasNextPage = currentOffset + sentHits < totalHits;
       const hasPrevPage = currentOffset > 0;
 
-      // Build pagination HTML
-      let paginationHTML = '<div class="pagination-controls">';
+      // Build pagination controls using safe DOM methods
+      const paginationControlsTop = createPaginationControls(
+        hasPrevPage,
+        hasNextPage,
+        currentPage,
+        totalPages,
+        totalHits,
+        true
+      );
+      const paginationControlsBottom = createPaginationControls(
+        hasPrevPage,
+        hasNextPage,
+        currentPage,
+        totalPages,
+        totalHits,
+        false
+      );
 
-      // Previous button
-      if (hasPrevPage) {
-        paginationHTML += '<button id="prevPageButton" class="pagination-button">← Previous</button>';
-      } else {
-        paginationHTML += '<button class="pagination-button" disabled>← Previous</button>';
-      }
-
-      // Page info
-      paginationHTML += `<span class="pagination-info">Page ${currentPage} of ${totalPages} (${totalHits} total results)</span>`;
-
-      // Next button
-      if (hasNextPage) {
-        paginationHTML += '<button id="nextPageButton" class="pagination-button">Next →</button>';
-      } else {
-        paginationHTML += '<button class="pagination-button" disabled>Next →</button>';
-      }
-
-      paginationHTML += '</div>';
-
-      // Update both pagination areas
-      paginationTop.innerHTML = paginationHTML;
-      paginationBottom.innerHTML = paginationHTML;
+      // Clear and update both pagination areas
+      paginationTop.textContent = "";
+      paginationBottom.textContent = "";
+      paginationTop.appendChild(paginationControlsTop);
+      paginationBottom.appendChild(paginationControlsBottom);
 
       // Add event listeners for pagination buttons
       addPaginationEventListeners(currentOffset, maxResults);
     }
   );
+}
+
+// Create pagination controls using safe DOM methods
+function createPaginationControls(
+  hasPrevPage,
+  hasNextPage,
+  currentPage,
+  totalPages,
+  totalHits,
+  isTop
+) {
+  const container = document.createElement("div");
+  container.className = "pagination-controls";
+
+  // Previous button
+  const prevButton = document.createElement("button");
+  prevButton.className = "pagination-button";
+  prevButton.textContent = "← Previous";
+  if (hasPrevPage) {
+    prevButton.classList.add("prevPageButton");
+  } else {
+    prevButton.disabled = true;
+  }
+  container.appendChild(prevButton);
+
+  // Page info
+  const pageInfo = document.createElement("span");
+  pageInfo.className = "pagination-info";
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${totalHits} total results)`;
+  container.appendChild(pageInfo);
+
+  // Next button
+  const nextButton = document.createElement("button");
+  nextButton.className = "pagination-button";
+  nextButton.textContent = "Next →";
+  if (hasNextPage) {
+    nextButton.classList.add("nextPageButton");
+  } else {
+    nextButton.disabled = true;
+  }
+  container.appendChild(nextButton);
+
+  return container;
 }
 
 // Add event listeners to pagination buttons
@@ -382,7 +423,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   const query = queryInputField.value.trim().replace(/\s/g, "+");
 
   // Previous page buttons (both top and bottom)
-  document.querySelectorAll("#prevPageButton").forEach((button) => {
+  document.querySelectorAll(".prevPageButton").forEach((button) => {
     button.addEventListener("click", function () {
       updateStatus("Loading...", 2000);
       sendMessage({
@@ -396,7 +437,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   });
 
   // Next page buttons (both top and bottom)
-  document.querySelectorAll("#nextPageButton").forEach((button) => {
+  document.querySelectorAll(".nextPageButton").forEach((button) => {
     button.addEventListener("click", function () {
       updateStatus("Loading...", 2000);
       sendMessage({
