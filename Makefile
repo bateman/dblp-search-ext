@@ -12,10 +12,10 @@ SED := $(shell command -v sed 2> /dev/null)
 SED_INPLACE := $(shell if $(SED) --version >/dev/null 2>&1; then echo "$(SED) -i"; else echo "$(SED) -i ''"; fi)
 AWK := $(shell command -v awk 2> /dev/null)
 GIT := $(shell command -v git 2> /dev/null)
-GIT_VERSION := $(shell $(GIT) --version 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
+GIT_VERSION := $(shell $(GIT) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
 XCRUN := $(shell command -v xcrun 2> /dev/null)
-XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
-XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || echo -e "\033[31mnot installed\033[0m")
+XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
+XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || printf '\033[31mnot installed\033[0m')
 
 # Apps
 CHROME_APP := Google Chrome.app
