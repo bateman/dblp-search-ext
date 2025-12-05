@@ -136,7 +136,15 @@ document.addEventListener("DOMContentLoaded", function () {
 // Send a message to the background script and log the response
 function sendMessage(dictObject) {
   browser.runtime.sendMessage(dictObject, function (response) {
-    if (response && response.success === false) {
+    if (browser.runtime.lastError) {
+      console.error("Popup.js message error:", browser.runtime.lastError.message);
+      return;
+    }
+    if (!response) {
+      console.warn("Popup.js received no response from background script");
+      return;
+    }
+    if (response.success === false) {
       console.error(
         `Popup.js received an error from '${response.script}': ${response.error}`
       );

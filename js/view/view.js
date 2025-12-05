@@ -72,10 +72,12 @@ export class PublicationView {
       // Type icon cell
       const typeCell = document.createElement("td");
       const typeImg = document.createElement("img");
-      typeImg.className = this.escapeHtml(result.type);
-      typeImg.title = this.escapeHtml(result.type);
+      // Type comes from transformType() which returns safe hardcoded values
+      // Don't use escapeHtml here as HTML entities break CSS class selectors
+      typeImg.className = result.type || "";
+      typeImg.title = result.type || "";
       typeImg.src = "../images/pub-type.png";
-      typeImg.alt = this.escapeHtml(result.type);
+      typeImg.alt = result.type || "";
       typeCell.appendChild(typeImg);
       row.appendChild(typeCell);
 
@@ -92,7 +94,8 @@ export class PublicationView {
 
       // Authors cell
       const authorsCell = document.createElement("td");
-      authorsCell.textContent = result.authors.join(", ");
+      const authors = Array.isArray(result.authors) ? result.authors : [];
+      authorsCell.textContent = authors.join(", ");
       row.appendChild(authorsCell);
 
       // Year cell
@@ -120,11 +123,13 @@ export class PublicationView {
       accessCell.className = "center";
       const accessImg = document.createElement("img");
       accessImg.className = "access";
-      accessImg.src = `../images/${this.escapeHtml(result.access)}-access.png`;
-      accessImg.title = `This publication is ${this.escapeHtml(
-        result.access
-      )} access`;
-      accessImg.alt = `${this.escapeHtml(result.access)} access`;
+      // Validate access value against whitelist - don't use escapeHtml as HTML entities break file paths
+      const validAccess = ["open", "closed"].includes(result.access)
+        ? result.access
+        : "closed";
+      accessImg.src = `../images/${validAccess}-access.png`;
+      accessImg.title = `This publication is ${validAccess} access`;
+      accessImg.alt = `${validAccess} access`;
       accessCell.appendChild(accessImg);
       row.appendChild(accessCell);
 
