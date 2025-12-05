@@ -185,7 +185,7 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 	@echo -e "$(GREEN)Done$(RESET)"
 
 .PHONY: build/edge
-buid/edge:  ## Build Edge extension zip (same as Chrome)
+build/edge:  ## Build Edge extension zip (same as Chrome)
 	$(MAKE) build/chrome
 
 .PHONY: clean
