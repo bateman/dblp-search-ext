@@ -54,7 +54,6 @@ SRC_FILES := $(shell find $(SRC) -type f)
 JS_FILES := $(wildcard $(JS)/*.js)
 
 # Stamp files
-RELEASE_TIMESTAMP := .release.stamp
 CHROME_BUILD_TIMESTAMP := .chrome.stamp
 FIREFOX_BUILD_TIMESTAMP := .firefox.stamp
 SAFARI_BUILD_TIMESTAMP := .safari.stamp
@@ -109,12 +108,12 @@ dep/git:
 .PHONY: dep/xcode
 dep/xcode:
 	@echo -e "$(CYAN)\nChecking if Xcode is installed...$(RESET)"
-	@xcode-select -p || "echo 'Xcode is not installed.'"
+	@xcode-select -p || echo 'Xcode is not installed.'
 
 .PHONY: dep/macos
 dep/macos:
 	@echo -e "$(CYAN)\nChecking if OS is MacOS...$(RESET)"
-	@uname -s | grep "Darwin" || "echo 'Run targets are only available on MacOS.'"
+	@uname -s | grep "Darwin" || echo 'Run targets are only available on MacOS.'
 
 .PHONY: dep/chrome
 dep/chrome: | dep/macos
@@ -164,11 +163,11 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/src > /dev/null
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/pkg > /dev/null
-	@cp $(MANIFEST) $(BUILD_DIR)/$(SAFARI_DIR)/src 
-	@cp -r $(HTML) $(BUILD_DIR)/$(SAFARI_DIR)/src 
-	@cp -r $(IMAGES) $(BUILD_DIR)/$(SAFARI_DIR)/src 
-	@cp -r $(JS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
-	@cp -r $(CSS) $(BUILD_DIR)/$(SAFARI_DIR)/src 
+	@cp $(MANIFEST) $(BUILD_DIR)/$(SAFARI_DIR)/src
+	@cp -r $(HTML) $(BUILD_DIR)/$(SAFARI_DIR)/src
+	@cp -r $(IMAGES) $(BUILD_DIR)/$(SAFARI_DIR)/src
+	@cp -r $(JS) $(BUILD_DIR)/$(SAFARI_DIR)/src
+	@cp -r $(CSS) $(BUILD_DIR)/$(SAFARI_DIR)/src
 	@$(XCRUN) safari-web-extension-converter $(BUILD_DIR)/$(SAFARI_DIR)/src --app-name "$(APP_NAME)" --bundle-identifier "dev.fcalefato.$(APP_NAME)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
 	@cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && $(XCODEBUILD) -quiet -target $(APP_NAME) -configuration Release clean build
 	@zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)-appex-$(APP_VERSION).zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app
@@ -188,8 +187,8 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 build/edge:  ## Build Edge extension zip (same as Chrome)
 	$(MAKE) build/chrome
 
-.PHONY: clean
-build/clean:  # Clean up build directory and remove all timestamps
+.PHONY: build/clean
+build/clean:  ## Clean up build directory and remove all timestamps
 	@echo -e "$(CYAN)\nCleaning up $(BUILD_DIR) directory...$(RESET)"
 	@rm -rf $(BUILD_DIR)/$(FIREFOX_DIR)
 	@rm -rf $(BUILD_DIR)/$(SAFARI_DIR)
@@ -275,15 +274,15 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
 
-.PHONY: tag/delete 
+.PHONY: tag/delete
 tag/delete: | dep/git  ## Delete the tag for the current version
 	$(eval tag_exists=$(shell $(GIT) rev-parse $(APP_VERSION) >/dev/null 2>&1 && echo 1 || echo 0))
 	@if [ "$(tag_exists)" = "1" ]; then \
-		@echo -e "$(CYAN)\nDeleting tag $(APP_VERSION)...$(RESET)"; \
+		echo -e "$(CYAN)\nDeleting tag $(APP_VERSION)...$(RESET)"; \
 		$(GIT) tag -d $(APP_VERSION) && $(GIT) push origin :refs/tags/$(APP_VERSION); \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	else \
-		@echo -e "$(ORANGE)Current $(APP_VERSION) is not tagged.$(RESET)"; \
+		echo -e "$(ORANGE)Current $(APP_VERSION) is not tagged.$(RESET)"; \
 	fi
 
 #-- Run
