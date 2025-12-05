@@ -49,6 +49,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
 - **Rename BibTex Citation Keys**: Replace dblp default citation keys with `<first author's lastname>`   `<year>` `<venue>` (e.g.,  `calefato2023esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
+- **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows current page, total pages, and result count. Pagination state persists across browser sessions.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
 - **Remove duplicates**: Useless, duplicated CoRR abs entries are filtered out.
