@@ -9,6 +9,19 @@ export class PublicationView {
     this.table = "";
   }
 
+  // Validate URL to prevent javascript: protocol XSS attacks
+  isValidURL(url) {
+    if (!url || typeof url !== "string") {
+      return false;
+    }
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+
   // Callback function for controller to notify to update the view
   update(responseStatus, publications, totalHits, sentHits, excludedCount) {
     if (totalHits > 0) {
@@ -32,39 +45,32 @@ export class PublicationView {
     });
   }
 
-  // Build the table with the new data
+  // Build the table with the new data using DOM manipulation to prevent XSS
   buildTable(publications) {
-    // Create table element
     const table = document.createElement("table");
     table.id = "results-table";
     table.className = "table table-striped table-hover";
 
-    // Create thead
+    // Create header with colspan=2 for Title to match original structure
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    const headers = [
-      { text: "Title", colspan: 2 },
-      { text: "Authors" },
-      { text: "Year" },
-      { text: "Venue" },
-      { text: "DOI" },
-      { text: "Access" },
-      { text: "BibTeX" },
-    ];
 
-    headers.forEach((header) => {
+    const thTitle = document.createElement("th");
+    thTitle.scope = "col";
+    thTitle.colSpan = 2;
+    thTitle.textContent = "Title";
+    headerRow.appendChild(thTitle);
+
+    const otherHeaders = ["Authors", "Year", "Venue", "DOI", "Access", "BibTeX"];
+    otherHeaders.forEach((headerText) => {
       const th = document.createElement("th");
       th.scope = "col";
-      if (header.colspan) {
-        th.colSpan = header.colspan;
-      }
-      th.textContent = header.text;
+      th.textContent = headerText;
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
-    // Create tbody
     const tbody = document.createElement("tbody");
     publications.forEach((result) => {
       const row = document.createElement("tr");
@@ -73,26 +79,27 @@ export class PublicationView {
       const typeCell = document.createElement("td");
       const typeImg = document.createElement("img");
       // Type comes from transformType() which returns safe hardcoded values
-      // Don't use escapeHtml here as HTML entities break CSS class selectors
       typeImg.className = result.type || "";
       typeImg.title = result.type || "";
       typeImg.src = "../images/pub-type.png";
-      typeImg.alt = result.type || "";
       typeCell.appendChild(typeImg);
       row.appendChild(typeCell);
 
-      // Title cell
+      // Title cell with validated URL
       const titleCell = document.createElement("td");
       const titleLink = document.createElement("a");
-      titleLink.href = this.sanitizeUrl(result.permaLink);
+      if (this.isValidURL(result.permaLink)) {
+        titleLink.href = result.permaLink;
+      } else {
+        titleLink.href = "#";
+      }
       titleLink.target = "_blank";
-      titleLink.rel = "noopener noreferrer";
-      titleLink.title = this.escapeHtml(result.title);
+      titleLink.title = result.permaLink || "";
       titleLink.textContent = result.title;
       titleCell.appendChild(titleLink);
       row.appendChild(titleCell);
 
-      // Authors cell
+      // Authors cell with defensive array check
       const authorsCell = document.createElement("td");
       const authors = Array.isArray(result.authors) ? result.authors : [];
       authorsCell.textContent = authors.join(", ");
@@ -108,12 +115,15 @@ export class PublicationView {
       venueCell.textContent = result.venue;
       row.appendChild(venueCell);
 
-      // DOI cell
+      // DOI cell with validated URL
       const doiCell = document.createElement("td");
       const doiLink = document.createElement("a");
-      doiLink.href = this.sanitizeUrl(result.doiURL);
+      if (this.isValidURL(result.doiURL)) {
+        doiLink.href = result.doiURL;
+      } else {
+        doiLink.href = "#";
+      }
       doiLink.target = "_blank";
-      doiLink.rel = "noopener noreferrer";
       doiLink.textContent = result.doi;
       doiCell.appendChild(doiLink);
       row.appendChild(doiCell);
@@ -123,13 +133,12 @@ export class PublicationView {
       accessCell.className = "center";
       const accessImg = document.createElement("img");
       accessImg.className = "access";
-      // Validate access value against whitelist - don't use escapeHtml as HTML entities break file paths
+      // Validate access value against whitelist to prevent path traversal
       const validAccess = ["open", "closed"].includes(result.access)
         ? result.access
         : "closed";
       accessImg.src = `../images/${validAccess}-access.png`;
       accessImg.title = `This publication is ${validAccess} access`;
-      accessImg.alt = `${validAccess} access`;
       accessCell.appendChild(accessImg);
       row.appendChild(accessCell);
 
@@ -138,11 +147,13 @@ export class PublicationView {
       bibtexCell.className = "center";
       const bibtexButton = document.createElement("button");
       bibtexButton.className = "copyBibtexButton";
-      bibtexButton.title = "Copy BibTeX";
-      bibtexButton.setAttribute("data-url", this.sanitizeUrl(result.bibtexLink));
+      bibtexButton.title = "Copy BibTex";
+      // Validate bibtexLink URL before setting data attribute
+      if (this.isValidURL(result.bibtexLink)) {
+        bibtexButton.dataset.url = result.bibtexLink;
+      }
       const bibtexImg = document.createElement("img");
       bibtexImg.src = "../images/copy.png";
-      bibtexImg.alt = "Copy";
       bibtexButton.appendChild(bibtexImg);
       bibtexCell.appendChild(bibtexButton);
       row.appendChild(bibtexCell);
@@ -151,36 +162,6 @@ export class PublicationView {
     });
     table.appendChild(tbody);
 
-    // Return the outer HTML
     return table.outerHTML;
-  }
-
-  // Sanitize HTML to prevent XSS
-  escapeHtml(text) {
-    if (text === undefined || text === null) {
-      return "";
-    }
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // Sanitize URLs to prevent javascript: protocol injection
-  sanitizeUrl(url) {
-    if (!url) {
-      return "#";
-    }
-    const urlStr = String(url);
-    // Only allow http:, https:, and relative URLs
-    if (
-      urlStr.startsWith("http://") ||
-      urlStr.startsWith("https://") ||
-      urlStr.startsWith("/") ||
-      urlStr.startsWith("../")
-    ) {
-      return urlStr;
-    }
-    // If it doesn't match safe patterns, return a safe default
-    return "#";
   }
 }
