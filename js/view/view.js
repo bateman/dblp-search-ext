@@ -7,6 +7,11 @@ var browser = browser || chrome;
 export class PublicationView {
   constructor() {
     this.table = "";
+    this.currentOffset = 0;
+  }
+
+  setCurrentOffset(offset) {
+    this.currentOffset = offset;
   }
 
   // Validate URL to prevent javascript: protocol XSS attacks
@@ -32,7 +37,7 @@ export class PublicationView {
       this.table = "";
     }
     console.log(
-      `Sending reponse to popup.js to display results : ${responseStatus}, ${totalHits}, ${sentHits}, ${excludedCount}`
+      `Sending reponse to popup.js to display results : ${responseStatus}, ${totalHits}, ${sentHits}, ${excludedCount}, offset: ${this.currentOffset}`
     );
     browser.runtime.sendMessage({
       script: "view.js",
@@ -42,6 +47,7 @@ export class PublicationView {
       sentHits: sentHits,
       excludedCount: excludedCount,
       resultsTable: this.table,
+      currentOffset: this.currentOffset,
     });
   }
 
