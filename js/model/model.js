@@ -12,14 +12,19 @@ export class PublicationModel {
     this.totalHits = 0;
     this.sentHits = 0;
     this.excludedCount = 0;
+    this.currentOffset = 0;
   }
 
-  async searchPublications(query) {
-    console.log(`Searching publications matching: ${query}`);
+  async searchPublications(query, offset = 0) {
+    console.log(`Searching publications matching: ${query} (offset: ${offset})`);
+    this.currentOffset = offset;
     var url = `https://dblp.org/search/publ/api?q=${encodeURIComponent(
       query
     )}&format=json`;
     url = await this.getUrlWithMaxResults(url);
+    if (offset > 0) {
+      url += "&f=" + offset;
+    }
     try {
       // Create AbortController for timeout
       const controller = new AbortController();

@@ -94,6 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
         sentHits: 0,
         excludedCount: 0,
         results: [],
+        currentOffset: 0,
       },
     });
     requestClearResults(true);
@@ -109,7 +110,8 @@ document.addEventListener("DOMContentLoaded", function () {
         message.responseStatus,
         message.totalHits,
         message.sentHits,
-        message.excludedCount
+        message.excludedCount,
+        message.currentOffset
       );
       updatePublicationsCount(
         message.responseStatus,
@@ -119,13 +121,19 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       console.log("Popup.js updating publications table.");
       updatePublicationsTable(message.resultsTable);
+      updatePaginationControls(
+        message.totalHits,
+        message.sentHits,
+        message.currentOffset || 0
+      );
       saveResultsToStorage(
         queryInputField.value,
         message.responseStatus,
         message.totalHits,
         message.sentHits,
         message.excludedCount,
-        message.resultsTable
+        message.resultsTable,
+        message.currentOffset || 0
       );
     }
   });
@@ -158,7 +166,7 @@ function sendMessage(dictObject) {
 }
 
 // Ask background script to execute the query on dblp
-function requestSearchDblp(q) {
+function requestSearchDblp(q, offset = 0) {
   // Update status to let user know search has started.
   updateStatus("Searching...", 2000);
   // Clear existing results, but not the paperTitle
@@ -168,6 +176,7 @@ function requestSearchDblp(q) {
     script: "popup.js",
     type: "REQUEST_SEARCH_PUBLICATIONS",
     query: q,
+    offset: offset,
   });
 }
 
@@ -179,6 +188,7 @@ function requestClearResults(clearTitle = true) {
   }
   updatePublicationsCount("RESET", 0, 0, 0);
   updatePublicationsTable("");
+  updatePaginationControls(0, 0, 0);
 }
 
 // Update the count of publications found
@@ -261,6 +271,7 @@ function restoreResultsFromStorage() {
         sentHits: 0,
         excludedCount: 0,
         resultsTable: "",
+        currentOffset: 0,
       },
     },
     function (items) {
@@ -273,6 +284,11 @@ function restoreResultsFromStorage() {
           items.search.excludedCount
         );
         updatePublicationsTable(items.search.resultsTable);
+        updatePaginationControls(
+          items.search.totalHits,
+          items.search.sentHits,
+          items.search.currentOffset || 0
+        );
         var queryInputField = document.getElementById("paperTitle");
         if (queryInputField) {
           queryInputField.value = items.search.paperTitle;
@@ -290,7 +306,8 @@ function saveResultsToStorage(
   totalHits,
   sentHits,
   excludedCount,
-  resultsTable
+  resultsTable,
+  currentOffset
 ) {
   console.log(
     "Saving results to storage: ",
@@ -298,7 +315,8 @@ function saveResultsToStorage(
     status,
     totalHits,
     sentHits,
-    excludedCount
+    excludedCount,
+    currentOffset
   );
   browser.storage.local.set({
     search: {
@@ -308,6 +326,7 @@ function saveResultsToStorage(
       sentHits: sentHits,
       excludedCount: excludedCount,
       resultsTable: resultsTable,
+      currentOffset: currentOffset,
     },
   });
 }
@@ -403,3 +422,135 @@ window.copyBibtexToClipboard = function (url) {
       }
     });
 };
+
+// Update pagination controls
+function updatePaginationControls(totalHits, sentHits, currentOffset) {
+  const paginationTop = document.getElementById("pagination");
+  const paginationBottom = document.getElementById("pagination-bottom");
+
+  if (!paginationTop || !paginationBottom) return;
+
+  // Clear pagination if no results
+  if (totalHits === 0) {
+    paginationTop.textContent = "";
+    paginationBottom.textContent = "";
+    return;
+  }
+
+  // Get maxResults from storage to calculate pages
+  browser.storage.local.get(
+    {
+      options: {
+        maxResults: 30,
+      },
+    },
+    function (items) {
+      const maxResults = Math.min(Math.max(items.options.maxResults, 1), 1000);
+      const currentPage = Math.floor(currentOffset / maxResults) + 1;
+      const totalPages = Math.ceil(totalHits / maxResults);
+      const hasNextPage = currentOffset + sentHits < totalHits;
+      const hasPrevPage = currentOffset > 0;
+
+      // Build pagination controls using safe DOM methods
+      const paginationControlsTop = createPaginationControls(
+        hasPrevPage,
+        hasNextPage,
+        currentPage,
+        totalPages,
+        totalHits
+      );
+      const paginationControlsBottom = createPaginationControls(
+        hasPrevPage,
+        hasNextPage,
+        currentPage,
+        totalPages,
+        totalHits
+      );
+
+      // Clear and update both pagination areas
+      paginationTop.textContent = "";
+      paginationBottom.textContent = "";
+      paginationTop.appendChild(paginationControlsTop);
+      paginationBottom.appendChild(paginationControlsBottom);
+
+      // Add event listeners for pagination buttons
+      addPaginationEventListeners(currentOffset, maxResults);
+    }
+  );
+}
+
+// Create pagination controls using safe DOM methods
+function createPaginationControls(
+  hasPrevPage,
+  hasNextPage,
+  currentPage,
+  totalPages,
+  totalHits
+) {
+  const container = document.createElement("div");
+  container.className = "pagination-controls";
+
+  // Previous button
+  const prevButton = document.createElement("button");
+  prevButton.className = "pagination-button";
+  prevButton.textContent = "← Previous";
+  if (hasPrevPage) {
+    prevButton.classList.add("prevPageButton");
+  } else {
+    prevButton.disabled = true;
+  }
+  container.appendChild(prevButton);
+
+  // Page info
+  const pageInfo = document.createElement("span");
+  pageInfo.className = "pagination-info";
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${totalHits} total results)`;
+  container.appendChild(pageInfo);
+
+  // Next button
+  const nextButton = document.createElement("button");
+  nextButton.className = "pagination-button";
+  nextButton.textContent = "Next →";
+  if (hasNextPage) {
+    nextButton.classList.add("nextPageButton");
+  } else {
+    nextButton.disabled = true;
+  }
+  container.appendChild(nextButton);
+
+  return container;
+}
+
+// Add event listeners to pagination buttons
+function addPaginationEventListeners(currentOffset, maxResults) {
+  const queryInputField = document.getElementById("paperTitle");
+  const query = queryInputField.value.trim().replace(/\s/g, "+");
+
+  // Previous page buttons (both top and bottom)
+  document.querySelectorAll(".prevPageButton").forEach((button) => {
+    button.addEventListener("click", function () {
+      updateStatus("Loading...", 2000);
+      sendMessage({
+        script: "popup.js",
+        type: "REQUEST_PREVIOUS_PAGE",
+        query: query,
+        currentOffset: currentOffset,
+        maxResults: maxResults,
+      });
+    });
+  });
+
+  // Next page buttons (both top and bottom)
+  document.querySelectorAll(".nextPageButton").forEach((button) => {
+    button.addEventListener("click", function () {
+      updateStatus("Loading...", 2000);
+      sendMessage({
+        script: "popup.js",
+        type: "REQUEST_NEXT_PAGE",
+        query: query,
+        currentOffset: currentOffset,
+        maxResults: maxResults,
+      });
+    });
+  });
+}
