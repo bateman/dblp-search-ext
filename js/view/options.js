@@ -14,11 +14,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Saves options to chrome.storage
 function saveOptions() {
-  var maxResults = document.getElementById("maxResults").value;
+  var maxResultsInput = document.getElementById("maxResults").value;
   var keyRenaming = document.getElementById("renamingCheckbox").checked;
   var removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
+
+  // Validate maxResults input
+  var maxResults = parseInt(maxResultsInput, 10);
+  if (isNaN(maxResults) || maxResults < 1 || maxResults > 1000) {
+    updateStatus("Error: Max results must be between 1 and 1000", 3000);
+    // Reset to default value
+    maxResults = 30;
+    document.getElementById("maxResults").value = maxResults;
+    return;
+  }
 
   browser.storage.local.set(
     {
@@ -30,7 +40,7 @@ function saveOptions() {
     },
     function () {
       // Update status to let user know options were saved.
-      updateStatus("Saving options", 750);
+      updateStatus("Options saved successfully", 2000);
     }
   );
 }

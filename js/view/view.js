@@ -78,8 +78,9 @@ export class PublicationView {
       // Type icon cell
       const typeCell = document.createElement("td");
       const typeImg = document.createElement("img");
-      typeImg.className = result.type;
-      typeImg.title = result.type;
+      // Type comes from transformType() which returns safe hardcoded values
+      typeImg.className = result.type || "";
+      typeImg.title = result.type || "";
       typeImg.src = "../images/pub-type.png";
       typeCell.appendChild(typeImg);
       row.appendChild(typeCell);
@@ -98,9 +99,10 @@ export class PublicationView {
       titleCell.appendChild(titleLink);
       row.appendChild(titleCell);
 
-      // Authors cell
+      // Authors cell with defensive array check
       const authorsCell = document.createElement("td");
-      authorsCell.textContent = result.authors.join(", ");
+      const authors = Array.isArray(result.authors) ? result.authors : [];
+      authorsCell.textContent = authors.join(", ");
       row.appendChild(authorsCell);
 
       // Year cell
@@ -131,7 +133,7 @@ export class PublicationView {
       accessCell.className = "center";
       const accessImg = document.createElement("img");
       accessImg.className = "access";
-      // Sanitize access value to only allow expected values
+      // Validate access value against whitelist to prevent path traversal
       const validAccess = ["open", "closed"].includes(result.access)
         ? result.access
         : "closed";

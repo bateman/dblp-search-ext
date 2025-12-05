@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "dblp Search",
-    "version": "3.1.10",
+    "version": "3.1.11",
     "description": "Search academic publications on dblp from everywhere.",
     "icons": {
         "48": "images/icon-48.png",
@@ -33,5 +33,8 @@
         "gecko": {
             "id": "dblpSearch@fcalefato.dev"
         }
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
     }
 }
