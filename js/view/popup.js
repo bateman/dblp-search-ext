@@ -544,20 +544,18 @@ window.copyBibtexToClipboard = function (url) {
             var venueValue = venue;
             var titleValue = firstTitleWord;
 
-            // Safe getter to avoid dynamic property access (object injection)
-            function getFieldValue(f) {
-              switch (f) {
-                case "author": return authorValue;
-                case "year": return yearValue;
-                case "venue": return venueValue;
-                case "title": return titleValue;
-                default: return "";
-              }
-            }
-
             // Generate citation key based on selected fields
+            // Using inline switch to avoid function declaration inside block
             var newCitationKey = citationKeyFields
-              .map(function(f) { return getFieldValue(f); })
+              .map(function(f) {
+                switch (f) {
+                  case "author": return authorValue;
+                  case "year": return yearValue;
+                  case "venue": return venueValue;
+                  case "title": return titleValue;
+                  default: return "";
+                }
+              })
               .join("");
 
             // Replace the old citation key with the new one:
