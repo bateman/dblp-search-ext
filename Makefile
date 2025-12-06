@@ -206,7 +206,18 @@ build/all:  ## Build all extensions
 #-- Release
 
 .PHONY: tag
-tag: | dep/git
+tag: | dep/git  ## Create a git tag from the current manifest version
+	@$(eval TAG := v$(APP_VERSION))
+	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
+		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
+	else \
+		echo -e "$(CYAN)\nCreating tag $(TAG)...$(RESET)"; \
+		$(GIT) tag $(TAG); \
+		echo -e "$(GREEN)Done. Tag $(TAG) created.$(RESET)"; \
+	fi
+
+.PHONY: tag/check
+tag/check: | dep/git  ## Check if a new release is needed
 	@$(eval TAG := $(shell $(GIT) describe --tags --abbrev=0))
 	@$(eval BEHIND_AHEAD := $(shell $(GIT) rev-list --left-right --count $(TAG)...origin/main))
 	@$(shell if [ "$(BEHIND_AHEAD)" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi)
@@ -236,7 +247,7 @@ define update_version
 endef
 
 .PHONY: tag/patch
-tag/patch: | tag staging  ## Bump patch semantic version in manifest files (e.g., 1.0.0 -> 1.0.1)
+tag/patch: | tag/check staging  ## Bump patch semantic version in manifest files (e.g., 1.0.0 -> 1.0.1)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF++; print $$0}') ; \
@@ -244,7 +255,7 @@ tag/patch: | tag staging  ## Bump patch semantic version in manifest files (e.g.
 	fi
 
 .PHONY: tag/minor
-tag/minor: | tag staging  ## Bump minor semantic version in manifest files (e.g., 1.0.0 -> 1.1.0)
+tag/minor: | tag/check staging  ## Bump minor semantic version in manifest files (e.g., 1.0.0 -> 1.1.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$(NF-1)++; $$NF=0; print $$0}') ; \
@@ -252,7 +263,7 @@ tag/minor: | tag staging  ## Bump minor semantic version in manifest files (e.g.
 	fi
 
 .PHONY: tag/major
-tag/major: | tag staging  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 2.0.0)
+tag/major: | tag/check staging  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 2.0.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$1++; $$2=0; $$3=0; print $$0}') ; \
