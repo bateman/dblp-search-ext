@@ -87,12 +87,12 @@ function handleDrop(e) {
   if (token) {
     // Create a new token for the dropzone with remove button
     const newToken = createDropzoneToken(field);
-    dropzone.appendChild(newToken);
-
-    // Hide original token
-    token.style.display = "none";
-
-    updatePreview();
+    if (newToken) {
+      dropzone.appendChild(newToken);
+      // Hide original token
+      token.style.display = "none";
+      updatePreview();
+    }
   }
 }
 
@@ -109,17 +109,33 @@ function handleDropToAvailable(e) {
 }
 
 function createDropzoneToken(field) {
+  // Validate field against whitelist
+  const validFields = ["author", "year", "venue", "title"];
+  if (!validFields.includes(field)) {
+    console.error("Invalid field:", field);
+    return null;
+  }
+
   const token = document.createElement("div");
   token.className = "field-token in-dropzone";
   token.draggable = true;
   token.dataset.field = field;
-  token.innerHTML = `${capitalize(field)}<span class="remove-btn" title="Remove">\u00d7</span>`;
+
+  // Use safe DOM methods instead of innerHTML to prevent XSS
+  const textNode = document.createTextNode(capitalize(field));
+  token.appendChild(textNode);
+
+  const removeBtn = document.createElement("span");
+  removeBtn.className = "remove-btn";
+  removeBtn.title = "Remove";
+  removeBtn.textContent = "\u00d7";
+  token.appendChild(removeBtn);
 
   token.addEventListener("dragstart", handleDragStart);
   token.addEventListener("dragend", handleDragEnd);
 
   // Remove button click
-  token.querySelector(".remove-btn").addEventListener("click", function (e) {
+  removeBtn.addEventListener("click", function (e) {
     e.stopPropagation();
     removeFieldFromDropzone(field);
   });
@@ -128,6 +144,12 @@ function createDropzoneToken(field) {
 }
 
 function removeFieldFromDropzone(field) {
+  // Validate field against whitelist
+  const validFields = ["author", "year", "venue", "title"];
+  if (!validFields.includes(field)) {
+    return;
+  }
+
   const dropzone = document.getElementById("citationKeyDropzone");
   const token = dropzone.querySelector(`[data-field="${field}"]`);
   if (token) {
@@ -169,8 +191,10 @@ function setSelectedFields(fields) {
     );
     if (originalToken) {
       const newToken = createDropzoneToken(field);
-      dropzone.appendChild(newToken);
-      originalToken.style.display = "none";
+      if (newToken) {
+        dropzone.appendChild(newToken);
+        originalToken.style.display = "none";
+      }
     }
   });
 
