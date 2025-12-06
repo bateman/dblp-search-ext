@@ -23,6 +23,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const renamingCheckbox = document.getElementById("renamingCheckbox");
   renamingCheckbox.addEventListener("change", toggleDragDropVisibility);
 
+  // Update preview when formatting options change
+  document.getElementById("authorCapitalize").addEventListener("change", updatePreview);
+  document.getElementById("venueUppercase").addEventListener("change", updatePreview);
+
   initDragAndDrop();
   restoreOptions();
 });
@@ -235,7 +239,19 @@ function updatePreview() {
     return;
   }
 
-  const key = fields.map((f) => getSampleValue(f)).join("");
+  const authorCapitalize = document.getElementById("authorCapitalize").checked;
+  const venueUppercase = document.getElementById("venueUppercase").checked;
+
+  const key = fields.map((f) => {
+    var value = getSampleValue(f);
+    if (f === "author" && authorCapitalize) {
+      value = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    if (f === "venue" && venueUppercase) {
+      value = value.toUpperCase();
+    }
+    return value;
+  }).join("");
   preview.textContent = key;
 }
 
@@ -250,6 +266,8 @@ function saveOptions() {
   var maxResultsInput = document.getElementById("maxResults").value;
   var keyRenaming = document.getElementById("renamingCheckbox").checked;
   var citationKeyFields = getSelectedFields();
+  var authorCapitalize = document.getElementById("authorCapitalize").checked;
+  var venueUppercase = document.getElementById("venueUppercase").checked;
   var removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
@@ -276,6 +294,8 @@ function saveOptions() {
         maxResults: maxResults,
         keyRenaming: keyRenaming,
         citationKeyFields: citationKeyFields,
+        authorCapitalize: authorCapitalize,
+        venueUppercase: venueUppercase,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
       },
     },
@@ -294,6 +314,8 @@ function restoreOptions() {
         maxResults: 30,
         keyRenaming: true,
         citationKeyFields: ["author", "year", "venue"],
+        authorCapitalize: false,
+        venueUppercase: false,
         removeTimestampBiburlBibsource: true,
       },
     },
@@ -301,6 +323,10 @@ function restoreOptions() {
       document.getElementById("maxResults").value = items.options.maxResults;
       document.getElementById("renamingCheckbox").checked =
         items.options.keyRenaming;
+      document.getElementById("authorCapitalize").checked =
+        items.options.authorCapitalize;
+      document.getElementById("venueUppercase").checked =
+        items.options.venueUppercase;
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
 

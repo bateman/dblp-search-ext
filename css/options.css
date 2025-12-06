@@ -167,6 +167,26 @@ select {
     border: 1px solid #ddd;
 }
 
+.format-options {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.format-option {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.format-option label {
+    font-weight: normal;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+}
+
 button {
     cursor: pointer;
     background: #2e7fca;

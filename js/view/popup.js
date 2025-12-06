@@ -470,11 +470,15 @@ window.copyBibtexToClipboard = function (url) {
           options: {
             keyRenaming: true,
             citationKeyFields: ["author", "year", "venue"],
+            authorCapitalize: false,
+            venueUppercase: false,
           },
         },
         function (items) {
           var keyRenaming = items.options.keyRenaming;
           var citationKeyFields = items.options.citationKeyFields;
+          var authorCapitalize = items.options.authorCapitalize;
+          var venueUppercase = items.options.venueUppercase;
 
           // Handle migration from old format
           if (!citationKeyFields && items.options.citationKeyPattern) {
@@ -538,10 +542,13 @@ window.copyBibtexToClipboard = function (url) {
               }
             }
 
-            // Build field values
+            // Build field values with formatting options
             var authorValue = name.toLowerCase();
+            if (authorCapitalize) {
+              authorValue = authorValue.charAt(0).toUpperCase() + authorValue.slice(1);
+            }
             var yearValue = year;
-            var venueValue = venue;
+            var venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
             var titleValue = firstTitleWord;
 
             // Generate citation key based on selected fields
