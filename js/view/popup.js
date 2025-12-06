@@ -469,12 +469,21 @@ window.copyBibtexToClipboard = function (url) {
         {
           options: {
             keyRenaming: true,
-            citationKeyPattern: "author-year-venue",
+            citationKeyFields: ["author", "year", "venue"],
           },
         },
         function (items) {
           var keyRenaming = items.options.keyRenaming;
-          var citationKeyPattern = items.options.citationKeyPattern;
+          var citationKeyFields = items.options.citationKeyFields;
+
+          // Handle migration from old format
+          if (!citationKeyFields && items.options.citationKeyPattern) {
+            citationKeyFields = items.options.citationKeyPattern.split("-");
+          }
+          if (!citationKeyFields || citationKeyFields.length === 0) {
+            citationKeyFields = ["author", "year", "venue"];
+          }
+
           if (keyRenaming) {
             // Rename the citation key
             var keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
@@ -500,7 +509,7 @@ window.copyBibtexToClipboard = function (url) {
             }
             var year = yearMatch[1];
 
-            // Extract first word of title (for author-year-title pattern)
+            // Extract first word of title (for title field)
             var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
             var firstTitleWord = "";
             if (titleMatch) {
@@ -529,23 +538,19 @@ window.copyBibtexToClipboard = function (url) {
               }
             }
 
-            // Generate citation key based on selected pattern
-            var newCitationKey;
-            switch (citationKeyPattern) {
-              case "author-year-title":
-                newCitationKey = name.toLowerCase() + year + firstTitleWord;
-                break;
-              case "venue-author-year":
-                newCitationKey = venue + name.toLowerCase() + year;
-                break;
-              case "year-author-venue":
-                newCitationKey = year + name.toLowerCase() + venue;
-                break;
-              case "author-year-venue":
-              default:
-                newCitationKey = name.toLowerCase() + year + venue;
-                break;
-            }
+            // Build field values map
+            var fieldValues = {
+              author: name.toLowerCase(),
+              year: year,
+              venue: venue,
+              title: firstTitleWord,
+            };
+
+            // Generate citation key based on selected fields
+            var newCitationKey = citationKeyFields
+              .map((field) => fieldValues[field] || "")
+              .join("");
+
             // Replace the old citation key with the new one:
             // specifically, replace all the text from DBLP until the first comma (excluded)
             // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."

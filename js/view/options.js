@@ -4,19 +4,203 @@ import { updateStatus } from "./commons.js";
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 
+// Sample values for preview
+const sampleValues = {
+  author: "calefato",
+  year: "2023",
+  venue: "esem",
+  title: "option",
+};
+
 // ------------------------------------- Listeners -------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("saveButton").addEventListener("click", saveOptions);
+  initDragAndDrop();
   restoreOptions();
 });
 
-// ------------------------------------- Functions -------------------------------------
+// ------------------------------------- Drag & Drop -------------------------------------
+
+function initDragAndDrop() {
+  const availableFields = document.getElementById("availableFields");
+  const dropzone = document.getElementById("citationKeyDropzone");
+
+  // Add drag events to all field tokens
+  document.querySelectorAll(".field-token").forEach((token) => {
+    token.addEventListener("dragstart", handleDragStart);
+    token.addEventListener("dragend", handleDragEnd);
+  });
+
+  // Dropzone events
+  dropzone.addEventListener("dragover", handleDragOver);
+  dropzone.addEventListener("dragleave", handleDragLeave);
+  dropzone.addEventListener("drop", handleDrop);
+
+  // Also allow dropping back to available fields
+  availableFields.addEventListener("dragover", handleDragOver);
+  availableFields.addEventListener("dragleave", handleDragLeave);
+  availableFields.addEventListener("drop", handleDropToAvailable);
+}
+
+function handleDragStart(e) {
+  e.target.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", e.target.dataset.field);
+  e.dataTransfer.setData("source", e.target.parentElement.id);
+}
+
+function handleDragEnd(e) {
+  e.target.classList.remove("dragging");
+  document.querySelectorAll(".drag-over").forEach((el) => {
+    el.classList.remove("drag-over");
+  });
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  e.currentTarget.classList.add("drag-over");
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove("drag-over");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove("drag-over");
+
+  const field = e.dataTransfer.getData("text/plain");
+  const source = e.dataTransfer.getData("source");
+  const dropzone = document.getElementById("citationKeyDropzone");
+
+  // Check if field is already in dropzone
+  const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
+  if (existingToken) {
+    return; // Field already in dropzone
+  }
+
+  // Find and move the token
+  const token = document.querySelector(
+    `#${source} .field-token[data-field="${field}"]`
+  );
+  if (token) {
+    // Create a new token for the dropzone with remove button
+    const newToken = createDropzoneToken(field);
+    dropzone.appendChild(newToken);
+
+    // Hide original token
+    token.style.display = "none";
+
+    updatePreview();
+  }
+}
+
+function handleDropToAvailable(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove("drag-over");
+
+  const field = e.dataTransfer.getData("text/plain");
+  const source = e.dataTransfer.getData("source");
+
+  if (source === "citationKeyDropzone") {
+    removeFieldFromDropzone(field);
+  }
+}
+
+function createDropzoneToken(field) {
+  const token = document.createElement("div");
+  token.className = "field-token in-dropzone";
+  token.draggable = true;
+  token.dataset.field = field;
+  token.innerHTML = `${capitalize(field)}<span class="remove-btn" title="Remove">\u00d7</span>`;
+
+  token.addEventListener("dragstart", handleDragStart);
+  token.addEventListener("dragend", handleDragEnd);
+
+  // Remove button click
+  token.querySelector(".remove-btn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    removeFieldFromDropzone(field);
+  });
+
+  return token;
+}
+
+function removeFieldFromDropzone(field) {
+  const dropzone = document.getElementById("citationKeyDropzone");
+  const token = dropzone.querySelector(`[data-field="${field}"]`);
+  if (token) {
+    token.remove();
+  }
+
+  // Show original token in available fields
+  const originalToken = document.querySelector(
+    `#availableFields .field-token[data-field="${field}"]`
+  );
+  if (originalToken) {
+    originalToken.style.display = "";
+  }
+
+  updatePreview();
+}
+
+function getSelectedFields() {
+  const dropzone = document.getElementById("citationKeyDropzone");
+  const tokens = dropzone.querySelectorAll(".field-token");
+  return Array.from(tokens).map((t) => t.dataset.field);
+}
+
+function setSelectedFields(fields) {
+  const dropzone = document.getElementById("citationKeyDropzone");
+
+  // Clear dropzone
+  dropzone.innerHTML = "";
+
+  // Show all available tokens first
+  document.querySelectorAll("#availableFields .field-token").forEach((t) => {
+    t.style.display = "";
+  });
+
+  // Add selected fields to dropzone
+  fields.forEach((field) => {
+    const originalToken = document.querySelector(
+      `#availableFields .field-token[data-field="${field}"]`
+    );
+    if (originalToken) {
+      const newToken = createDropzoneToken(field);
+      dropzone.appendChild(newToken);
+      originalToken.style.display = "none";
+    }
+  });
+
+  updatePreview();
+}
+
+function updatePreview() {
+  const fields = getSelectedFields();
+  const preview = document.getElementById("citationKeyPreview");
+
+  if (fields.length === 0) {
+    preview.textContent = "(select fields)";
+    return;
+  }
+
+  const key = fields.map((f) => sampleValues[f]).join("");
+  preview.textContent = key;
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ------------------------------------- Save/Restore -------------------------------------
 
 // Saves options to chrome.storage
 function saveOptions() {
   var maxResultsInput = document.getElementById("maxResults").value;
   var keyRenaming = document.getElementById("renamingCheckbox").checked;
-  var citationKeyPattern = document.getElementById("citationKeyPattern").value;
+  var citationKeyFields = getSelectedFields();
   var removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
@@ -31,12 +215,18 @@ function saveOptions() {
     return;
   }
 
+  // Validate citation key fields
+  if (keyRenaming && citationKeyFields.length === 0) {
+    updateStatus("Error: Please select at least one field for citation key", 3000);
+    return;
+  }
+
   browser.storage.local.set(
     {
       options: {
         maxResults: maxResults,
         keyRenaming: keyRenaming,
-        citationKeyPattern: citationKeyPattern,
+        citationKeyFields: citationKeyFields,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
       },
     },
@@ -47,14 +237,14 @@ function saveOptions() {
   );
 }
 
-// Restores select box and checkbox state using the preferences stored in local storag
+// Restores select box and checkbox state using the preferences stored in local storage
 function restoreOptions() {
   browser.storage.local.get(
     {
       options: {
         maxResults: 30,
         keyRenaming: true,
-        citationKeyPattern: "author-year-venue",
+        citationKeyFields: ["author", "year", "venue"],
         removeTimestampBiburlBibsource: true,
       },
     },
@@ -62,10 +252,20 @@ function restoreOptions() {
       document.getElementById("maxResults").value = items.options.maxResults;
       document.getElementById("renamingCheckbox").checked =
         items.options.keyRenaming;
-      document.getElementById("citationKeyPattern").value =
-        items.options.citationKeyPattern;
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
+
+      // Handle migration from old format
+      var fields = items.options.citationKeyFields;
+      if (!fields && items.options.citationKeyPattern) {
+        // Convert old pattern to new fields array
+        fields = items.options.citationKeyPattern.split("-");
+      }
+      if (!fields || fields.length === 0) {
+        fields = ["author", "year", "venue"];
+      }
+
+      setSelectedFields(fields);
     }
   );
 }

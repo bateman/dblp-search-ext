@@ -62,6 +62,111 @@ select {
     min-width: 250px;
 }
 
+/* Citation Key Builder - Drag & Drop */
+.citation-key-builder {
+    margin-top: 10px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+}
+
+.field-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: normal;
+}
+
+.fields-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 36px;
+}
+
+.field-token {
+    padding: 6px 12px;
+    background-color: #2e7fca;
+    color: white;
+    border-radius: 4px;
+    cursor: grab;
+    font-size: 13px;
+    user-select: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.field-token:hover {
+    background-color: #0a4da5;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.field-token.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.field-token.in-dropzone {
+    background-color: #28a745;
+}
+
+.field-token .remove-btn {
+    margin-left: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+.field-token .remove-btn:hover {
+    opacity: 1;
+}
+
+.dropzone-area {
+    margin-top: 12px;
+}
+
+.dropzone {
+    min-height: 44px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background-color: white;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.dropzone.drag-over {
+    border-color: #2e7fca;
+    background-color: #e8f4fc;
+}
+
+.dropzone:empty::before {
+    content: "Drop fields here...";
+    color: #aaa;
+    font-style: italic;
+}
+
+.preview-area {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.preview-text {
+    font-family: monospace;
+    font-size: 14px;
+    color: #333;
+    background-color: #fff;
+    padding: 4px 8px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
 button {
     cursor: pointer;
     background: #2e7fca;

@@ -32,13 +32,26 @@
         <label class="optionval" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
         <input type="checkbox" id="renamingCheckbox">
         <br><br>
-        <label class="optionval" for="citationKeyPattern">Citation key pattern:</label>
-        <select id="citationKeyPattern">
-            <option value="author-year-venue">Author + Year + Venue (e.g., calefato2023esem)</option>
-            <option value="author-year-title">Author + Year + Title (e.g., calefato2023option)</option>
-            <option value="venue-author-year">Venue + Author + Year (e.g., esemcalefato2023)</option>
-            <option value="year-author-venue">Year + Author + Venue (e.g., 2023calefatoesem)</option>
-        </select>
+        <label class="optionval">Citation key pattern:</label>
+        <div class="citation-key-builder">
+            <div class="available-fields">
+                <span class="field-label">Available fields:</span>
+                <div id="availableFields" class="fields-container">
+                    <div class="field-token" draggable="true" data-field="author">Author</div>
+                    <div class="field-token" draggable="true" data-field="year">Year</div>
+                    <div class="field-token" draggable="true" data-field="venue">Venue</div>
+                    <div class="field-token" draggable="true" data-field="title">Title</div>
+                </div>
+            </div>
+            <div class="dropzone-area">
+                <span class="field-label">Drag fields here to compose key:</span>
+                <div id="citationKeyDropzone" class="dropzone"></div>
+            </div>
+            <div class="preview-area">
+                <span class="field-label">Preview:</span>
+                <span id="citationKeyPreview" class="preview-text">calefato2023esem</span>
+            </div>
+        </div>
     </div>
 
     <div class="options">
