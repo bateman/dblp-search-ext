@@ -487,8 +487,8 @@ function extractFirstTitleWord(data) {
   title = title.replace(/[{}\\]/g, "");
   var words = title.split(/\s+/).filter(function(w) { return w.length > 0; });
   var skipWords = ["a", "an", "the", "on", "in", "at"];
-  for (var i = 0; i < words.length; i++) {
-    var word = words[i].toLowerCase();
+  for (var wordItem of words) {
+    var word = wordItem.toLowerCase();
     if (skipWords.indexOf(word) === -1 && word.length > 2) {
       return word.replace(/[^a-z0-9]/g, "");
     }
