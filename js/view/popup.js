@@ -604,7 +604,7 @@ function createPaginationControls(
   // Previous button
   const prevButton = document.createElement("button");
   prevButton.className = "pagination-button";
-  prevButton.textContent = "← Previous";
+  prevButton.textContent = "← Prev";
   if (hasPrevPage) {
     prevButton.classList.add("prevPageButton");
   } else {
