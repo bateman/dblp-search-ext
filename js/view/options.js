@@ -4,6 +4,9 @@ import { updateStatus } from "./commons.js";
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 
+// Valid fields whitelist (used for validation throughout)
+const VALID_FIELDS = ["author", "year", "venue", "title"];
+
 // Sample values for preview
 const sampleValues = {
   author: "calefato",
@@ -110,8 +113,7 @@ function handleDropToAvailable(e) {
 
 function createDropzoneToken(field) {
   // Validate field against whitelist
-  const validFields = ["author", "year", "venue", "title"];
-  if (!validFields.includes(field)) {
+  if (!VALID_FIELDS.includes(field)) {
     console.error("Invalid field:", field);
     return null;
   }
@@ -145,8 +147,7 @@ function createDropzoneToken(field) {
 
 function removeFieldFromDropzone(field) {
   // Validate field against whitelist
-  const validFields = ["author", "year", "venue", "title"];
-  if (!validFields.includes(field)) {
+  if (!VALID_FIELDS.includes(field)) {
     return;
   }
 
