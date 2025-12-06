@@ -38,12 +38,15 @@ export class PublicationModel {
         throw new Error(`HTTP error! status: ${this.status}`);
       }
       const data = await response.json();
-      this.totalHits = data.result.hits["@total"];
-      this.sentHits = data.result.hits["@sent"];
-      if (this.totalHits > 0) {
+      this.totalHits = parseInt(data.result.hits["@total"], 10) || 0;
+      this.sentHits = parseInt(data.result.hits["@sent"], 10) || 0;
+      if (this.sentHits > 0 && data.result.hits.hit) {
         const result = this.parsePublications(data.result.hits.hit);
         this.publications = result.publications;
         this.excludedCount = result.excludedCount;
+      } else {
+        this.publications = [];
+        this.excludedCount = 0;
       }
     } catch (error) {
       if (error.name === "AbortError") {

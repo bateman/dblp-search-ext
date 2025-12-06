@@ -201,8 +201,9 @@ img.footer-gh {
 }
 
 .pagination-button:hover:not(:disabled) {
-    background-color: #0a4da5;
+    background-color: #2e7fca;
     border: 1px solid #0a4da5;
+    color: #fdd700;
 }
 
 .pagination-button:disabled {

@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
         totalHits: 0,
         sentHits: 0,
         excludedCount: 0,
-        results: [],
+        publications: [],
         currentOffset: 0,
       },
     });
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
         message.excludedCount
       );
       console.log("Popup.js updating publications table.");
-      updatePublicationsTable(message.resultsTable);
+      buildAndDisplayTable(message.publications);
       updatePaginationControls(
         message.totalHits,
         message.sentHits,
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
         message.totalHits,
         message.sentHits,
         message.excludedCount,
-        message.resultsTable,
+        message.publications,
         message.currentOffset || 0
       );
     }
@@ -187,7 +187,7 @@ function requestClearResults(clearTitle = true) {
     document.getElementById("paperTitle").value = "";
   }
   updatePublicationsCount("RESET", 0, 0, 0);
-  updatePublicationsTable("");
+  clearResultsTable();
   updatePaginationControls(0, 0, 0);
 }
 
@@ -218,46 +218,157 @@ function updatePublicationsCount(
   }
 }
 
-// Update the table with the found publications
-function updatePublicationsTable(tableHTML) {
+// Validate URL to prevent javascript: protocol XSS attacks
+function isValidURL(url) {
+  if (!url || typeof url !== "string") {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+// Clear the results table
+function clearResultsTable() {
+  const results = document.getElementById("results");
+  if (results) {
+    results.textContent = "";
+  }
+}
+
+// Build and display the publications table using DOM methods
+function buildAndDisplayTable(publications) {
   const results = document.getElementById("results");
   if (!results) return;
-
-  if (tableHTML === "") {
-    results.textContent = "";
-    return;
-  }
-
-  // Create a temporary container to safely parse the HTML
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(tableHTML, "text/html");
 
   // Clear existing content
   results.textContent = "";
 
-  // Safely transfer the table content
-  const parsedTable = doc.body.firstChild;
-  if (parsedTable) {
-    // Create a new table element and copy over safe attributes
-    const safeTable = document.createElement(parsedTable.tagName);
-
-    // Copy safe attributes
-    const safeAttributes = ["class", "id", "role"];
-    safeAttributes.forEach((attr) => {
-      if (parsedTable.hasAttribute(attr)) {
-        safeTable.setAttribute(attr, parsedTable.getAttribute(attr));
-      }
-    });
-
-    // Safely clone the table content
-    safeTable.appendChild(parsedTable.cloneNode(true));
-
-    // Add the safe table to the document
-    results.appendChild(safeTable);
-
-    // Add event listeners if needed
-    addCopyBibtexButtonEventListener();
+  if (!publications || publications.length === 0) {
+    return;
   }
+
+  // Create table
+  const table = document.createElement("table");
+  table.id = "results-table";
+  table.className = "table table-striped table-hover";
+
+  // Create header
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  const thTitle = document.createElement("th");
+  thTitle.scope = "col";
+  thTitle.colSpan = 2;
+  thTitle.textContent = "Title";
+  headerRow.appendChild(thTitle);
+
+  const otherHeaders = ["Authors", "Year", "Venue", "DOI", "Access", "BibTeX"];
+  otherHeaders.forEach((headerText) => {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Create body
+  const tbody = document.createElement("tbody");
+  publications.forEach((result) => {
+    const row = document.createElement("tr");
+
+    // Type icon cell
+    const typeCell = document.createElement("td");
+    const typeImg = document.createElement("img");
+    typeImg.className = result.type || "";
+    typeImg.title = result.type || "";
+    typeImg.src = "../images/pub-type.png";
+    typeCell.appendChild(typeImg);
+    row.appendChild(typeCell);
+
+    // Title cell with validated URL
+    const titleCell = document.createElement("td");
+    const titleLink = document.createElement("a");
+    if (isValidURL(result.permaLink)) {
+      titleLink.href = result.permaLink;
+    } else {
+      titleLink.href = "#";
+    }
+    titleLink.target = "_blank";
+    titleLink.title = result.permaLink || "";
+    titleLink.textContent = result.title;
+    titleCell.appendChild(titleLink);
+    row.appendChild(titleCell);
+
+    // Authors cell
+    const authorsCell = document.createElement("td");
+    const authors = Array.isArray(result.authors) ? result.authors : [];
+    authorsCell.textContent = authors.join(", ");
+    row.appendChild(authorsCell);
+
+    // Year cell
+    const yearCell = document.createElement("td");
+    yearCell.textContent = result.year;
+    row.appendChild(yearCell);
+
+    // Venue cell
+    const venueCell = document.createElement("td");
+    venueCell.textContent = result.venue;
+    row.appendChild(venueCell);
+
+    // DOI cell with validated URL
+    const doiCell = document.createElement("td");
+    const doiLink = document.createElement("a");
+    if (isValidURL(result.doiURL)) {
+      doiLink.href = result.doiURL;
+    } else {
+      doiLink.href = "#";
+    }
+    doiLink.target = "_blank";
+    doiLink.textContent = result.doi;
+    doiCell.appendChild(doiLink);
+    row.appendChild(doiCell);
+
+    // Access cell
+    const accessCell = document.createElement("td");
+    accessCell.className = "center";
+    const accessImg = document.createElement("img");
+    accessImg.className = "access";
+    const validAccess = ["open", "closed"].includes(result.access)
+      ? result.access
+      : "closed";
+    accessImg.src = `../images/${validAccess}-access.png`;
+    accessImg.title = `This publication is ${validAccess} access`;
+    accessCell.appendChild(accessImg);
+    row.appendChild(accessCell);
+
+    // BibTeX cell
+    const bibtexCell = document.createElement("td");
+    bibtexCell.className = "center";
+    const bibtexButton = document.createElement("button");
+    bibtexButton.className = "copyBibtexButton";
+    bibtexButton.title = "Copy BibTex";
+    if (isValidURL(result.bibtexLink)) {
+      bibtexButton.dataset.url = result.bibtexLink;
+    }
+    const bibtexImg = document.createElement("img");
+    bibtexImg.src = "../images/copy.png";
+    bibtexButton.appendChild(bibtexImg);
+    bibtexCell.appendChild(bibtexButton);
+    row.appendChild(bibtexCell);
+
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+
+  results.appendChild(table);
+
+  // Add event listeners for copy buttons
+  addCopyBibtexButtonEventListener();
 }
 
 // Load the results from the local storage
@@ -270,20 +381,20 @@ function restoreResultsFromStorage() {
         totalHits: 0,
         sentHits: 0,
         excludedCount: 0,
-        resultsTable: "",
+        publications: [],
         currentOffset: 0,
       },
     },
     function (items) {
       console.log("Restoring results from storage: ", items);
-      if (items.search.resultsTable !== "") {
+      if (items.search.publications && items.search.publications.length > 0) {
         updatePublicationsCount(
           items.search.status,
           items.search.totalHits,
           items.search.sentHits,
           items.search.excludedCount
         );
-        updatePublicationsTable(items.search.resultsTable);
+        buildAndDisplayTable(items.search.publications);
         updatePaginationControls(
           items.search.totalHits,
           items.search.sentHits,
@@ -306,7 +417,7 @@ function saveResultsToStorage(
   totalHits,
   sentHits,
   excludedCount,
-  resultsTable,
+  publications,
   currentOffset
 ) {
   console.log(
@@ -325,7 +436,7 @@ function saveResultsToStorage(
       totalHits: totalHits,
       sentHits: sentHits,
       excludedCount: excludedCount,
-      resultsTable: resultsTable,
+      publications: publications,
       currentOffset: currentOffset,
     },
   });
