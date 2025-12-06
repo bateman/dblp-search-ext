@@ -210,7 +210,12 @@ function updatePreview() {
     return;
   }
 
-  const key = fields.map((f) => sampleValues[f]).join("");
+  // Validate fields and safely access sampleValues using hasOwnProperty
+  const validFields = ["author", "year", "venue", "title"];
+  const key = fields
+    .filter((f) => validFields.includes(f))
+    .map((f) => Object.prototype.hasOwnProperty.call(sampleValues, f) ? sampleValues[f] : "")
+    .join("");
   preview.textContent = key;
 }
 

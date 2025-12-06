@@ -547,8 +547,13 @@ window.copyBibtexToClipboard = function (url) {
             };
 
             // Generate citation key based on selected fields
+            // Validate fields and safely access fieldValues using hasOwnProperty
+            var validFields = ["author", "year", "venue", "title"];
             var newCitationKey = citationKeyFields
-              .map((field) => fieldValues[field] || "")
+              .filter(function(field) { return validFields.indexOf(field) !== -1; })
+              .map(function(field) {
+                return Object.prototype.hasOwnProperty.call(fieldValues, field) ? fieldValues[field] : "";
+              })
               .join("");
 
             // Replace the old citation key with the new one:
