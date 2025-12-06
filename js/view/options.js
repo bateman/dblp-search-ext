@@ -18,11 +18,24 @@ const sampleValues = {
 // ------------------------------------- Listeners -------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("saveButton").addEventListener("click", saveOptions);
+
+  // Toggle drag & drop visibility based on checkbox
+  const renamingCheckbox = document.getElementById("renamingCheckbox");
+  renamingCheckbox.addEventListener("change", toggleDragDropVisibility);
+
   initDragAndDrop();
   restoreOptions();
 });
 
 // ------------------------------------- Drag & Drop -------------------------------------
+
+function toggleDragDropVisibility() {
+  const isEnabled = document.getElementById("renamingCheckbox").checked;
+  const builder = document.querySelector(".citation-key-builder");
+  if (builder) {
+    builder.style.display = isEnabled ? "block" : "none";
+  }
+}
 
 function initDragAndDrop() {
   const availableFields = document.getElementById("availableFields");
@@ -290,6 +303,9 @@ function restoreOptions() {
         items.options.keyRenaming;
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
+
+      // Show/hide drag & drop based on checkbox state
+      toggleDragDropVisibility();
 
       // Handle migration from old format
       var fields = items.options.citationKeyFields;
