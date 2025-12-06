@@ -177,11 +177,14 @@ select {
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid #ddd;
+    text-align: left;
 }
 
 .format-option {
     margin-top: 6px;
+    margin-left: 0;
     display: flex;
+    justify-content: flex-start;
     align-items: center;
     gap: 6px;
 }
