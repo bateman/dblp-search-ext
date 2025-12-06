@@ -94,13 +94,33 @@ function handleDrop(e) {
   const source = e.dataTransfer.getData("source");
   const dropzone = document.getElementById("citationKeyDropzone");
 
-  // Check if field is already in dropzone
+  // Determine insert position based on drop location
+  const insertPosition = getDropPosition(e, dropzone);
+
+  // If dragging within dropzone (reordering)
+  if (source === "citationKeyDropzone") {
+    const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
+    if (existingToken) {
+      // Remove from current position
+      existingToken.remove();
+      // Insert at new position
+      if (insertPosition) {
+        dropzone.insertBefore(existingToken, insertPosition);
+      } else {
+        dropzone.appendChild(existingToken);
+      }
+      updatePreview();
+    }
+    return;
+  }
+
+  // Check if field is already in dropzone (from available fields)
   const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
   if (existingToken) {
     return; // Field already in dropzone
   }
 
-  // Find and move the token
+  // Find and move the token from available fields
   const token = document.querySelector(
     `#${source} .field-token[data-field="${field}"]`
   );
@@ -108,12 +128,30 @@ function handleDrop(e) {
     // Create a new token for the dropzone with remove button
     const newToken = createDropzoneToken(field);
     if (newToken) {
-      dropzone.appendChild(newToken);
+      if (insertPosition) {
+        dropzone.insertBefore(newToken, insertPosition);
+      } else {
+        dropzone.appendChild(newToken);
+      }
       // Hide original token
       token.style.display = "none";
       updatePreview();
     }
   }
+}
+
+// Get the element to insert before based on drop position
+function getDropPosition(e, dropzone) {
+  const tokens = Array.from(dropzone.querySelectorAll(".field-token:not(.dragging)"));
+
+  for (const token of tokens) {
+    const rect = token.getBoundingClientRect();
+    const midpoint = rect.left + rect.width / 2;
+    if (e.clientX < midpoint) {
+      return token;
+    }
+  }
+  return null; // Insert at end
 }
 
 function handleDropToAvailable(e) {

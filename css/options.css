@@ -81,6 +81,7 @@ select {
 
 .fields-container {
     display: flex;
+    flex-direction: row;
     gap: 8px;
     flex-wrap: wrap;
     min-height: 36px;
@@ -104,8 +105,12 @@ select {
 }
 
 .field-token.dragging {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: grabbing;
+}
+
+.dropzone .field-token {
+    cursor: grab;
 }
 
 .field-token.in-dropzone {
@@ -133,6 +138,7 @@ select {
     border-radius: 6px;
     padding: 8px;
     display: flex;
+    flex-direction: row;
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
