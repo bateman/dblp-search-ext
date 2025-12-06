@@ -27,6 +27,5 @@ jobs:
                 addon-guid: dblpSearch@fcalefato.dev
                 xpi-path: build/firefox/dblpSearch-addon-${{ fromJson(env.manifest).version }}.xpi
                 self-hosted: false
-                license: MIT
                 jwt-issuer: ${{ secrets.FIREFOX_API_KEY }}
                 jwt-secret: ${{ secrets.FIREFOX_API_SECRET }}
