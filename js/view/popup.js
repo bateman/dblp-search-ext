@@ -538,22 +538,26 @@ window.copyBibtexToClipboard = function (url) {
               }
             }
 
-            // Build field values map
-            var fieldValues = {
-              author: name.toLowerCase(),
-              year: year,
-              venue: venue,
-              title: firstTitleWord,
-            };
+            // Build field values
+            var authorValue = name.toLowerCase();
+            var yearValue = year;
+            var venueValue = venue;
+            var titleValue = firstTitleWord;
+
+            // Safe getter to avoid dynamic property access (object injection)
+            function getFieldValue(f) {
+              switch (f) {
+                case "author": return authorValue;
+                case "year": return yearValue;
+                case "venue": return venueValue;
+                case "title": return titleValue;
+                default: return "";
+              }
+            }
 
             // Generate citation key based on selected fields
-            // Validate fields and safely access fieldValues using hasOwnProperty
-            var validFields = ["author", "year", "venue", "title"];
             var newCitationKey = citationKeyFields
-              .filter(function(field) { return validFields.indexOf(field) !== -1; })
-              .map(function(field) {
-                return Object.prototype.hasOwnProperty.call(fieldValues, field) ? fieldValues[field] : "";
-              })
+              .map(function(f) { return getFieldValue(f); })
               .join("");
 
             // Replace the old citation key with the new one:

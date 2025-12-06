@@ -201,6 +201,17 @@ function setSelectedFields(fields) {
   updatePreview();
 }
 
+// Safe getter to avoid dynamic property access (object injection)
+function getSampleValue(field) {
+  switch (field) {
+    case "author": return sampleValues.author;
+    case "year": return sampleValues.year;
+    case "venue": return sampleValues.venue;
+    case "title": return sampleValues.title;
+    default: return "";
+  }
+}
+
 function updatePreview() {
   const fields = getSelectedFields();
   const preview = document.getElementById("citationKeyPreview");
@@ -210,12 +221,7 @@ function updatePreview() {
     return;
   }
 
-  // Validate fields and safely access sampleValues using hasOwnProperty
-  const validFields = ["author", "year", "venue", "title"];
-  const key = fields
-    .filter((f) => validFields.includes(f))
-    .map((f) => Object.prototype.hasOwnProperty.call(sampleValues, f) ? sampleValues[f] : "")
-    .join("");
+  const key = fields.map((f) => getSampleValue(f)).join("");
   preview.textContent = key;
 }
 
