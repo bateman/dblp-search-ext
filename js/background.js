@@ -13,6 +13,18 @@ const model = new PublicationModel();
 const view = new PublicationView();
 const controller = new PublicationController(model, view);
 
+// Helper function to handle message errors consistently
+function handleMessageError(error, message, sendResponse) {
+  console.error(
+    `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
+  );
+  sendResponse({
+    script: "background.js",
+    success: false,
+    error: error.message || "Unknown error occurred",
+  });
+}
+
 //  Add a listener for messages from the view
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
@@ -32,17 +44,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             response: `Search for '${message.query}' completed.`,
           });
         })
-        .catch((error) => {
-          console.error(
-            `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
-          );
-          sendResponse({
-            script: "background.js",
-            success: false,
-            error: error.message || "Unknown error occurred",
-            response: `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`,
-          });
-        });
+        .catch((error) => handleMessageError(error, message, sendResponse));
       return true; // Will respond asynchronously
     } else if (message.type === "REQUEST_NEXT_PAGE") {
       controller
@@ -57,16 +59,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             response: "Next page loaded.",
           });
         })
-        .catch((error) => {
-          console.error(
-            `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
-          );
-          sendResponse({
-            script: "background.js",
-            success: false,
-            error: error.message || "Unknown error occurred",
-          });
-        });
+        .catch((error) => handleMessageError(error, message, sendResponse));
       return true;
     } else if (message.type === "REQUEST_PREVIOUS_PAGE") {
       controller
@@ -81,27 +74,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             response: "Previous page loaded.",
           });
         })
-        .catch((error) => {
-          console.error(
-            `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
-          );
-          sendResponse({
-            script: "background.js",
-            success: false,
-            error: error.message || "Unknown error occurred",
-          });
-        });
+        .catch((error) => handleMessageError(error, message, sendResponse));
       return true;
     }
   } catch (error) {
-    console.error(
-      `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
-    );
-    sendResponse({
-      script: "background.js",
-      success: false,
-      error: error.message || "Unknown error occurred",
-    });
+    handleMessageError(error, message, sendResponse);
   }
   return false;
 });
