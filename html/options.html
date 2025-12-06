@@ -31,6 +31,38 @@
         <br>
         <label class="optionval" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
         <input type="checkbox" id="renamingCheckbox">
+        <br><br>
+        <label class="optionval">Citation key pattern:</label>
+        <div class="citation-key-builder">
+            <div class="available-fields">
+                <span class="field-label">Available fields:</span>
+                <div id="availableFields" class="fields-container">
+                    <div class="field-token" draggable="true" data-field="author">Author</div>
+                    <div class="field-token" draggable="true" data-field="year">Year</div>
+                    <div class="field-token" draggable="true" data-field="venue">Venue</div>
+                    <div class="field-token" draggable="true" data-field="title">Title</div>
+                </div>
+            </div>
+            <div class="dropzone-area">
+                <span class="field-label">Drag fields here to compose key:</span>
+                <div id="citationKeyDropzone" class="dropzone"></div>
+            </div>
+            <div class="preview-area">
+                <span class="field-label">Preview:</span>
+                <span id="citationKeyPreview" class="preview-text">calefato2023esem</span>
+            </div>
+            <div class="format-options">
+                <span class="field-label">Formatting options:</span>
+                <div class="format-option">
+                    <input type="checkbox" id="authorCapitalize">
+                    <label for="authorCapitalize">Capitalize first letter of author name</label>
+                </div>
+                <div class="format-option">
+                    <input type="checkbox" id="venueUppercase">
+                    <label for="venueUppercase">Venue in uppercase</label>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="options">

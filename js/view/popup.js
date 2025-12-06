@@ -469,10 +469,25 @@ window.copyBibtexToClipboard = function (url) {
         {
           options: {
             keyRenaming: true,
+            citationKeyFields: ["author", "year", "venue"],
+            authorCapitalize: false,
+            venueUppercase: false,
           },
         },
         function (items) {
           var keyRenaming = items.options.keyRenaming;
+          var citationKeyFields = items.options.citationKeyFields;
+          var authorCapitalize = items.options.authorCapitalize;
+          var venueUppercase = items.options.venueUppercase;
+
+          // Handle migration from old format
+          if (!citationKeyFields && items.options.citationKeyPattern) {
+            citationKeyFields = items.options.citationKeyPattern.split("-");
+          }
+          if (!citationKeyFields || citationKeyFields.length === 0) {
+            citationKeyFields = ["author", "year", "venue"];
+          }
+
           if (keyRenaming) {
             // Rename the citation key
             var keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
@@ -497,7 +512,59 @@ window.copyBibtexToClipboard = function (url) {
               return;
             }
             var year = yearMatch[1];
-            var newCitationKey = name.toLowerCase() + year + venue;
+
+            // Extract first word of title (for title field)
+            var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
+            var firstTitleWord = "";
+            if (titleMatch) {
+              // Get the title text, remove special characters and get first word
+              var title = titleMatch[1];
+              // Remove LaTeX commands and special characters
+              title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
+              title = title.replace(/[{}\\]/g, "");
+              // Extract first significant word (skip common articles)
+              var words = title.split(/\s+/).filter((w) => w.length > 0);
+              for (const wordItem of words) {
+                var word = wordItem.toLowerCase();
+                // Skip common articles and prepositions
+                if (
+                  word !== "a" &&
+                  word !== "an" &&
+                  word !== "the" &&
+                  word !== "on" &&
+                  word !== "in" &&
+                  word !== "at" &&
+                  word.length > 2
+                ) {
+                  firstTitleWord = word.replace(/[^a-z0-9]/g, "");
+                  break;
+                }
+              }
+            }
+
+            // Build field values with formatting options
+            var authorValue = name.toLowerCase();
+            if (authorCapitalize) {
+              authorValue = authorValue.charAt(0).toUpperCase() + authorValue.slice(1);
+            }
+            var yearValue = year;
+            var venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
+            var titleValue = firstTitleWord;
+
+            // Generate citation key based on selected fields
+            // Using inline switch to avoid function declaration inside block
+            var newCitationKey = citationKeyFields
+              .map(function(f) {
+                switch (f) {
+                  case "author": return authorValue;
+                  case "year": return yearValue;
+                  case "venue": return venueValue;
+                  case "title": return titleValue;
+                  default: return "";
+                }
+              })
+              .join("");
+
             // Replace the old citation key with the new one:
             // specifically, replace all the text from DBLP until the first comma (excluded)
             // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."
