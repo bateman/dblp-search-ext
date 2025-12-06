@@ -452,6 +452,81 @@ function addCopyBibtexButtonEventListener() {
   });
 }
 
+// ------------------------------------- BibTeX Helper Functions -------------------------------------
+
+// Extract author name from DBLP citation key
+function extractAuthorFromKey(key) {
+  var name = key.split("/")[2].replace(",", "");
+  name = name.replace(/\d+/g, "");
+  name = name.replace(/[A-Z]+$/, "");
+  return name;
+}
+
+// Extract venue from DBLP citation key
+function extractVenueFromKey(key) {
+  return key.split("/")[1];
+}
+
+// Extract year from BibTeX data
+function extractYearFromBibtex(data) {
+  var yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
+  if (!yearMatch || yearMatch.length < 2) {
+    return null;
+  }
+  return yearMatch[1];
+}
+
+// Extract first significant word from title
+function extractFirstTitleWord(data) {
+  var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
+  if (!titleMatch) {
+    return "";
+  }
+  var title = titleMatch[1];
+  title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
+  title = title.replace(/[{}\\]/g, "");
+  var words = title.split(/\s+/).filter(function(w) { return w.length > 0; });
+  var skipWords = ["a", "an", "the", "on", "in", "at"];
+  for (var i = 0; i < words.length; i++) {
+    var word = words[i].toLowerCase();
+    if (skipWords.indexOf(word) === -1 && word.length > 2) {
+      return word.replace(/[^a-z0-9]/g, "");
+    }
+  }
+  return "";
+}
+
+// Build citation key from fields and options
+function buildCitationKey(fields, author, year, venue, title, authorCapitalize, venueUppercase) {
+  var authorValue = author.toLowerCase();
+  if (authorCapitalize) {
+    authorValue = authorValue.charAt(0).toUpperCase() + authorValue.slice(1);
+  }
+  var venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
+
+  return fields.map(function(f) {
+    switch (f) {
+      case "author": return authorValue;
+      case "year": return year;
+      case "venue": return venueValue;
+      case "title": return title;
+      default: return "";
+    }
+  }).join("");
+}
+
+// Clean BibTeX by removing metadata fields
+function cleanBibtexMetadata(data) {
+  data = data.replace(/\s*timestamp\s*=\s*\{[^}]*\},[\s\n]*/g, "");
+  data = data.replace(/\s*biburl\s*=\s*\{[^}]*\},[\s\n]*/g, "");
+  data = data.replace(/\s*bibsource\s*=\s*\{[^}]*\}[\s\n,]*/g, "");
+  data = data.replace(/,(\s*})\s*$/, "\n}");
+  data = data.replace(/\n\s*\n/g, "\n");
+  return data;
+}
+
+// ------------------------------------- Copy BibTeX -------------------------------------
+
 // Copy the BibTeX to the clipboard
 window.copyBibtexToClipboard = function (url) {
   const controller = new AbortController();
@@ -489,7 +564,6 @@ window.copyBibtexToClipboard = function (url) {
           }
 
           if (keyRenaming) {
-            // Rename the citation key
             var keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
             if (!keyMatch || keyMatch.length < 1) {
               console.error("Could not find the citation key in the BibTeX");
@@ -497,93 +571,27 @@ window.copyBibtexToClipboard = function (url) {
               return;
             }
             var key = keyMatch[0];
-            var venue = key.split("/")[1];
-            var name = key.split("/")[2].replace(",", "");
-            // Remove all digits from name
-            name = name.replace(/\d+/g, "");
-            // Starting from the end, remove all Capital letters from name
-            // stop at the first non-capital letter
-            name = name.replace(/[A-Z]+$/, "");
-            // extract the year from a string like this: "year = {2020},"
-            var yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
-            if (!yearMatch || yearMatch.length < 2) {
+            var author = extractAuthorFromKey(key);
+            var venue = extractVenueFromKey(key);
+            var year = extractYearFromBibtex(data);
+            if (!year) {
               console.error("Could not find the year in the BibTeX");
               updateStatus("Error: Invalid BibTeX format (missing year)", 3000);
               return;
             }
-            var year = yearMatch[1];
-
-            // Extract first word of title (for title field)
-            var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
-            var firstTitleWord = "";
-            if (titleMatch) {
-              // Get the title text, remove special characters and get first word
-              var title = titleMatch[1];
-              // Remove LaTeX commands and special characters
-              title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
-              title = title.replace(/[{}\\]/g, "");
-              // Extract first significant word (skip common articles)
-              var words = title.split(/\s+/).filter((w) => w.length > 0);
-              for (const wordItem of words) {
-                var word = wordItem.toLowerCase();
-                // Skip common articles and prepositions
-                if (
-                  word !== "a" &&
-                  word !== "an" &&
-                  word !== "the" &&
-                  word !== "on" &&
-                  word !== "in" &&
-                  word !== "at" &&
-                  word.length > 2
-                ) {
-                  firstTitleWord = word.replace(/[^a-z0-9]/g, "");
-                  break;
-                }
-              }
-            }
-
-            // Build field values with formatting options
-            var authorValue = name.toLowerCase();
-            if (authorCapitalize) {
-              authorValue = authorValue.charAt(0).toUpperCase() + authorValue.slice(1);
-            }
-            var yearValue = year;
-            var venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
-            var titleValue = firstTitleWord;
-
-            // Generate citation key based on selected fields
-            // Using inline switch to avoid function declaration inside block
-            var newCitationKey = citationKeyFields
-              .map(function(f) {
-                switch (f) {
-                  case "author": return authorValue;
-                  case "year": return yearValue;
-                  case "venue": return venueValue;
-                  case "title": return titleValue;
-                  default: return "";
-                }
-              })
-              .join("");
-
-            // Replace the old citation key with the new one:
-            // specifically, replace all the text from DBLP until the first comma (excluded)
-            // for example, "@inproceedings{DBLP:conf/esem/CalefatoQLK23,..."
-            // becomes "@inproceedings{calefato2023esem,..."
+            var title = extractFirstTitleWord(data);
+            var newCitationKey = buildCitationKey(
+              citationKeyFields, author, year, venue, title,
+              authorCapitalize, venueUppercase
+            );
             data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ",");
           }
-          // Remove timestamp, biburl, and bibsource fields including trailing comma and whitespace
-          var removeTimestampBiburlBibsource =
-            items.options.removeTimestampBiburlBibsource;
-          if (removeTimestampBiburlBibsource) {
-            data = data.replace(/\s*timestamp\s*=\s*\{[^}]*\},[\s\n]*/g, "");
-            data = data.replace(/\s*biburl\s*=\s*\{[^}]*\},[\s\n]*/g, "");
-            data = data.replace(/\s*bibsource\s*=\s*\{[^}]*\}[\s\n,]*/g, "");
+
+          if (items.options.removeTimestampBiburlBibsource) {
+            data = cleanBibtexMetadata(data);
           }
-          // Remove trailing comma from last field and add newline before closing brace
-          data = data.replace(/,(\s*})\s*$/, "\n}");
-          // Fix any remaining multiple newlines
-          data = data.replace(/\n\s*\n/g, "\n");
-          navigator.clipboard.writeText(data).catch((err) => {
+
+          navigator.clipboard.writeText(data).catch(function(err) {
             console.error("Could not copy BibTeX to clipboard: ", err);
           });
         }
