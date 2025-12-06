@@ -15,6 +15,11 @@ const controller = new PublicationController(model, view);
 
 //  Add a listener for messages from the view
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Ignore messages not meant for background.js
+  if (!message.type || !message.type.startsWith("REQUEST_")) {
+    return false;
+  }
+
   try {
     if (message.type === "REQUEST_SEARCH_PUBLICATIONS") {
       // handleSearch returns a promise, so we need to return true to indicate
