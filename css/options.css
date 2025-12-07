@@ -45,23 +45,8 @@ label {
     color: #000000;
 }
 
-input[type="text"] {
-    flex: 1;
-    width: 250px;
-}
-
 input[type="checkbox"] {
     vertical-align: middle;
-}
-
-select {
-    padding: 5px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: white;
-    cursor: pointer;
-    min-width: 250px;
 }
 
 /* Citation Key Builder - Drag & Drop */
@@ -71,14 +56,6 @@ select {
     border: 1px solid #ddd;
     border-radius: 6px;
     background-color: #f9f9f9;
-}
-
-.field-label {
-    display: block;
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 5px;
-    font-weight: bold;
 }
 
 .fields-container {
@@ -177,11 +154,6 @@ select {
     flex-direction: row;
     align-items: center;
     gap: 8px;
-}
-
-.preview-area .field-label {
-    display: inline;
-    margin-bottom: 0;
 }
 
 .preview-text {
