@@ -205,8 +205,8 @@ build/all:  ## Build all extensions
 
 #-- Release
 
-.PHONY: tag
-tag: | dep/git  ## Create a git tag from the current manifest version
+.PHONY: tag/apply
+tag/apply: | dep/git  ## Create and apply tag from current manifest version
 	@$(eval TAG := v$(APP_VERSION))
 	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
 		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
