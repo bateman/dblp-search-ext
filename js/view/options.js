@@ -41,8 +41,12 @@ document.addEventListener("DOMContentLoaded", function () {
 function toggleDragDropVisibility() {
   const isEnabled = document.getElementById("renamingCheckbox").checked;
   const builder = document.querySelector(".citation-key-builder");
+  const label = document.getElementById("citationKeyPatternLabel");
   if (builder) {
     builder.style.display = isEnabled ? "block" : "none";
+  }
+  if (label) {
+    label.style.display = isEnabled ? "inline-block" : "none";
   }
 }
 
