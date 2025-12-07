@@ -6,6 +6,11 @@ console.log("options.js loaded");
 
 // Valid fields whitelist (used for validation throughout)
 const VALID_FIELDS = ["author", "year", "venue", "title"];
+const VALID_SEPARATORS = ["dash", "underscore"];
+const ALL_VALID_TOKENS = [...VALID_FIELDS, ...VALID_SEPARATORS];
+
+// Counter for unique separator IDs
+let separatorCounter = 0;
 
 // Sample values for preview
 const sampleValues = {
@@ -67,6 +72,10 @@ function handleDragStart(e) {
   e.dataTransfer.effectAllowed = "move";
   e.dataTransfer.setData("text/plain", e.target.dataset.field);
   e.dataTransfer.setData("source", e.target.parentElement.id);
+  // Include tokenId for separators to enable reordering
+  if (e.target.dataset.tokenId) {
+    e.dataTransfer.setData("tokenId", e.target.dataset.tokenId);
+  }
 }
 
 function handleDragEnd(e) {
@@ -92,14 +101,18 @@ function handleDrop(e) {
 
   const field = e.dataTransfer.getData("text/plain");
   const source = e.dataTransfer.getData("source");
+  const tokenId = e.dataTransfer.getData("tokenId");
   const dropzone = document.getElementById("citationKeyDropzone");
+  const isSeparator = VALID_SEPARATORS.includes(field);
 
   // Determine insert position based on drop location
   const insertPosition = getDropPosition(e, dropzone);
 
   // If dragging within dropzone (reordering)
   if (source === "citationKeyDropzone") {
-    const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
+    const existingToken = tokenId
+      ? dropzone.querySelector(`[data-token-id="${tokenId}"]`)
+      : dropzone.querySelector(`[data-field="${field}"]`);
     if (existingToken) {
       // Remove from current position
       existingToken.remove();
@@ -114,27 +127,32 @@ function handleDrop(e) {
     return;
   }
 
-  // Check if field is already in dropzone (from available fields)
-  const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
-  if (existingToken) {
-    return; // Field already in dropzone
+  // For separators, always allow adding (they can be used multiple times)
+  // For regular fields, check if already in dropzone
+  if (!isSeparator) {
+    const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
+    if (existingToken) {
+      return; // Field already in dropzone
+    }
   }
 
-  // Find and move the token from available fields
+  // Find the token from available fields
   const token = document.querySelector(
     `#${source} .field-token[data-field="${field}"]`
   );
   if (token) {
     // Create a new token for the dropzone with remove button
-    const newToken = createDropzoneToken(field);
+    const newToken = createDropzoneToken(field, isSeparator);
     if (newToken) {
       if (insertPosition) {
         dropzone.insertBefore(newToken, insertPosition);
       } else {
         dropzone.appendChild(newToken);
       }
-      // Hide original token
-      token.style.display = "none";
+      // Hide original token only for non-separators
+      if (!isSeparator) {
+        token.style.display = "none";
+      }
       updatePreview();
     }
   }
@@ -160,26 +178,36 @@ function handleDropToAvailable(e) {
 
   const field = e.dataTransfer.getData("text/plain");
   const source = e.dataTransfer.getData("source");
+  const tokenId = e.dataTransfer.getData("tokenId");
+  const isSeparator = VALID_SEPARATORS.includes(field);
 
   if (source === "citationKeyDropzone") {
-    removeFieldFromDropzone(field);
+    removeFieldFromDropzone(field, tokenId, isSeparator);
   }
 }
 
-function createDropzoneToken(field) {
+function createDropzoneToken(field, isSeparator = false) {
   // Validate field against whitelist
-  if (!VALID_FIELDS.includes(field)) {
+  if (!ALL_VALID_TOKENS.includes(field)) {
     console.error("Invalid field:", field);
     return null;
   }
 
   const token = document.createElement("div");
   token.className = "field-token in-dropzone";
+  if (isSeparator) {
+    token.classList.add("separator-token");
+  }
   token.draggable = true;
   token.dataset.field = field;
 
+  // Assign unique tokenId for separators to enable multiple instances
+  const tokenId = isSeparator ? `${field}-${separatorCounter++}` : field;
+  token.dataset.tokenId = tokenId;
+
   // Use safe DOM methods instead of innerHTML to prevent XSS
-  const textNode = document.createTextNode(capitalize(field));
+  const displayText = getSeparatorDisplay(field);
+  const textNode = document.createTextNode(displayText);
   token.appendChild(textNode);
 
   const removeBtn = document.createElement("span");
@@ -191,33 +219,50 @@ function createDropzoneToken(field) {
   token.addEventListener("dragstart", handleDragStart);
   token.addEventListener("dragend", handleDragEnd);
 
-  // Remove button click
+  // Remove button click - use tokenId for separators
   removeBtn.addEventListener("click", function (e) {
     e.stopPropagation();
-    removeFieldFromDropzone(field);
+    removeFieldFromDropzone(field, tokenId, isSeparator);
   });
 
   return token;
 }
 
-function removeFieldFromDropzone(field) {
+// Get display text for a field
+function getSeparatorDisplay(field) {
+  switch (field) {
+    case "dash": return "-";
+    case "underscore": return "_";
+    default: return capitalize(field);
+  }
+}
+
+function removeFieldFromDropzone(field, tokenId = null, isSeparator = false) {
   // Validate field against whitelist
-  if (!VALID_FIELDS.includes(field)) {
+  if (!ALL_VALID_TOKENS.includes(field)) {
     return;
   }
 
   const dropzone = document.getElementById("citationKeyDropzone");
-  const token = dropzone.querySelector(`[data-field="${field}"]`);
+
+  // For separators, use tokenId to find the specific instance
+  // For regular fields, use field name
+  const token = tokenId
+    ? dropzone.querySelector(`[data-token-id="${tokenId}"]`)
+    : dropzone.querySelector(`[data-field="${field}"]`);
+
   if (token) {
     token.remove();
   }
 
-  // Show original token in available fields
-  const originalToken = document.querySelector(
-    `#availableFields .field-token[data-field="${field}"]`
-  );
-  if (originalToken) {
-    originalToken.style.display = "";
+  // Show original token in available fields only for non-separators
+  if (!isSeparator) {
+    const originalToken = document.querySelector(
+      `#availableFields .field-token[data-field="${field}"]`
+    );
+    if (originalToken) {
+      originalToken.style.display = "";
+    }
   }
 
   updatePreview();
@@ -235,21 +280,28 @@ function setSelectedFields(fields) {
   // Clear dropzone
   dropzone.innerHTML = "";
 
-  // Show all available tokens first
+  // Reset separator counter
+  separatorCounter = 0;
+
+  // Show all available tokens first (only non-separators get hidden)
   document.querySelectorAll("#availableFields .field-token").forEach((t) => {
     t.style.display = "";
   });
 
   // Add selected fields to dropzone
   fields.forEach((field) => {
+    const isSeparator = VALID_SEPARATORS.includes(field);
     const originalToken = document.querySelector(
       `#availableFields .field-token[data-field="${field}"]`
     );
     if (originalToken) {
-      const newToken = createDropzoneToken(field);
+      const newToken = createDropzoneToken(field, isSeparator);
       if (newToken) {
         dropzone.appendChild(newToken);
-        originalToken.style.display = "none";
+        // Only hide original for non-separators
+        if (!isSeparator) {
+          originalToken.style.display = "none";
+        }
       }
     }
   });
@@ -264,6 +316,8 @@ function getSampleValue(field) {
     case "year": return sampleValues.year;
     case "venue": return sampleValues.venue;
     case "title": return sampleValues.title;
+    case "dash": return "-";
+    case "underscore": return "_";
     default: return "";
   }
 }

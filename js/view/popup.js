@@ -510,6 +510,8 @@ function buildCitationKey(fields, author, year, venue, title, authorCapitalize, 
       case "year": return year;
       case "venue": return venueValue;
       case "title": return title;
+      case "dash": return "-";
+      case "underscore": return "_";
       default: return "";
     }
   }).join("");

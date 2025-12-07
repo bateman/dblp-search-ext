@@ -119,6 +119,16 @@ select {
     background-color: #28a745;
 }
 
+.field-token.separator-token {
+    background-color: #6c757d;
+    min-width: 30px;
+    text-align: center;
+}
+
+.field-token.separator-token:hover {
+    background-color: #5a6268;
+}
+
 .field-token .remove-btn {
     margin-left: 6px;
     cursor: pointer;
