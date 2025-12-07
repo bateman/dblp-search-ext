@@ -174,15 +174,14 @@ select {
 }
 
 .format-options {
-    margin-top: 12px;
+    margin: 12px 0 0 0;
     padding-top: 10px;
     border-top: 1px solid #ddd;
     text-align: left;
 }
 
 .format-option {
-    margin-top: 6px;
-    margin-left: 0;
+    margin: 6px 0 0 0;
     display: flex;
     justify-content: flex-start;
     align-items: center;
