@@ -75,10 +75,10 @@ select {
 
 .field-label {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     color: #666;
     margin-bottom: 5px;
-    font-weight: normal;
+    font-weight: bold;
 }
 
 .fields-container {
@@ -186,8 +186,8 @@ select {
 
 .preview-text {
     font-family: monospace;
-    font-size: 14px;
-    color: #333;
+    font-size: 13px;
+    color: #444343;
     background-color: #fff;
     padding: 4px 8px;
     border-radius: 3px;
@@ -196,6 +196,7 @@ select {
 
 .format-options {
     margin: 12px 0 0 0;
+    margin-left: 20px;
     padding-top: 10px;
     border-top: 1px solid #ddd;
 }
