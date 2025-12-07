@@ -177,24 +177,6 @@ select {
     margin: 12px 0 0 0;
     padding-top: 10px;
     border-top: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.format-option {
-    margin: 6px 0 0 0;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 6px;
-}
-
-.format-option label {
-    font-weight: normal;
-    font-size: 13px;
-    color: #333;
-    cursor: pointer;
 }
 
 button {
