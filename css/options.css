@@ -32,6 +32,8 @@ label {
 
 .option {
     color: #0a4da5;
+    display: inline-block;
+    margin-bottom: 5px;
 }
 
 .optiondesc {
@@ -161,6 +163,15 @@ select {
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid #ddd;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-area .field-label {
+    display: inline;
+    margin-bottom: 0;
 }
 
 .preview-text {
