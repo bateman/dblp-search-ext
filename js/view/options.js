@@ -16,7 +16,7 @@ let separatorCounter = 0;
 const sampleValues = {
   author: "author",
   year: new Date().getFullYear().toString(),
-  venue: "esem",
+  venue: "venue",
   title: "title",
 };
 
