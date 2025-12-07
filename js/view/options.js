@@ -14,10 +14,10 @@ let separatorCounter = 0;
 
 // Sample values for preview
 const sampleValues = {
-  author: "calefato",
-  year: "2023",
+  author: "author",
+  year: new Date().getFullYear().toString(),
   venue: "esem",
-  title: "option",
+  title: "title",
 };
 
 // ------------------------------------- Listeners -------------------------------------
