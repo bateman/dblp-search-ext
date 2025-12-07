@@ -99,15 +99,22 @@ function handleDragLeave(e) {
   e.currentTarget.classList.remove("drag-over");
 }
 
-function handleDrop(e) {
+function extractDropData(e) {
   e.preventDefault();
   e.currentTarget.classList.remove("drag-over");
 
   const field = e.dataTransfer.getData("text/plain");
-  const source = e.dataTransfer.getData("source");
-  const tokenId = e.dataTransfer.getData("tokenId");
+  return {
+    field,
+    source: e.dataTransfer.getData("source"),
+    tokenId: e.dataTransfer.getData("tokenId"),
+    isSeparator: VALID_SEPARATORS.includes(field),
+  };
+}
+
+function handleDrop(e) {
+  const { field, source, tokenId, isSeparator } = extractDropData(e);
   const dropzone = document.getElementById("citationKeyDropzone");
-  const isSeparator = VALID_SEPARATORS.includes(field);
 
   // Determine insert position based on drop location
   const insertPosition = getDropPosition(e, dropzone);
@@ -177,13 +184,7 @@ function getDropPosition(e, dropzone) {
 }
 
 function handleDropToAvailable(e) {
-  e.preventDefault();
-  e.currentTarget.classList.remove("drag-over");
-
-  const field = e.dataTransfer.getData("text/plain");
-  const source = e.dataTransfer.getData("source");
-  const tokenId = e.dataTransfer.getData("tokenId");
-  const isSeparator = VALID_SEPARATORS.includes(field);
+  const { field, source, tokenId, isSeparator } = extractDropData(e);
 
   if (source === "citationKeyDropzone") {
     removeFieldFromDropzone(field, tokenId, isSeparator);
