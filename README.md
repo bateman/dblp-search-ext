@@ -67,15 +67,19 @@ A simple cross-browser extension to ease the process of searching publications o
 
 Contributions are welcome! Please submit a pull request or create an issue to contribute to this project.
 
-### Instructions
+### Build Commands
 
-#### Building the extension
+```bash
+make build/chrome      # Build Chrome extension ZIP
+make build/firefox     # Build Firefox XPI addon
+make build/safari      # Build Safari app-extension (macOS + Xcode required)
+make build/edge        # Build Edge extension (same as Chrome)
+make build/all         # Build all extensions
+make build/clean       # Clean build directory and stamps
+```
 
-1. Open your terminal to the project directory.
-2. Run the `make build/all` command to build Chrome, Firefox, and Safari extensions. This will create each build in the `build/` directory.
-
-> [!NOTE] 
-> Safari build will start only on macOS, if XCode is installed.
+> [!NOTE]
+> Safari build will start only on macOS, if Xcode is installed.
 
 ### Manual installation
 
@@ -99,17 +103,31 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 
 3. Navigate to the `build/firefox` directory in your project folder and select it.
 
-### Running the extension from terminal
+### Development Commands
 
-Make sure your browser is not running before executing any of these commands.
-
-* **Chrome**: `make run/chrome`
-* **Edge**: `make run/edge`
-* **Firefox**: `make run/firefox`
+```bash
+make run/chrome        # Launch Chrome with extension loaded (dev mode)
+make run/firefox       # Launch Firefox Dev Edition with extension
+make run/safari        # Launch Safari with extension
+make run/edge          # Launch Edge with extension
+make info              # Show development environment info
+```
 
 > [!NOTE]
+> * Browser must not be running before executing `make run/*` commands
 > * Unlike Chrome, Edge does not run in development mode
-> * For Firefox, the script assumes you have [Firefox Developer Edition](https://www.mozilla.org/it/firefox/developer) installed. You can easily change the name to `Firefox` in the `make` script; it also requires `web-ext` to be installed. 
+> * For Firefox, the script assumes you have [Firefox Developer Edition](https://www.mozilla.org/it/firefox/developer) installed. You can easily change the name to `Firefox` in the `make` script; it also requires `web-ext` to be installed.
+
+### Release Workflow
+
+```bash
+make tag/patch         # Bump patch version (1.0.0 -> 1.0.1)
+make tag/minor         # Bump minor version (1.0.0 -> 1.1.0)
+make tag/major         # Bump major version (1.0.0 -> 2.0.0)
+make tag/push          # Push to origin (triggers CI/CD release to stores)
+```
+
+Version is stored in `manifest.json` and synced to `manifest.firefox.json`. 
 
 ## Donations
 
