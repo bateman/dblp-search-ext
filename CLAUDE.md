@@ -36,6 +36,55 @@ popup.js ← view.js ← controller.js ← model.js (observer pattern)
 - `options` - User preferences (maxResults, keyRenaming, field removal settings)
 - `search` - Persisted search state (query, results, pagination)
 
+## Browser Differences
+
+- `manifest.json` - Used for Chrome, Edge, Safari
+- `manifest.firefox.json` - Firefox-specific, includes `browser_specific_settings.gecko`
+
+The build process swaps manifests automatically. Both must be kept in sync for version and permissions.
+
+## DBLP API
+
+**Endpoint**: `https://dblp.org/search/publ/api`
+
+**Parameters**:
+- `q` - Search query
+- `format=json` - Response format
+- `h` - Max results (hits) to return
+- `f` - Offset for pagination
+
+## Adding New Options
+
+To add a new user-configurable option:
+
+1. **html/options.html** - Add checkbox/input element with unique `id`
+2. **js/view/options.js**:
+   - `saveOptions()` - Read element value and add to storage object
+   - `restoreOptions()` - Add default value and restore element state
+3. **js/view/popup.js** - Read option from storage where needed, include default value
+
+Always provide default values in every `storage.local.get()` call.
+
+## Common Code Patterns
+
+**Storage access with defaults**:
+```javascript
+browser.storage.local.get(
+  { options: { optionName: defaultValue } },
+  function(items) {
+    var value = items.options.optionName;
+  }
+);
+```
+
+**Safe DOM element creation**:
+```javascript
+const el = document.createElement("div");
+el.textContent = userContent;  // Never use innerHTML
+el.className = "safe-class";
+parent.appendChild(el);
+```
+
 ## Code Quality & Security
 
 Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these practices to maintain grades:

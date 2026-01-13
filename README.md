@@ -127,7 +127,25 @@ make tag/major         # Bump major version (1.0.0 -> 2.0.0)
 make tag/push          # Push to origin (triggers CI/CD release to stores)
 ```
 
-Version is stored in `manifest.json` and synced to `manifest.firefox.json`. 
+Version is stored in `manifest.json` and synced to `manifest.firefox.json`.
+
+### Testing
+
+No automated test suite. Testing is manual:
+
+1. Run `make run/chrome` (or firefox/safari/edge)
+2. Test the modified functionality in the browser
+3. Check browser console for errors (popup and background service worker)
+
+### Debugging
+
+**Popup console**: Right-click extension icon → Inspect popup
+
+**Background service worker**:
+- Chrome: `chrome://extensions` → Find extension → "Service worker" link
+- Firefox: `about:debugging` → This Firefox → Inspect
+
+**Storage inspection**: In console, run `browser.storage.local.get(null, console.log)`
 
 ## Donations
 
