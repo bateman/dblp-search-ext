@@ -197,11 +197,14 @@ build/clean:  ## Clean up build directory and remove all timestamps
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 .PHONY: build/all
-build/all:  ## Build all extensions
+build/all:  ## Build all extensions (alias: make build)
 	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
-	$(MAKE) build/chrome 
-	$(MAKE) build/firefox 
+	$(MAKE) build/chrome
+	$(MAKE) build/firefox
 	$(MAKE) build/safari
+
+.PHONY: build
+build: build/all
 
 #-- Release
 
@@ -271,7 +274,7 @@ tag/major: | tag/check staging  ## Bump major semantic version in manifest files
 	fi
 
 .PHONY: tag/push
-tag/push: | dep/git  ## Push the tag to origin - triggers the release action
+tag/push: | dep/git  ## Push the tag to origin - triggers the release action (alias: make release)
 	@$(eval TAG := $(shell echo v$(APP_VERSION)))
 	@$(eval REMOTE_TAGS := $(shell $(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'))
 	@if echo $(REMOTE_TAGS) | grep -q $(TAG); then \
@@ -284,6 +287,9 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action
 		$(GIT) push origin $(TAG) ; \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
+
+.PHONY: release
+release: tag/push
 
 .PHONY: tag/delete
 tag/delete: | dep/git  ## Delete the tag for the current version
