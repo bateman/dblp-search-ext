@@ -476,21 +476,12 @@ function extractYearFromBibtex(data) {
   return yearMatch[1];
 }
 
-// Extract first significant word from title
-function extractFirstTitleWord(data) {
-  // Find the title field start
-  var titleStart = data.match(/title\s*=\s*\{/i);
-  if (!titleStart) {
-    return "";
-  }
-
-  // Use brace counting to find the matching closing brace
-  var startIndex = titleStart.index + titleStart[0].length;
-  var braceCount = 1;
-  var endIndex = startIndex;
-
+// Find matching closing brace using brace counting
+function findMatchingBrace(data, startIndex) {
+  let braceCount = 1;
+  let endIndex = startIndex;
   while (endIndex < data.length && braceCount > 0) {
-    var char = data.charAt(endIndex);
+    const char = data.charAt(endIndex);
     if (char === "{") {
       braceCount++;
     } else if (char === "}") {
@@ -498,23 +489,39 @@ function extractFirstTitleWord(data) {
     }
     endIndex++;
   }
+  return braceCount === 0 ? endIndex : -1;
+}
 
-  if (braceCount !== 0) {
-    return "";
-  }
-
-  var title = data.substring(startIndex, endIndex - 1);
-  title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
-  title = title.replace(/[{}\\]/g, "");
-  var words = title.split(/\s+/).filter(function(w) { return w.length > 0; });
-  var skipWords = ["a", "an", "the", "on", "in", "at"];
-  for (var wordItem of words) {
-    var word = wordItem.toLowerCase();
+// Find first significant word (skipping articles and short words)
+function findFirstSignificantWord(words) {
+  const skipWords = ["a", "an", "the", "on", "in", "at"];
+  for (const wordItem of words) {
+    const word = wordItem.toLowerCase();
     if (skipWords.indexOf(word) === -1 && word.length > 2) {
       return word.replace(/[^a-z0-9]/g, "");
     }
   }
   return "";
+}
+
+// Extract first significant word from title
+function extractFirstTitleWord(data) {
+  const titleStart = data.match(/title\s*=\s*\{/i);
+  if (!titleStart) {
+    return "";
+  }
+
+  const startIndex = titleStart.index + titleStart[0].length;
+  const endIndex = findMatchingBrace(data, startIndex);
+  if (endIndex === -1) {
+    return "";
+  }
+
+  let title = data.substring(startIndex, endIndex - 1);
+  title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
+  title = title.replace(/[{}\\]/g, "");
+  const words = title.split(/\s+/).filter(function(w) { return w.length > 0; });
+  return findFirstSignificantWord(words);
 }
 
 // Build citation key from fields and options

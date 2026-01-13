@@ -104,6 +104,7 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 - Use strict equality (`===`) instead of loose (`==`)
 - Handle promise rejections with `.catch()` or try/catch
 - Avoid code duplication and keep functions focused
+- Keep cyclomatic complexity below 8 (extract helper functions if needed)
 
 ## Dependencies
 
