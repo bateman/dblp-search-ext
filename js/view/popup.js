@@ -478,11 +478,31 @@ function extractYearFromBibtex(data) {
 
 // Extract first significant word from title
 function extractFirstTitleWord(data) {
-  var titleMatch = data.match(/title\s*=\s*\{([^}]+)\}/);
-  if (!titleMatch) {
+  // Find the title field start
+  var titleStart = data.match(/title\s*=\s*\{/i);
+  if (!titleStart) {
     return "";
   }
-  var title = titleMatch[1];
+
+  // Use brace counting to find the matching closing brace
+  var startIndex = titleStart.index + titleStart[0].length;
+  var braceCount = 1;
+  var endIndex = startIndex;
+
+  while (endIndex < data.length && braceCount > 0) {
+    if (data[endIndex] === "{") {
+      braceCount++;
+    } else if (data[endIndex] === "}") {
+      braceCount--;
+    }
+    endIndex++;
+  }
+
+  if (braceCount !== 0) {
+    return "";
+  }
+
+  var title = data.substring(startIndex, endIndex - 1);
   title = title.replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1");
   title = title.replace(/[{}\\]/g, "");
   var words = title.split(/\s+/).filter(function(w) { return w.length > 0; });
