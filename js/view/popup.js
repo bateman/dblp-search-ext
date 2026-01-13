@@ -527,6 +527,14 @@ function cleanBibtexMetadata(data) {
   return data;
 }
 
+// Remove URL field from BibTeX
+function removeUrlFromBibtex(data) {
+  data = data.replace(/\s*url\s*=\s*\{[^}]*\},[\s\n]*/g, "");
+  data = data.replace(/,(\s*})\s*$/, "\n}");
+  data = data.replace(/\n\s*\n/g, "\n");
+  return data;
+}
+
 // ------------------------------------- Copy BibTeX -------------------------------------
 
 // Copy the BibTeX to the clipboard
@@ -549,6 +557,8 @@ window.copyBibtexToClipboard = function (url) {
             citationKeyFields: ["author", "year", "venue"],
             authorCapitalize: false,
             venueUppercase: false,
+            removeTimestampBiburlBibsource: true,
+            removeUrl: false,
           },
         },
         function (items) {
@@ -591,6 +601,10 @@ window.copyBibtexToClipboard = function (url) {
 
           if (items.options.removeTimestampBiburlBibsource) {
             data = cleanBibtexMetadata(data);
+          }
+
+          if (items.options.removeUrl) {
+            data = removeUrlFromBibtex(data);
           }
 
           navigator.clipboard.writeText(data).catch(function(err) {

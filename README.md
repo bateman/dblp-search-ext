@@ -53,7 +53,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
 - **Remove duplicates**: Useless, duplicated CoRR abs entries are filtered out.
-- **Remove BibTeX fields**: When copying BibTeX entries, the extension can remove the `timestamp`, `bibsource`, and `biburl` entries.
+- **Remove BibTeX fields**: When copying BibTeX entries, the extension can remove the `timestamp`, `bibsource`, `biburl`, and `url` fields.
 
 ## Usage
 

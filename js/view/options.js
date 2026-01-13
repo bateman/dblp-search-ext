@@ -368,6 +368,7 @@ function saveOptions() {
   var removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
+  var removeUrl = document.getElementById("removeUrl").checked;
 
   // Validate maxResults input
   var maxResults = parseInt(maxResultsInput, 10);
@@ -394,6 +395,7 @@ function saveOptions() {
         authorCapitalize: authorCapitalize,
         venueUppercase: venueUppercase,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
+        removeUrl: removeUrl,
       },
     },
     function () {
@@ -414,6 +416,7 @@ function restoreOptions() {
         authorCapitalize: false,
         venueUppercase: false,
         removeTimestampBiburlBibsource: true,
+        removeUrl: false,
       },
     },
     function (items) {
@@ -426,6 +429,7 @@ function restoreOptions() {
         items.options.venueUppercase;
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
+      document.getElementById("removeUrl").checked = items.options.removeUrl;
 
       // Show/hide drag & drop based on checkbox state
       toggleDragDropVisibility();
