@@ -27,10 +27,44 @@
     <div class="options">
         <label class="option">BibTeX key format</label>
         <br>
-        <label class="optiondesc">When enabled, a citation key like "DBLP:conf/esem/CalefatoQLK23" becomes "calefato2023esem".</label>
+        <label class="optiondesc">When enabled, customize the citation key by dragging fields (Author, Year, Venue, Title) in your preferred order.</label>
         <br>
         <label class="optionval" for="renamingCheckbox">Enable BibTex citation key renaming:</label>
         <input type="checkbox" id="renamingCheckbox">
+        <br><br>
+        <label id="citationKeyPatternLabel" class="option">Citation key pattern</label>
+        <div class="citation-key-builder">
+            <div class="available-fields">
+                <span class="optionval">Available fields:</span>
+                <div id="availableFields" class="fields-container">
+                    <div class="field-token" draggable="true" data-field="author">Author</div>
+                    <div class="field-token" draggable="true" data-field="year">Year</div>
+                    <div class="field-token" draggable="true" data-field="venue">Venue</div>
+                    <div class="field-token" draggable="true" data-field="title">Title</div>
+                    <div class="field-token separator-token" draggable="true" data-field="dash" data-separator="true">-</div>
+                    <div class="field-token separator-token" draggable="true" data-field="underscore" data-separator="true">_</div>
+                </div>
+            </div>
+            <div class="dropzone-area">
+                <span class="optionval">Drag fields here to compose key:</span>
+                <div id="citationKeyDropzone" class="dropzone"></div>
+            </div>
+            <div class="preview-area">
+                <span class="optionval">Preview:</span>
+                <span id="citationKeyPreview" class="preview-text"></span>
+            </div>
+            <div class="format-options">
+                <label class="optiondesc">When enabled, the first letter of the author's last name will be capitalized.</label>
+                <br>
+                <label class="optionval" for="authorCapitalize">Capitalize author name:</label>
+                <input type="checkbox" id="authorCapitalize">
+                <br><br>
+                <label class="optiondesc">When enabled, the venue abbreviation will be in uppercase.</label>
+                <br>
+                <label class="optionval" for="venueUppercase">Uppercase venue:</label>
+                <input type="checkbox" id="venueUppercase">
+            </div>
+        </div>
     </div>
 
     <div class="options">
@@ -40,6 +74,15 @@
         <br>
         <label class="optionval" for="removeTimestampBiburlBibsource">Enable removing fields:</label>
         <input type="checkbox" id="removeTimestampBiburlBibsource">
+    </div>
+
+    <div class="options">
+        <label class="option">Remove URL from BibTeX</label>
+        <br>
+        <label class="optiondesc">When enabled, the URL field is removed when copying the BibTeX entry.</label>
+        <br>
+        <label class="optionval" for="removeUrl">Enable removing URL field:</label>
+        <input type="checkbox" id="removeUrl">
     </div>
 
     <div class="options">
