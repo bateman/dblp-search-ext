@@ -529,7 +529,7 @@ function cleanBibtexMetadata(data) {
 
 // Remove URL field from BibTeX
 function removeUrlFromBibtex(data) {
-  data = data.replace(/\s*url\s*=\s*\{[^}]*\},[\s\n]*/g, "");
+  data = data.replace(/\n\s*url\s*=\s*\{[^}]*\},?/g, "");
   data = data.replace(/,(\s*})\s*$/, "\n}");
   data = data.replace(/\n\s*\n/g, "\n");
   return data;
