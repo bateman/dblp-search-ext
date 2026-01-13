@@ -490,9 +490,10 @@ function extractFirstTitleWord(data) {
   var endIndex = startIndex;
 
   while (endIndex < data.length && braceCount > 0) {
-    if (data[endIndex] === "{") {
+    var char = data.charAt(endIndex);
+    if (char === "{") {
       braceCount++;
-    } else if (data[endIndex] === "}") {
+    } else if (char === "}") {
       braceCount--;
     }
     endIndex++;

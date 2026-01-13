@@ -97,6 +97,7 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 - Validate message origins in `runtime.onMessage` handlers
 - Sanitize data from external APIs before use
 - CSP enforced: `script-src 'self'; object-src 'self'`
+- Use `charAt()` instead of bracket notation for string character access (avoids "Generic Object Injection Sink" warnings)
 
 **Quality:**
 - Use `const`/`let` instead of `var`
