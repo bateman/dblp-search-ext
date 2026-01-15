@@ -47,7 +47,7 @@ A simple cross-browser extension to ease the process of searching publications o
 
 - **Search Papers**: Enter the paper's title in the input field or highlight any text on the current web page, then click the search button. The extension will search for matching publications on dblp.org and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
-- **Rename BibTeX Citation Keys**: Replace dblp default citation keys with `<first author's lastname>`   `<year>` `<venue>` (e.g.,  `calefato2023esem`).
+- **Customizable BibTeX Citation Keys**: Replace dblp default citation keys with a custom format. Use the drag-and-drop builder in Options to arrange fields (Author, Year, Venue, Title) and separators (dash, underscore) in any order. Additional formatting options include capitalizing the author's name and uppercasing the venue (e.g., `Calefato2023ESEM`, `calefato_2023_esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
 - **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows current page, total pages, and result count. Pagination state persists across browser sessions.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
