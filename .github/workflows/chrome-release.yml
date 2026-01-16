@@ -22,7 +22,7 @@ jobs:
               run: make build/chrome
 
             - name: Upload to Chrome Web Store
-              uses: wdzeng/chrome-extension@b167f5b883d2ade3c4209eccb62fa8307ae44434
+              uses: wdzeng/chrome-extension@v1
               with:
                 extension-id: onilpcgmnpikffebghpncnnapebndpaj
                 zip-path: build/chrome/dblpSearch-ext-${{ fromJson(env.manifest).version }}.zip
