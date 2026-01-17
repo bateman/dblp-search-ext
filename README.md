@@ -49,7 +49,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
 - **Customizable BibTeX Citation Keys**: Replace dblp default citation keys with a custom format. Use the drag-and-drop builder in Options to arrange fields (Author, Year, Venue, Title) and separators (dash, underscore) in any order. Additional formatting options include capitalizing the author's name and uppercasing the venue (e.g., `Calefato2023ESEM`, `calefato_2023_esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
-- **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows current page, total pages, and result count. Pagination state persists across browser sessions.
+- **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows the current page, total pages, and result count. Pagination state persists across browser sessions.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
 - **Remove duplicates**: Useless, duplicated CoRR abs entries are filtered out.
@@ -58,10 +58,10 @@ A simple cross-browser extension to ease the process of searching publications o
 ## Usage
 
 1. Install the extension to your Chromium browser (e.g., Chrome, Edge, ...), Firefox, or Safari.
-2. Click on the extension icon to open the popup.
+2. Click on the extension icon to open the pop-up.
 3. Enter the title of the paper you want to search for in the input field. Alternatively, highlight some text on the current web page.
 4. Click the 'Search' button to start the search.
-5. The search results will be displayed in the popup. Click the 'Copy BibTeX' button next to a result to copy its BibTeX entry to your clipboard.
+5. The search results will be displayed in the pop-up. Click the 'Copy BibTeX' button next to a result to copy its BibTeX entry to your clipboard.
 
 ## Contributions
 
@@ -79,7 +79,7 @@ make build/clean       # Clean build directory and stamps
 ```
 
 > [!NOTE]
-> Safari build will start only on macOS, if Xcode is installed.
+> Safari build will start only on macOS if Xcode is installed.
 
 ### Manual installation
 
@@ -135,7 +135,7 @@ No automated test suite. Testing is manual:
 
 1. Run `make run/chrome` (or firefox/safari/edge)
 2. Test the modified functionality in the browser
-3. Check browser console for errors (popup and background service worker)
+3. Check the browser console for errors (pop-up and background service worker)
 
 ### Debugging
 
@@ -156,3 +156,6 @@ No automated test suite. Testing is manual:
 ## License
 
 This project is licensed under the MIT license, see the [LICENSE](LICENSE) file.
+
+## Credits
+Developed by Fabio Calefato ([@bateman](https://github.com/bateman)).
