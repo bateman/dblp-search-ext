@@ -79,7 +79,7 @@ function showInvalidDOIFeedback(text) {
   // Option A: Badge text for user feedback
   try {
     browser.action.setBadgeText({ text: "!" });
-    browser.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+    browser.action.setBadgeBackgroundColor({ color: "#b91a2d" });
     browser.action.setTitle({ title: "Invalid DOI format" });
 
     // Clear badge after 3 seconds
