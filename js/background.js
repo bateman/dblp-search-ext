@@ -34,6 +34,31 @@ function isValidDOI(doi) {
 }
 
 /**
+ * Removes DOI URL prefixes from text using string operations (avoids regex ReDoS)
+ * Handles: https://doi.org/, http://doi.org/, https://dx.doi.org/, doi.org/, etc.
+ * @param {string} text - The text to clean
+ * @returns {string} Text with URL prefix removed
+ */
+function removeDOIUrlPrefix(text) {
+  const lowerText = text.toLowerCase();
+  const prefixes = [
+    "https://dx.doi.org/",
+    "http://dx.doi.org/",
+    "https://doi.org/",
+    "http://doi.org/",
+    "dx.doi.org/",
+    "doi.org/",
+  ];
+
+  for (const prefix of prefixes) {
+    if (lowerText.startsWith(prefix)) {
+      return text.slice(prefix.length);
+    }
+  }
+  return text;
+}
+
+/**
  * Extracts a DOI from text, handling URL prefixes and trailing punctuation
  * @param {string} text - The text that may contain a DOI
  * @returns {string|null} The extracted DOI or null if invalid
@@ -43,8 +68,8 @@ function extractDOI(text) {
 
   let cleaned = text.trim();
 
-  // Remove common URL prefixes
-  cleaned = cleaned.replace(/^(?:https?:\/\/)?(?:dx\.)?doi\.org\//i, "");
+  // Remove common URL prefixes (using string methods to avoid ReDoS)
+  cleaned = removeDOIUrlPrefix(cleaned);
 
   // Remove doi: prefix
   cleaned = cleaned.replace(/^doi:\s*/i, "");
