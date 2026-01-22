@@ -15,10 +15,9 @@ const controller = new PublicationController(model, view);
 
 // DOI validation patterns (based on Crossref recommendations)
 // See: https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-// Character class includes all valid DOI characters per DOI handbook
 const DOI_PATTERNS = [
-  /^10\.\d{4,9}\/[-._;()/:A-Z0-9<>@#%+&?=]+$/i, // Standard DOIs (74.4M+)
-  /^10\.1002\/[^\s]+$/i, // Wiley legacy DOIs (~300K)
+  /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, // Standard DOIs (74.4M+)
+  /^10\.1002\/[^\s]+$/i, // Wiley legacy DOIs (~300K) - intentionally permissive for SICI
 ];
 
 // Track badge timeout to prevent race conditions
@@ -74,11 +73,12 @@ function extractDOI(text) {
   // Remove doi: prefix
   cleaned = cleaned.replace(/^doi:\s*/i, "");
 
-  // Remove URL query parameters and fragments (e.g., ?ref=foo or #abstract)
-  cleaned = cleaned.replace(/[?#].*$/, "");
+  // Remove URL query parameters and fragments only when they look like URL syntax
+  // (contain = or &), since ? and # can be valid DOI characters
+  cleaned = cleaned.replace(/[?#](?=[^?#]*[=&]).*$/, "");
 
-  // Strip trailing punctuation (but preserve valid DOI chars like parentheses)
-  cleaned = cleaned.replace(/[.,;:!?'"\s]+$/, "");
+  // Strip trailing punctuation (preserve : and ; which can be valid in DOIs)
+  cleaned = cleaned.replace(/[.,!?'"\s]+$/, "");
 
   // Check if anything remains after cleaning
   if (!cleaned) return null;
