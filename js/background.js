@@ -15,10 +15,14 @@ const controller = new PublicationController(model, view);
 
 // DOI validation patterns (based on Crossref recommendations)
 // See: https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+// Character class includes all valid DOI characters per DOI handbook
 const DOI_PATTERNS = [
-  /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, // Standard DOIs (74.4M+)
+  /^10\.\d{4,9}\/[-._;()/:A-Z0-9<>@#%+&?=]+$/i, // Standard DOIs (74.4M+)
   /^10\.1002\/[^\s]+$/i, // Wiley legacy DOIs (~300K)
 ];
+
+// Track badge timeout to prevent race conditions
+let badgeTimeoutId = null;
 
 /**
  * Validates if a string is a valid DOI format
@@ -45,8 +49,14 @@ function extractDOI(text) {
   // Remove doi: prefix
   cleaned = cleaned.replace(/^doi:\s*/i, "");
 
+  // Remove URL query parameters and fragments (e.g., ?ref=foo or #abstract)
+  cleaned = cleaned.replace(/[?#].*$/, "");
+
   // Strip trailing punctuation (but preserve valid DOI chars like parentheses)
-  cleaned = cleaned.replace(/[.,;:!?\s]+$/, "");
+  cleaned = cleaned.replace(/[.,;:!?'"\s]+$/, "");
+
+  // Check if anything remains after cleaning
+  if (!cleaned) return null;
 
   return isValidDOI(cleaned) ? cleaned : null;
 }
@@ -54,21 +64,37 @@ function extractDOI(text) {
 /**
  * Shows feedback to user when selected text is not a valid DOI
  * Uses both badge text (visual) and console warning (debugging)
+ * @param {string} text - The selected text that failed validation
  */
-function showInvalidDOIFeedback() {
-  // Option B: Console warning for debugging
-  console.warn("Selected text is not a valid DOI format");
+function showInvalidDOIFeedback(text) {
+  // Option B: Console warning for debugging (includes selected text)
+  console.warn("Selected text is not a valid DOI format:", text);
+
+  // Clear any existing timeout to prevent race conditions
+  if (badgeTimeoutId) {
+    clearTimeout(badgeTimeoutId);
+    badgeTimeoutId = null;
+  }
 
   // Option A: Badge text for user feedback
-  browser.action.setBadgeText({ text: "!" });
-  browser.action.setBadgeBackgroundColor({ color: "#e74c3c" });
-  browser.action.setTitle({ title: "Invalid DOI format" });
+  try {
+    browser.action.setBadgeText({ text: "!" });
+    browser.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+    browser.action.setTitle({ title: "Invalid DOI format" });
 
-  // Clear badge after 3 seconds
-  setTimeout(() => {
-    browser.action.setBadgeText({ text: "" });
-    browser.action.setTitle({ title: "dblp Search" });
-  }, 3000);
+    // Clear badge after 3 seconds
+    badgeTimeoutId = setTimeout(() => {
+      try {
+        browser.action.setBadgeText({ text: "" });
+        browser.action.setTitle({ title: "dblp Search" });
+      } catch (error) {
+        console.error("Failed to clear badge:", error);
+      }
+      badgeTimeoutId = null;
+    }, 3000);
+  } catch (error) {
+    console.error("Failed to set badge:", error);
+  }
 }
 
 // Helper function to handle message errors consistently
@@ -177,7 +203,7 @@ browser.contextMenus.onClicked.addListener(function (info) {
         url: "https://doi.org/" + encodeURIComponent(doi),
       });
     } else {
-      showInvalidDOIFeedback();
+      showInvalidDOIFeedback(info.selectionText);
     }
   }
 });
