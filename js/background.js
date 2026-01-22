@@ -13,6 +13,64 @@ const model = new PublicationModel();
 const view = new PublicationView();
 const controller = new PublicationController(model, view);
 
+// DOI validation patterns (based on Crossref recommendations)
+// See: https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+const DOI_PATTERNS = [
+  /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, // Standard DOIs (74.4M+)
+  /^10\.1002\/[^\s]+$/i, // Wiley legacy DOIs (~300K)
+];
+
+/**
+ * Validates if a string is a valid DOI format
+ * @param {string} doi - The DOI string to validate
+ * @returns {boolean} True if valid DOI format
+ */
+function isValidDOI(doi) {
+  return DOI_PATTERNS.some((pattern) => pattern.test(doi));
+}
+
+/**
+ * Extracts a DOI from text, handling URL prefixes and trailing punctuation
+ * @param {string} text - The text that may contain a DOI
+ * @returns {string|null} The extracted DOI or null if invalid
+ */
+function extractDOI(text) {
+  if (!text) return null;
+
+  let cleaned = text.trim();
+
+  // Remove common URL prefixes
+  cleaned = cleaned.replace(/^(?:https?:\/\/)?(?:dx\.)?doi\.org\//i, "");
+
+  // Remove doi: prefix
+  cleaned = cleaned.replace(/^doi:\s*/i, "");
+
+  // Strip trailing punctuation (but preserve valid DOI chars like parentheses)
+  cleaned = cleaned.replace(/[.,;:!?\s]+$/, "");
+
+  return isValidDOI(cleaned) ? cleaned : null;
+}
+
+/**
+ * Shows feedback to user when selected text is not a valid DOI
+ * Uses both badge text (visual) and console warning (debugging)
+ */
+function showInvalidDOIFeedback() {
+  // Option B: Console warning for debugging
+  console.warn("Selected text is not a valid DOI format");
+
+  // Option A: Badge text for user feedback
+  browser.action.setBadgeText({ text: "!" });
+  browser.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+  browser.action.setTitle({ title: "Invalid DOI format" });
+
+  // Clear badge after 3 seconds
+  setTimeout(() => {
+    browser.action.setBadgeText({ text: "" });
+    browser.action.setTitle({ title: "dblp Search" });
+  }, 3000);
+}
+
 // Helper function to handle message errors consistently
 function handleMessageError(error, message, sendResponse) {
   console.error(
@@ -88,14 +146,20 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-// Create a context menu item to search dblp
+// Create context menu items
 browser.runtime.onInstalled.addListener(function () {
-  let context = "selection";
-  let title = "Search highlighted text on dblp";
+  // Context menu item to search dblp
   browser.contextMenus.create({
-    title: title,
-    contexts: [context],
-    id: context,
+    title: "Search highlighted text on dblp",
+    contexts: ["selection"],
+    id: "selection",
+  });
+
+  // Context menu item to resolve DOI
+  browser.contextMenus.create({
+    title: "Resolve DOI",
+    contexts: ["selection"],
+    id: "doi-resolve",
   });
 });
 
@@ -106,5 +170,14 @@ browser.contextMenus.onClicked.addListener(function (info) {
     browser.tabs.create({
       url: "https://dblp.org/search?q=" + encodeURIComponent(query),
     });
+  } else if (info.menuItemId === "doi-resolve") {
+    const doi = extractDOI(info.selectionText);
+    if (doi) {
+      browser.tabs.create({
+        url: "https://doi.org/" + encodeURIComponent(doi),
+      });
+    } else {
+      showInvalidDOIFeedback();
+    }
   }
 });
