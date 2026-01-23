@@ -139,6 +139,9 @@ dep/safari: | dep/macos
 
 #-- Build targets
 
+.PHONY: build
+build: build/all  ## Build all extensions (alias: build/all)
+
 .PHONY: build/firefox
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
@@ -188,14 +191,11 @@ build/edge:  ## Build Edge extension zip (same as Chrome)
 	$(MAKE) build/chrome
 
 .PHONY: build/all
-build/all:  ## Build all extensions (alias: make build)
+build/all:  ## Build all extensions (alias: build)
 	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
 	$(MAKE) build/chrome
 	$(MAKE) build/firefox
 	$(MAKE) build/safari
-
-.PHONY: build
-build: build/all
 
 .PHONY: build/clean
 build/clean:  ## Clean up build directory and remove all timestamps
@@ -300,7 +300,7 @@ release/check: | dep/git  ## Check if a new release is needed
 	@echo -e "  $(CYAN)Needs release:$(RESET) $(shell cat $(RELEASE_STAMP))"
 
 .PHONY: release
-release: tag/push  ## Triggers the release action - pushs the tag to origin (alias: tag/push)
+release: tag/push  ## Triggers the release action - pushes the tag to origin (alias: tag/push)
 
 #-- Run
 
