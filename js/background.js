@@ -88,11 +88,11 @@ function extractDOI(text) {
 
 /**
  * Shows feedback to user when selected text is not a valid DOI
- * Uses both badge text (visual) and console warning (debugging)
+ * Uses flashing badge (visual) and console warning (debugging)
  * @param {string} text - The selected text that failed validation
  */
 function showInvalidDOIFeedback(text) {
-  // Option B: Console warning for debugging (includes selected text)
+  // Console warning for debugging (includes selected text)
   console.warn("Selected text is not a valid DOI format:", text);
 
   // Clear any existing timeout to prevent race conditions
@@ -101,25 +101,40 @@ function showInvalidDOIFeedback(text) {
     badgeTimeoutId = null;
   }
 
-  // Option A: Badge text for user feedback
-  try {
-    browser.action.setBadgeText({ text: "!" });
-    browser.action.setBadgeBackgroundColor({ color: "#b91a2d" });
-    browser.action.setTitle({ title: "Invalid DOI format" });
+  // Flash the badge to make it more noticeable
+  const flashCount = 3;
+  const flashInterval = 300; // ms between flashes
+  let flashes = 0;
 
-    // Clear badge after 3 seconds
-    badgeTimeoutId = setTimeout(() => {
-      try {
-        browser.action.setBadgeText({ text: "" });
-        browser.action.setTitle({ title: "dblp Search" });
-      } catch (error) {
-        console.error("Failed to clear badge:", error);
+  function flash() {
+    try {
+      const isVisible = flashes % 2 === 0;
+      browser.action.setBadgeText({ text: isVisible ? "!" : "" });
+      browser.action.setBadgeBackgroundColor({ color: "#b91a2d" });
+      browser.action.setTitle({ title: "Invalid DOI format" });
+
+      flashes++;
+      if (flashes < flashCount * 2) {
+        badgeTimeoutId = setTimeout(flash, flashInterval);
+      } else {
+        // Keep badge visible after flashing, then clear after 3 seconds
+        browser.action.setBadgeText({ text: "!" });
+        badgeTimeoutId = setTimeout(() => {
+          try {
+            browser.action.setBadgeText({ text: "" });
+            browser.action.setTitle({ title: "dblp Search" });
+          } catch (error) {
+            console.error("Failed to clear badge:", error);
+          }
+          badgeTimeoutId = null;
+        }, 3000);
       }
-      badgeTimeoutId = null;
-    }, 3000);
-  } catch (error) {
-    console.error("Failed to set badge:", error);
+    } catch (error) {
+      console.error("Failed to set badge:", error);
+    }
   }
+
+  flash();
 }
 
 // Helper function to handle message errors consistently
