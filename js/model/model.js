@@ -1,20 +1,48 @@
 /* global chrome */
 
-// model.js
+/**
+ * @file model.js
+ * @description Model component for the MVC architecture. Handles DBLP API calls,
+ * data parsing, and storage integration.
+ */
+
 console.log("model.js loaded");
 var browser = browser || chrome;
 
+/**
+ * Model class for managing publication data from DBLP API.
+ * Implements the observer pattern to notify controllers of data changes.
+ * @class
+ */
 export class PublicationModel {
+  /**
+   * Creates a new PublicationModel instance
+   * @constructor
+   */
   constructor() {
+    /** @type {Object[]} Array of parsed publication objects */
     this.publications = [];
+    /** @type {Function|null} Callback function to notify observers of changes */
     this.notify = null;
+    /** @type {string} HTTP response status */
     this.status = "";
+    /** @type {number} Total number of hits from DBLP API */
     this.totalHits = 0;
+    /** @type {number} Number of hits returned in current response */
     this.sentHits = 0;
+    /** @type {number} Number of excluded publications (e.g., CoRR abs entries) */
     this.excludedCount = 0;
+    /** @type {number} Current pagination offset */
     this.currentOffset = 0;
   }
 
+  /**
+   * Searches for publications on DBLP API matching the given query
+   * @async
+   * @param {string} query - The search query string
+   * @param {number} [offset=0] - Pagination offset for results
+   * @returns {Promise<void>}
+   */
   async searchPublications(query, offset = 0) {
     console.log(`Searching publications matching: ${query} (offset: ${offset})`);
     this.currentOffset = offset;
@@ -63,6 +91,12 @@ export class PublicationModel {
     }
   }
 
+  /**
+   * Appends maxResults parameter to the API URL from user settings
+   * @async
+   * @param {string} baseUrl - The base DBLP API URL
+   * @returns {Promise<string>} URL with maxResults parameter appended
+   */
   async getUrlWithMaxResults(baseUrl) {
     return new Promise((resolve) => {
       browser.storage.local.get(
@@ -81,6 +115,11 @@ export class PublicationModel {
     });
   }
 
+  /**
+   * Parses raw publication data from DBLP API response
+   * @param {Object[]} pubsInfo - Array of publication info objects from DBLP
+   * @returns {{publications: Object[], excludedCount: number}} Parsed publications and count of excluded entries
+   */
   parsePublications(pubsInfo) {
     const results = [];
     let excludedCount = 0;
@@ -106,10 +145,22 @@ export class PublicationModel {
     };
   }
 
+  /**
+   * Checks if a publication should be excluded from results (e.g., CoRR abs entries)
+   * @param {Object} pub - Publication info object
+   * @param {string} pub.key - Publication key from DBLP
+   * @returns {boolean} True if publication should be excluded
+   */
   isExcludedPublication(pub) {
     return pub.key.includes("corr/abs-");
   }
 
+  /**
+   * Extracts author names from DBLP author info, cleaning up numeric suffixes
+   * @param {Object} authorsInfo - Author information from DBLP
+   * @param {Object|Object[]} authorsInfo.author - Single author or array of authors
+   * @returns {string[]} Array of cleaned author names
+   */
   extractAuthors(authorsInfo) {
     // Fix: dblp api sometimes returns '000n' next to authors' names
     const authors = [];
@@ -124,6 +175,15 @@ export class PublicationModel {
     return authors;
   }
 
+  /**
+   * Constructs venue string including volume and number for journal articles
+   * @param {Object} pub - Publication info object
+   * @param {string} pub.venue - Publication venue name
+   * @param {string} pub.type - Publication type
+   * @param {string} [pub.volume] - Volume number for journals
+   * @param {string} [pub.number] - Issue number for journals
+   * @returns {string} Formatted venue string
+   */
   constructVenue(pub) {
     let venue = pub.venue;
     const type = this.transformType(pub.type);
@@ -138,6 +198,13 @@ export class PublicationModel {
     return venue;
   }
 
+  /**
+   * Creates a standardized publication object from DBLP data
+   * @param {Object} pub - Raw publication info from DBLP
+   * @param {string[]} authors - Array of author names
+   * @param {string} venue - Formatted venue string
+   * @returns {Object} Standardized publication object with properties: type, title, permaLink, authors, year, venue, pages, doi, doiURL, bibtexLink, access
+   */
   createPublication(pub, authors, venue) {
     return {
       type: this.transformType(pub.type),
@@ -154,6 +221,11 @@ export class PublicationModel {
     };
   }
 
+  /**
+   * Transforms DBLP publication type to BibTeX entry type
+   * @param {string} type - DBLP publication type (e.g., "Journal Articles")
+   * @returns {string|undefined} BibTeX entry type (e.g., "article") or undefined if unknown type
+   */
   transformType(type) {
     var _type;
     switch (type) {
@@ -182,6 +254,10 @@ export class PublicationModel {
     return _type;
   }
 
+  /**
+   * Subscribes a callback function to be notified when model data changes
+   * @param {Function} callback - Callback function to invoke on data changes
+   */
   subscribe(callback) {
     this.notify = callback;
   }

@@ -1,10 +1,17 @@
-// popup.js
+/**
+ * @file popup.js
+ * @description Main UI component for the extension popup. Handles search input,
+ * results display, BibTeX copying, and pagination.
+ */
+
 import { updateStatus } from "./commons.js";
 
 console.log("popup.js loaded");
 var browser = window.msBrowser || window.browser || window.chrome;
 
-// ------------------------------------- Listeners -------------------------------------
+// =====================================
+// Event Listeners
+// =====================================
 
 document.addEventListener("DOMContentLoaded", function () {
   // Display extension version in the footer
@@ -139,9 +146,16 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// ------------------------------------- Functions -------------------------------------
+// =====================================
+// Core Functions
+// =====================================
 
-// Send a message to the background script and log the response
+/**
+ * Sends a message to the background script and handles the response
+ * @param {Object} dictObject - Message object to send
+ * @param {string} dictObject.script - Identifier of the sending script
+ * @param {string} dictObject.type - Message type
+ */
 function sendMessage(dictObject) {
   browser.runtime.sendMessage(dictObject, function (response) {
     if (browser.runtime.lastError) {
@@ -165,13 +179,17 @@ function sendMessage(dictObject) {
   });
 }
 
-// Ask background script to execute the query on dblp
+/**
+ * Requests a publication search from the background script
+ * @param {string} q - The search query string
+ * @param {number} [offset=0] - Pagination offset
+ */
 function requestSearchDblp(q, offset = 0) {
   // Update status to let user know search has started.
   updateStatus("Searching...", 2000);
   // Clear existing results, but not the paperTitle
   requestClearResults(false);
-  // Send nmessage to background.js
+  // Send message to background.js
   sendMessage({
     script: "popup.js",
     type: "REQUEST_SEARCH_PUBLICATIONS",
@@ -180,7 +198,10 @@ function requestSearchDblp(q, offset = 0) {
   });
 }
 
-// Ask background script to clear the count message
+/**
+ * Clears the current search results and optionally the search input
+ * @param {boolean} [clearTitle=true] - Whether to also clear the search input field
+ */
 function requestClearResults(clearTitle = true) {
   console.log("Clearing existing results...");
   if (clearTitle) {
@@ -191,7 +212,13 @@ function requestClearResults(clearTitle = true) {
   updatePaginationControls(0, 0, 0);
 }
 
-// Update the count of publications found
+/**
+ * Updates the publication count display in the UI
+ * @param {string} responseStatus - HTTP response status or "RESET"
+ * @param {number} totalHits - Total number of matching publications
+ * @param {number} sentHits - Number of publications in current response
+ * @param {number} excludedCount - Number of excluded publications
+ */
 function updatePublicationsCount(
   responseStatus,
   totalHits,
@@ -218,7 +245,11 @@ function updatePublicationsCount(
   }
 }
 
-// Validate URL to prevent javascript: protocol XSS attacks
+/**
+ * Validates a URL to prevent javascript: protocol XSS attacks
+ * @param {string} url - The URL to validate
+ * @returns {boolean} True if URL is valid HTTP/HTTPS
+ */
 function isValidURL(url) {
   if (!url || typeof url !== "string") {
     return false;
@@ -231,7 +262,9 @@ function isValidURL(url) {
   }
 }
 
-// Clear the results table
+/**
+ * Clears the results table content
+ */
 function clearResultsTable() {
   const results = document.getElementById("results");
   if (results) {
@@ -239,7 +272,10 @@ function clearResultsTable() {
   }
 }
 
-// Build and display the publications table using DOM methods
+/**
+ * Builds and displays the publications results table using safe DOM methods
+ * @param {Object[]} publications - Array of publication objects to display
+ */
 function buildAndDisplayTable(publications) {
   const results = document.getElementById("results");
   if (!results) return;
@@ -371,7 +407,9 @@ function buildAndDisplayTable(publications) {
   addCopyBibtexButtonEventListener();
 }
 
-// Load the results from the local storage
+/**
+ * Restores previous search results from browser local storage
+ */
 function restoreResultsFromStorage() {
   browser.storage.local.get(
     {
@@ -410,7 +448,16 @@ function restoreResultsFromStorage() {
   );
 }
 
-// Save the results to the local storage
+/**
+ * Saves search results to browser local storage for persistence
+ * @param {string} paperTitle - The search query
+ * @param {string} status - Response status
+ * @param {number} totalHits - Total number of matching publications
+ * @param {number} sentHits - Number of publications in current response
+ * @param {number} excludedCount - Number of excluded publications
+ * @param {Object[]} publications - Array of publication objects
+ * @param {number} currentOffset - Current pagination offset
+ */
 function saveResultsToStorage(
   paperTitle,
   status,
@@ -442,7 +489,9 @@ function saveResultsToStorage(
   });
 }
 
-// Add the event listener to all elements of copyBibtexButton class
+/**
+ * Adds click event listeners to all BibTeX copy buttons
+ */
 function addCopyBibtexButtonEventListener() {
   document.querySelectorAll(".copyBibtexButton").forEach((button) => {
     button.addEventListener("click", function () {
@@ -452,9 +501,15 @@ function addCopyBibtexButtonEventListener() {
   });
 }
 
-// ------------------------------------- BibTeX Helper Functions -------------------------------------
+// =====================================
+// BibTeX Helper Functions
+// =====================================
 
-// Extract author name from DBLP citation key
+/**
+ * Extracts author surname from DBLP citation key
+ * @param {string} key - DBLP citation key (e.g., "DBLP:journals/tse/Smith21")
+ * @returns {string} Author surname with numeric suffixes removed
+ */
 function extractAuthorFromKey(key) {
   var name = key.split("/")[2].replace(",", "");
   name = name.replace(/\d+/g, "");
@@ -462,12 +517,20 @@ function extractAuthorFromKey(key) {
   return name;
 }
 
-// Extract venue from DBLP citation key
+/**
+ * Extracts venue abbreviation from DBLP citation key
+ * @param {string} key - DBLP citation key
+ * @returns {string} Venue abbreviation
+ */
 function extractVenueFromKey(key) {
   return key.split("/")[1];
 }
 
-// Extract year from BibTeX data
+/**
+ * Extracts publication year from BibTeX data
+ * @param {string} data - BibTeX entry string
+ * @returns {string|null} Four-digit year or null if not found
+ */
 function extractYearFromBibtex(data) {
   var yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
   if (!yearMatch || yearMatch.length < 2) {
@@ -476,7 +539,12 @@ function extractYearFromBibtex(data) {
   return yearMatch[1];
 }
 
-// Find matching closing brace using brace counting
+/**
+ * Finds the matching closing brace for a BibTeX field value
+ * @param {string} data - BibTeX entry string
+ * @param {number} startIndex - Index to start searching from (after opening brace)
+ * @returns {number} Index after the matching closing brace, or -1 if not found
+ */
 function findMatchingBrace(data, startIndex) {
   let braceCount = 1;
   let endIndex = startIndex;
@@ -492,7 +560,11 @@ function findMatchingBrace(data, startIndex) {
   return braceCount === 0 ? endIndex : -1;
 }
 
-// Find first significant word (skipping articles and short words)
+/**
+ * Finds the first significant word from an array, skipping articles and short words
+ * @param {string[]} words - Array of words to search
+ * @returns {string} First significant word (lowercase, alphanumeric only) or empty string
+ */
 function findFirstSignificantWord(words) {
   const skipWords = ["a", "an", "the", "on", "in", "at"];
   for (const wordItem of words) {
@@ -504,7 +576,11 @@ function findFirstSignificantWord(words) {
   return "";
 }
 
-// Extract first significant word from title
+/**
+ * Extracts the first significant word from the title field in BibTeX data
+ * @param {string} data - BibTeX entry string
+ * @returns {string} First significant title word or empty string
+ */
 function extractFirstTitleWord(data) {
   const titleStart = data.match(/title\s*=\s*\{/i);
   if (!titleStart) {
@@ -524,7 +600,17 @@ function extractFirstTitleWord(data) {
   return findFirstSignificantWord(words);
 }
 
-// Build citation key from fields and options
+/**
+ * Builds a citation key from specified fields and formatting options
+ * @param {string[]} fields - Array of field names to include (author, year, venue, title, dash, underscore)
+ * @param {string} author - Author surname
+ * @param {string} year - Publication year
+ * @param {string} venue - Venue abbreviation
+ * @param {string} title - First significant title word
+ * @param {boolean} authorCapitalize - Whether to capitalize author name
+ * @param {boolean} venueUppercase - Whether to uppercase venue
+ * @returns {string} Formatted citation key
+ */
 function buildCitationKey(fields, author, year, venue, title, authorCapitalize, venueUppercase) {
   var authorValue = author.toLowerCase();
   if (authorCapitalize) {
@@ -545,7 +631,11 @@ function buildCitationKey(fields, author, year, venue, title, authorCapitalize, 
   }).join("");
 }
 
-// Clean BibTeX by removing metadata fields
+/**
+ * Removes DBLP metadata fields (timestamp, biburl, bibsource) from BibTeX
+ * @param {string} data - BibTeX entry string
+ * @returns {string} Cleaned BibTeX string
+ */
 function cleanBibtexMetadata(data) {
   data = data.replace(/\s*timestamp\s*=\s*\{[^}]*\},[\s\n]*/g, "");
   data = data.replace(/\s*biburl\s*=\s*\{[^}]*\},[\s\n]*/g, "");
@@ -555,7 +645,11 @@ function cleanBibtexMetadata(data) {
   return data;
 }
 
-// Remove URL field from BibTeX
+/**
+ * Removes the URL field from BibTeX entry
+ * @param {string} data - BibTeX entry string
+ * @returns {string} BibTeX string with URL field removed
+ */
 function removeUrlFromBibtex(data) {
   data = data.replace(/\n\s*url\s*=\s*\{[^}]*\},?/g, "");
   data = data.replace(/,(\s*})\s*$/, "\n}");
@@ -563,9 +657,14 @@ function removeUrlFromBibtex(data) {
   return data;
 }
 
-// ------------------------------------- Copy BibTeX -------------------------------------
+// =====================================
+// Copy BibTeX Functions
+// =====================================
 
-// Copy the BibTeX to the clipboard
+/**
+ * Fetches BibTeX from URL, applies user options, and copies to clipboard
+ * @param {string} url - URL to fetch BibTeX from
+ */
 window.copyBibtexToClipboard = function (url) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -653,7 +752,16 @@ window.copyBibtexToClipboard = function (url) {
     });
 };
 
-// Update pagination controls
+// =====================================
+// Pagination Functions
+// =====================================
+
+/**
+ * Updates pagination controls based on current results state
+ * @param {number} totalHits - Total number of matching publications
+ * @param {number} sentHits - Number of publications in current response
+ * @param {number} currentOffset - Current pagination offset
+ */
 function updatePaginationControls(totalHits, sentHits, currentOffset) {
   const paginationTop = document.getElementById("pagination");
   const paginationBottom = document.getElementById("pagination-bottom");
@@ -709,7 +817,15 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
   );
 }
 
-// Create pagination controls using safe DOM methods
+/**
+ * Creates pagination control elements using safe DOM methods
+ * @param {boolean} hasPrevPage - Whether previous page is available
+ * @param {boolean} hasNextPage - Whether next page is available
+ * @param {number} currentPage - Current page number (1-indexed)
+ * @param {number} totalPages - Total number of pages
+ * @param {number} totalHits - Total number of matching publications
+ * @returns {HTMLDivElement} Container element with pagination controls
+ */
 function createPaginationControls(
   hasPrevPage,
   hasNextPage,
@@ -751,7 +867,11 @@ function createPaginationControls(
   return container;
 }
 
-// Add event listeners to pagination buttons
+/**
+ * Adds click event listeners to pagination buttons (prev/next)
+ * @param {number} currentOffset - Current pagination offset
+ * @param {number} maxResults - Number of results per page
+ */
 function addPaginationEventListeners(currentOffset, maxResults) {
   const queryInputField = document.getElementById("paperTitle");
   const query = queryInputField.value.trim().replace(/\s/g, "+");

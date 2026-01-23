@@ -1,18 +1,42 @@
-// options.js
+/**
+ * @file options.js
+ * @description Settings UI for the extension. Handles drag-and-drop citation key builder
+ * and user preference management.
+ */
+
 import { updateStatus } from "./commons.js";
 
 var browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 
-// Valid fields whitelist (used for validation throughout)
+/**
+ * Valid field names for citation key building
+ * @type {string[]}
+ */
 const VALID_FIELDS = ["author", "year", "venue", "title"];
+
+/**
+ * Valid separator tokens for citation key building
+ * @type {string[]}
+ */
 const VALID_SEPARATORS = ["dash", "underscore"];
+
+/**
+ * Combined list of all valid tokens (fields + separators)
+ * @type {string[]}
+ */
 const ALL_VALID_TOKENS = [...VALID_FIELDS, ...VALID_SEPARATORS];
 
-// Counter for unique separator IDs
+/**
+ * Counter for generating unique separator token IDs
+ * @type {number}
+ */
 let separatorCounter = 0;
 
-// Sample values for preview
+/**
+ * Sample values used for citation key preview display
+ * @type {{author: string, year: string, venue: string, title: string}}
+ */
 const sampleValues = {
   author: "author",
   year: new Date().getFullYear().toString(),
@@ -20,7 +44,13 @@ const sampleValues = {
   title: "title",
 };
 
-// ------------------------------------- Listeners -------------------------------------
+// =====================================
+// Event Listeners
+// =====================================
+
+/**
+ * Initializes the options page when DOM is loaded
+ */
 document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("saveButton").addEventListener("click", saveOptions);
 
@@ -36,8 +66,13 @@ document.addEventListener("DOMContentLoaded", function () {
   restoreOptions();
 });
 
-// ------------------------------------- Drag & Drop -------------------------------------
+// =====================================
+// Drag & Drop Functions
+// =====================================
 
+/**
+ * Toggles visibility of the drag-and-drop citation key builder based on checkbox state
+ */
 function toggleDragDropVisibility() {
   const isEnabled = document.getElementById("renamingCheckbox").checked;
   const builder = document.querySelector(".citation-key-builder");
@@ -50,6 +85,9 @@ function toggleDragDropVisibility() {
   }
 }
 
+/**
+ * Initializes drag-and-drop functionality for the citation key builder
+ */
 function initDragAndDrop() {
   const availableFields = document.getElementById("availableFields");
   const dropzone = document.getElementById("citationKeyDropzone");
@@ -71,6 +109,10 @@ function initDragAndDrop() {
   availableFields.addEventListener("drop", handleDropToAvailable);
 }
 
+/**
+ * Handles drag start event for field tokens
+ * @param {DragEvent} e - The drag event
+ */
 function handleDragStart(e) {
   e.target.classList.add("dragging");
   e.dataTransfer.effectAllowed = "move";
@@ -82,6 +124,10 @@ function handleDragStart(e) {
   }
 }
 
+/**
+ * Handles drag end event, cleaning up visual states
+ * @param {DragEvent} e - The drag event
+ */
 function handleDragEnd(e) {
   e.target.classList.remove("dragging");
   document.querySelectorAll(".drag-over").forEach((el) => {
@@ -89,16 +135,29 @@ function handleDragEnd(e) {
   });
 }
 
+/**
+ * Handles drag over event, enabling drop and showing visual feedback
+ * @param {DragEvent} e - The drag event
+ */
 function handleDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = "move";
   e.currentTarget.classList.add("drag-over");
 }
 
+/**
+ * Handles drag leave event, removing visual feedback
+ * @param {DragEvent} e - The drag event
+ */
 function handleDragLeave(e) {
   e.currentTarget.classList.remove("drag-over");
 }
 
+/**
+ * Extracts and validates data from a drop event
+ * @param {DragEvent} e - The drop event
+ * @returns {{field: string, source: string, tokenId: string, isSeparator: boolean}} Drop data object
+ */
 function extractDropData(e) {
   e.preventDefault();
   e.currentTarget.classList.remove("drag-over");
@@ -112,6 +171,10 @@ function extractDropData(e) {
   };
 }
 
+/**
+ * Handles drop event on the citation key dropzone
+ * @param {DragEvent} e - The drop event
+ */
 function handleDrop(e) {
   const { field, source, tokenId, isSeparator } = extractDropData(e);
   const dropzone = document.getElementById("citationKeyDropzone");
@@ -169,7 +232,12 @@ function handleDrop(e) {
   }
 }
 
-// Get the element to insert before based on drop position
+/**
+ * Determines the insert position based on drop location within dropzone
+ * @param {DragEvent} e - The drop event
+ * @param {HTMLElement} dropzone - The dropzone element
+ * @returns {HTMLElement|null} Element to insert before, or null for end
+ */
 function getDropPosition(e, dropzone) {
   const tokens = Array.from(dropzone.querySelectorAll(".field-token:not(.dragging)"));
 
@@ -183,6 +251,10 @@ function getDropPosition(e, dropzone) {
   return null; // Insert at end
 }
 
+/**
+ * Handles drop event on the available fields area (removes from dropzone)
+ * @param {DragEvent} e - The drop event
+ */
 function handleDropToAvailable(e) {
   const { field, source, tokenId, isSeparator } = extractDropData(e);
 
@@ -191,6 +263,12 @@ function handleDropToAvailable(e) {
   }
 }
 
+/**
+ * Creates a token element for the dropzone with remove button
+ * @param {string} field - Field name (must be in ALL_VALID_TOKENS)
+ * @param {boolean} [isSeparator=false] - Whether this is a separator token
+ * @returns {HTMLElement|null} Token element or null if invalid field
+ */
 function createDropzoneToken(field, isSeparator = false) {
   // Validate field against whitelist
   if (!ALL_VALID_TOKENS.includes(field)) {
@@ -233,7 +311,11 @@ function createDropzoneToken(field, isSeparator = false) {
   return token;
 }
 
-// Get display text for a field
+/**
+ * Gets the display text for a field token
+ * @param {string} field - Field name
+ * @returns {string} Display text (e.g., "-" for "dash", capitalized name for fields)
+ */
 function getSeparatorDisplay(field) {
   switch (field) {
     case "dash": return "-";
@@ -242,6 +324,12 @@ function getSeparatorDisplay(field) {
   }
 }
 
+/**
+ * Removes a field token from the dropzone
+ * @param {string} field - Field name to remove
+ * @param {string|null} [tokenId=null] - Specific token ID (for separators)
+ * @param {boolean} [isSeparator=false] - Whether this is a separator token
+ */
 function removeFieldFromDropzone(field, tokenId = null, isSeparator = false) {
   // Validate field against whitelist
   if (!ALL_VALID_TOKENS.includes(field)) {
@@ -273,12 +361,20 @@ function removeFieldFromDropzone(field, tokenId = null, isSeparator = false) {
   updatePreview();
 }
 
+/**
+ * Gets the ordered list of fields currently in the dropzone
+ * @returns {string[]} Array of field names in order
+ */
 function getSelectedFields() {
   const dropzone = document.getElementById("citationKeyDropzone");
   const tokens = dropzone.querySelectorAll(".field-token");
   return Array.from(tokens).map((t) => t.dataset.field);
 }
 
+/**
+ * Sets the dropzone fields from an array, restoring a saved configuration
+ * @param {string[]} fields - Array of field names to set
+ */
 function setSelectedFields(fields) {
   const dropzone = document.getElementById("citationKeyDropzone");
 
@@ -314,7 +410,11 @@ function setSelectedFields(fields) {
   updatePreview();
 }
 
-// Safe getter to avoid dynamic property access (object injection)
+/**
+ * Safely gets a sample value for a field (avoids object injection)
+ * @param {string} field - Field name
+ * @returns {string} Sample value for the field
+ */
 function getSampleValue(field) {
   switch (field) {
     case "author": return sampleValues.author;
@@ -327,6 +427,9 @@ function getSampleValue(field) {
   }
 }
 
+/**
+ * Updates the citation key preview based on current dropzone configuration
+ */
 function updatePreview() {
   const fields = getSelectedFields();
   const preview = document.getElementById("citationKeyPreview");
@@ -352,13 +455,22 @@ function updatePreview() {
   preview.textContent = key;
 }
 
+/**
+ * Capitalizes the first letter of a string
+ * @param {string} str - String to capitalize
+ * @returns {string} Capitalized string
+ */
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// ------------------------------------- Save/Restore -------------------------------------
+// =====================================
+// Save/Restore Functions
+// =====================================
 
-// Saves options to chrome.storage
+/**
+ * Saves all user options to browser storage
+ */
 function saveOptions() {
   var maxResultsInput = document.getElementById("maxResults").value;
   var keyRenaming = document.getElementById("renamingCheckbox").checked;
@@ -405,7 +517,9 @@ function saveOptions() {
   );
 }
 
-// Restores select box and checkbox state using the preferences stored in local storage
+/**
+ * Restores user options from browser storage and updates UI elements
+ */
 function restoreOptions() {
   browser.storage.local.get(
     {

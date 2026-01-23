@@ -1,6 +1,16 @@
-// commons.js
+/**
+ * @file commons.js
+ * @description Shared utility functions used across popup and options views.
+ */
+
 console.log("commons.js loaded");
 
+/**
+ * Displays a status message with a loading spinner that auto-clears after timeout
+ * @param {string} message - The status message to display
+ * @param {number} [timeout=2000] - Time in milliseconds before clearing the status
+ * @param {string} [id="status"] - ID of the status element to update
+ */
 export function updateStatus(message, timeout = 2000, id = "status") {
   // `${message}&nbsp;<img class="status" src="../images/spinner.gif" />&nbsp;`
   const statusElement = document.getElementById(id);

@@ -1,6 +1,11 @@
 /*global chrome*/
 
-// background.js
+/**
+ * @file background.js
+ * @description Service worker for the dblp Search extension. Handles messages from popup/options,
+ * manages context menus, and coordinates between MVC components.
+ */
+
 var browser = browser || chrome;
 console.log("background.js loaded");
 
@@ -9,18 +14,27 @@ import { PublicationController } from "./controller/controller.js";
 import { PublicationModel } from "./model/model.js";
 import { PublicationView } from "./view/view.js";
 
+/** @type {PublicationModel} */
 const model = new PublicationModel();
+/** @type {PublicationView} */
 const view = new PublicationView();
+/** @type {PublicationController} */
 const controller = new PublicationController(model, view);
 
-// DOI validation patterns (based on Crossref recommendations)
-// See: https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+/**
+ * DOI validation patterns based on Crossref recommendations
+ * @see https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+ * @type {RegExp[]}
+ */
 const DOI_PATTERNS = [
   /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, // Standard DOIs (74.4M+)
   /^10\.1002\/[^\s]+$/i, // Wiley legacy DOIs (~300K) - intentionally permissive for SICI
 ];
 
-// Track badge timeout to prevent race conditions
+/**
+ * Tracks badge timeout ID to prevent race conditions during badge updates
+ * @type {number|null}
+ */
 let badgeTimeoutId = null;
 
 /**
@@ -137,7 +151,14 @@ function showInvalidDOIFeedback(text) {
   flash();
 }
 
-// Helper function to handle message errors consistently
+/**
+ * Handles message errors consistently by logging and sending error response
+ * @param {Error} error - The error that occurred
+ * @param {Object} message - The original message object
+ * @param {string} message.type - The type of message
+ * @param {string} message.script - The script that sent the message
+ * @param {Function} sendResponse - Callback function to send response back
+ */
 function handleMessageError(error, message, sendResponse) {
   console.error(
     `There was a problem with the message '${message.type}' sent by '${message.script}': ${error}`
@@ -149,7 +170,20 @@ function handleMessageError(error, message, sendResponse) {
   });
 }
 
-//  Add a listener for messages from the view
+/**
+ * Message listener for handling requests from popup and other extension components.
+ * Processes search requests and pagination commands.
+ * @param {Object} message - The message object from the sender
+ * @param {string} message.type - Message type (REQUEST_SEARCH_PUBLICATIONS, REQUEST_NEXT_PAGE, REQUEST_PREVIOUS_PAGE)
+ * @param {string} message.script - The script that sent the message
+ * @param {string} [message.query] - Search query string
+ * @param {number} [message.offset] - Pagination offset
+ * @param {number} [message.currentOffset] - Current pagination offset
+ * @param {number} [message.maxResults] - Maximum results per page
+ * @param {Object} sender - Information about the message sender
+ * @param {Function} sendResponse - Callback to send response
+ * @returns {boolean} True if response will be sent asynchronously, false otherwise
+ */
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Ignore messages not meant for background.js
   if (!message.type || !message.type.startsWith("REQUEST_")) {
@@ -212,7 +246,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-// Create context menu items
+/**
+ * Creates context menu items when the extension is installed.
+ * Adds menu options for searching highlighted text on dblp and resolving DOIs.
+ */
 browser.runtime.onInstalled.addListener(function () {
   // Context menu item to search dblp
   browser.contextMenus.create({
@@ -229,7 +266,14 @@ browser.runtime.onInstalled.addListener(function () {
   });
 });
 
-// Add menu click listener
+/**
+ * Handles context menu item clicks.
+ * - "selection": Opens dblp search with highlighted text
+ * - "doi-resolve": Resolves DOI to its target URL
+ * @param {Object} info - Information about the clicked menu item
+ * @param {string} info.menuItemId - The ID of the clicked menu item
+ * @param {string} info.selectionText - The selected text when the menu was clicked
+ */
 browser.contextMenus.onClicked.addListener(function (info) {
   if (info.menuItemId === "selection") {
     const query = info.selectionText;
