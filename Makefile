@@ -187,15 +187,6 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 build/edge:  ## Build Edge extension zip (same as Chrome)
 	$(MAKE) build/chrome
 
-.PHONY: build/clean
-build/clean:  ## Clean up build directory and remove all timestamps
-	@echo -e "$(CYAN)\nCleaning up $(BUILD_DIR) directory...$(RESET)"
-	@rm -rf $(BUILD_DIR)/$(FIREFOX_DIR)
-	@rm -rf $(BUILD_DIR)/$(SAFARI_DIR)
-	@rm -rf $(BUILD_DIR)/$(CHROME_DIR)
-	@rm -f $(STAMP_FILES)
-	@echo -e "$(GREEN)Done.$(RESET)"
-
 .PHONY: build/all
 build/all:  ## Build all extensions (alias: make build)
 	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
@@ -206,28 +197,16 @@ build/all:  ## Build all extensions (alias: make build)
 .PHONY: build
 build: build/all
 
+.PHONY: build/clean
+build/clean:  ## Clean up build directory and remove all timestamps
+	@echo -e "$(CYAN)\nCleaning up $(BUILD_DIR) directory...$(RESET)"
+	@rm -rf $(BUILD_DIR)/$(FIREFOX_DIR)
+	@rm -rf $(BUILD_DIR)/$(SAFARI_DIR)
+	@rm -rf $(BUILD_DIR)/$(CHROME_DIR)
+	@rm -f $(STAMP_FILES)
+	@echo -e "$(GREEN)Done.$(RESET)"
+
 #-- Release
-
-.PHONY: tag/apply
-tag/apply: | dep/git  ## Create and apply tag from current manifest version
-	@$(eval TAG := v$(APP_VERSION))
-	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
-		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
-	else \
-		echo -e "$(CYAN)\nCreating tag $(TAG)...$(RESET)"; \
-		$(GIT) tag $(TAG); \
-		echo -e "$(GREEN)Done. Tag $(TAG) created.$(RESET)"; \
-	fi
-
-.PHONY: tag/check
-tag/check: | dep/git  ## Check if a new release is needed
-	@$(eval TAG := $(shell $(GIT) describe --tags --abbrev=0))
-	@$(eval BEHIND_AHEAD := $(shell $(GIT) rev-list --left-right --count $(TAG)...origin/main))
-	@$(shell if [ "$(BEHIND_AHEAD)" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi)
-	@echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"
-	@echo -e "  $(CYAN)Current tag:$(RESET) $(TAG)"
-	@echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $(shell echo ${BEHIND_AHEAD} | tr '[:space:]' '/' | $(SED) 's/\/$$//')"
-	@echo -e "  $(CYAN)Needs release:$(RESET) $(shell cat $(RELEASE_STAMP))"
 
 .PHONY: staging
 staging: | dep/git
@@ -249,28 +228,39 @@ define update_version
     $(GIT) commit -m "Bump version to $(1)"
 endef
 
-.PHONY: tag/patch
-tag/patch: | tag/check staging  ## Bump patch semantic version in manifest files (e.g., 1.0.0 -> 1.0.1)
+.PHONY: bump/patch
+bump/patch: | release/check staging  ## Bump patch semantic version in manifest files (e.g., 1.0.0 -> 1.0.1)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF++; print $$0}') ; \
 		$(call update_version,$$NEW_VERSION) ; \
 	fi
 
-.PHONY: tag/minor
-tag/minor: | tag/check staging  ## Bump minor semantic version in manifest files (e.g., 1.0.0 -> 1.1.0)
+.PHONY: bump/minor
+bump/minor: | release/check staging  ## Bump minor semantic version in manifest files (e.g., 1.0.0 -> 1.1.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$(NF-1)++; $$NF=0; print $$0}') ; \
 		$(call update_version,$$NEW_VERSION) ; \
 	fi
 
-.PHONY: tag/major
-tag/major: | tag/check staging  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 2.0.0)
+.PHONY: bump/major
+bump/major: | release/check staging  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 2.0.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$1++; $$2=0; $$3=0; print $$0}') ; \
 		$(call update_version,$$NEW_VERSION) ; \
+	fi
+
+.PHONY: tag/apply
+tag/apply: | dep/git  ## Create and apply tag from current manifest version
+	@$(eval TAG := v$(APP_VERSION))
+	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
+		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
+	else \
+		echo -e "$(CYAN)\nCreating tag $(TAG)...$(RESET)"; \
+		$(GIT) tag $(TAG); \
+		echo -e "$(GREEN)Done. Tag $(TAG) created.$(RESET)"; \
 	fi
 
 .PHONY: tag/push
@@ -288,9 +278,6 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action (al
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
 
-.PHONY: release
-release: tag/push
-
 .PHONY: tag/delete
 tag/delete: | dep/git  ## Delete the tag for the current version
 	$(eval tag_exists=$(shell $(GIT) rev-parse $(APP_VERSION) >/dev/null 2>&1 && echo 1 || echo 0))
@@ -301,6 +288,19 @@ tag/delete: | dep/git  ## Delete the tag for the current version
 	else \
 		echo -e "$(ORANGE)Current $(APP_VERSION) is not tagged.$(RESET)"; \
 	fi
+
+.PHONY: release/check
+release/check: | dep/git  ## Check if a new release is needed
+	@$(eval TAG := $(shell $(GIT) describe --tags --abbrev=0))
+	@$(eval BEHIND_AHEAD := $(shell $(GIT) rev-list --left-right --count $(TAG)...origin/main))
+	@$(shell if [ "$(BEHIND_AHEAD)" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi)
+	@echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"
+	@echo -e "  $(CYAN)Current tag:$(RESET) $(TAG)"
+	@echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $(shell echo ${BEHIND_AHEAD} | tr '[:space:]' '/' | $(SED) 's/\/$$//')"
+	@echo -e "  $(CYAN)Needs release:$(RESET) $(shell cat $(RELEASE_STAMP))"
+
+.PHONY: release
+release: tag/push  ## Triggers the release action - pushs the tag to origin (alias: tag/push)
 
 #-- Run
 
