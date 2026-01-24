@@ -481,6 +481,7 @@ function saveOptions() {
     "removeTimestampBiburlBibsource"
   ).checked;
   var removeUrl = document.getElementById("removeUrl").checked;
+  var popupWidthInput = document.getElementById("popupWidth").value;
 
   // Validate maxResults input
   var maxResults = parseInt(maxResultsInput, 10);
@@ -489,6 +490,16 @@ function saveOptions() {
     // Reset to default value
     maxResults = 30;
     document.getElementById("maxResults").value = maxResults;
+    return;
+  }
+
+  // Validate popupWidth input
+  var popupWidth = parseInt(popupWidthInput, 10);
+  if (isNaN(popupWidth) || popupWidth < 500 || popupWidth > 800) {
+    updateStatus("Error: Popup width must be between 500 and 800", 3000);
+    // Reset to default value
+    popupWidth = 650;
+    document.getElementById("popupWidth").value = popupWidth;
     return;
   }
 
@@ -508,6 +519,7 @@ function saveOptions() {
         venueUppercase: venueUppercase,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
         removeUrl: removeUrl,
+        popupWidth: popupWidth,
       },
     },
     function () {
@@ -531,6 +543,7 @@ function restoreOptions() {
         venueUppercase: false,
         removeTimestampBiburlBibsource: true,
         removeUrl: false,
+        popupWidth: 650,
       },
     },
     function (items) {
@@ -544,6 +557,8 @@ function restoreOptions() {
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
       document.getElementById("removeUrl").checked = items.options.removeUrl;
+      document.getElementById("popupWidth").value =
+        items.options.popupWidth || 650;
 
       // Show/hide drag & drop based on checkbox state
       toggleDragDropVisibility();

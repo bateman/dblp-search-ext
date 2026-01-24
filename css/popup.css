@@ -2,6 +2,8 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     color: #333;
+    min-width: 500px;
+    max-width: 800px;
 }
 
 div {
@@ -19,7 +21,7 @@ div {
 
 input {
     flex: 1;
-    width: 600px;
+    min-width: 200px;
     height: 20px;
 }
 
@@ -96,6 +98,16 @@ img {
 #results tbody td {
     padding: 10px;
     border-bottom: 1px solid #e9e7e7;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Allow title column to wrap */
+#results tbody td:nth-child(2) {
+    white-space: normal;
+    max-width: none;
 }
 
 #results tbody tr:last-child td {
@@ -217,4 +229,25 @@ img.footer-gh {
     font-weight: bold;
     color: #333;
     white-space: nowrap;
+}
+
+/* Responsive column hiding for narrow widths */
+/* Hide DOI (col 6) and Access (col 7) columns below 650px */
+@media (max-width: 650px) {
+    #results thead th:nth-child(6),
+    #results thead th:nth-child(7),
+    #results tbody td:nth-child(6),
+    #results tbody td:nth-child(7) {
+        display: none;
+    }
+}
+
+/* Also hide Authors (col 3) and Venue (col 5) columns below 550px */
+@media (max-width: 550px) {
+    #results thead th:nth-child(3),
+    #results thead th:nth-child(5),
+    #results tbody td:nth-child(3),
+    #results tbody td:nth-child(5) {
+        display: none;
+    }
 }
