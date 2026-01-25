@@ -526,7 +526,9 @@ function createPublicationRow(result, index) {
 
   const authorsCell = document.createElement("td");
   const authors = Array.isArray(result.authors) ? result.authors : [];
-  authorsCell.textContent = authors.join(", ");
+  const authorsText = authors.join(", ");
+  authorsCell.textContent = authorsText;
+  authorsCell.title = authorsText;
   row.appendChild(authorsCell);
 
   const yearCell = document.createElement("td");
@@ -535,6 +537,7 @@ function createPublicationRow(result, index) {
 
   const venueCell = document.createElement("td");
   venueCell.textContent = result.venue;
+  venueCell.title = result.venue || "";
   row.appendChild(venueCell);
 
   row.appendChild(createDoiCell(result.doi, result.doiURL));

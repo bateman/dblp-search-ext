@@ -21,7 +21,8 @@ div {
 
 input {
     flex: 1;
-    min-width: 200px;
+    min-width: 150px;
+    max-width: calc(100% - 90px);
     height: 20px;
 }
 
@@ -115,10 +116,64 @@ img {
     white-space: nowrap;
 }
 
-/* Allow title column to wrap */
+/* Column width definitions for 800px max popup width */
+/* Col 1: Type (icon) - minimal, centered */
+#results thead th:nth-child(1),
+#results tbody td:nth-child(1) {
+    width: 24px;
+    padding: 6px 4px;
+    text-align: center;
+}
+
+/* Col 2: Title - flexible, wraps */
 #results tbody td:nth-child(2) {
     white-space: normal;
-    max-width: none;
+}
+
+/* Col 3: Authors - truncate with ellipsis */
+#results thead th:nth-child(3),
+#results tbody td:nth-child(3) {
+    width: 90px;
+    max-width: 90px;
+}
+
+/* Col 4: Year - compact */
+#results thead th:nth-child(4),
+#results tbody td:nth-child(4) {
+    width: 45px;
+    padding: 8px 4px;
+    text-align: center;
+}
+
+/* Col 5: Venue - truncate with ellipsis */
+#results thead th:nth-child(5),
+#results tbody td:nth-child(5) {
+    width: 85px;
+    max-width: 85px;
+}
+
+/* Col 6: DOI - compact */
+#results thead th:nth-child(6),
+#results tbody td:nth-child(6) {
+    width: 35px;
+    padding: 8px 4px;
+    text-align: center;
+}
+
+/* Col 7: Access - compact */
+#results thead th:nth-child(7),
+#results tbody td:nth-child(7) {
+    width: 50px;
+    padding: 8px 4px;
+    text-align: center;
+}
+
+/* Col 8: BibTeX - fits header and button */
+#results thead th:nth-child(8),
+#results tbody td:nth-child(8) {
+    width: 52px;
+    padding: 8px 4px;
+    text-align: center;
 }
 
 #results tbody tr:last-child td {
