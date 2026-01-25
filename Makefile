@@ -35,6 +35,7 @@ PROJECT_REPO ?= $(shell url=$$($(GIT) config --get remote.origin.url); echo $${u
 GITHUB_USER_NAME ?= $(shell echo $(PROJECT_REPO) | $(AWK) -F/ 'NF>=4{print $$4}')
 GITHUB_USER_EMAIL ?= $(shell $(GIT) config --get user.email || echo '')
 DEFAULT_URL ?= "https://scholar.google.com"
+COMMIT ?=
 SAFARI_DEV_ID := dev.fcalefato.$(APP_NAME)
 
 # Dirs
@@ -224,12 +225,17 @@ define update_version
     mv $(MANIFEST_TMP) $(MANIFEST) && \
     cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
-    $(GIT) add $(MANIFEST) $(MANIFEST_FIREFOX) && \
-    $(GIT) commit -m "Bump version to $(1)"
+    if [ "$(COMMIT)" = "1" ]; then \
+        $(GIT) add $(MANIFEST) $(MANIFEST_FIREFOX) && \
+        $(GIT) commit -m "Bump version to $(1)" && \
+        echo -e "$(GREEN)Version updated and committed.$(RESET)" ; \
+    else \
+        echo -e "$(GREEN)Version updated. Use COMMIT=1 to auto-commit.$(RESET)" ; \
+    fi
 endef
 
 .PHONY: bump/patch
-bump/patch: | release/check staging  ## Bump patch semantic version in manifest files (e.g., 1.0.0 -> 1.0.1)
+bump/patch: | release/check staging  ## Bump patch version (e.g., 1.0.0 -> 1.0.1). Use COMMIT=1 to auto-commit
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF++; print $$0}') ; \
@@ -237,7 +243,7 @@ bump/patch: | release/check staging  ## Bump patch semantic version in manifest 
 	fi
 
 .PHONY: bump/minor
-bump/minor: | release/check staging  ## Bump minor semantic version in manifest files (e.g., 1.0.0 -> 1.1.0)
+bump/minor: | release/check staging  ## Bump minor version (e.g., 1.0.0 -> 1.1.0). Use COMMIT=1 to auto-commit
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$(NF-1)++; $$NF=0; print $$0}') ; \
@@ -245,7 +251,7 @@ bump/minor: | release/check staging  ## Bump minor semantic version in manifest 
 	fi
 
 .PHONY: bump/major
-bump/major: | release/check staging  ## Bump major semantic version in manifest files (e.g., 1.0.0 -> 2.0.0)
+bump/major: | release/check staging  ## Bump major version (e.g., 1.0.0 -> 2.0.0). Use COMMIT=1 to auto-commit
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$1++; $$2=0; $$3=0; print $$0}') ; \
