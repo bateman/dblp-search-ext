@@ -31,6 +31,9 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Could not load manifest version:", error);
     });
 
+  // Restore popup width from storage
+  restorePopupWidth();
+
   // if the content of the popup was saved in the local storage, then restore it
   restoreResultsFromStorage();
 
@@ -487,6 +490,26 @@ function saveResultsToStorage(
       currentOffset: currentOffset,
     },
   });
+}
+
+/**
+ * Restores popup width from browser local storage
+ */
+function restorePopupWidth() {
+  browser.storage.local.get(
+    {
+      options: {
+        popupWidth: 650,
+      },
+    },
+    function (items) {
+      const width = Math.min(
+        Math.max(items.options.popupWidth || 650, 500),
+        800
+      );
+      document.body.style.width = width + "px";
+    }
+  );
 }
 
 /**
