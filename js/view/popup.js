@@ -12,6 +12,24 @@ var browser = window.msBrowser || window.browser || window.chrome;
 // Track currently selected row for keyboard navigation
 var selectedRowIndex = -1;
 
+// Track current sort and filter settings
+var currentSort = { field: "none", direction: "asc" };
+var currentFilters = {
+  article: true,
+  inproceedings: true,
+  book: true,
+  incollection: true,
+  editor: true,
+  misc: true,
+  refwork: true
+};
+
+// Store original publications for filtering/sorting
+var originalPublications = [];
+
+// Track if filter dropdown should stay open after rebuild
+var keepFilterDropdownOpen = false;
+
 // =====================================
 // Event Listeners
 // =====================================
@@ -152,58 +170,110 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Keyboard navigation and shortcuts
-  document.addEventListener("keydown", function (event) {
-    const rows = document.querySelectorAll("#results-table tbody tr");
-
-    // Handle arrow keys in search input to jump to results
-    if (document.activeElement === queryInputField) {
-      if ((event.key === "ArrowDown" || event.key === "ArrowUp") && rows.length > 0) {
-        event.preventDefault();
-        queryInputField.blur();
-        selectedRowIndex = 0;
-        const firstRow = rows.item(0);
-        if (firstRow) {
-          firstRow.classList.add("selected");
-          firstRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
-        }
-      }
-      return;
-    }
-
-    if (rows.length === 0) {
-      return;
-    }
-
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        navigateRows(rows, 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        navigateRows(rows, -1);
-        break;
-      case "c":
-      case "C":
-        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
-          copySelectedRowBibtex(rows.item(selectedRowIndex));
-        }
-        break;
-      case "d":
-      case "D":
-        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
-          openSelectedRowDblp(rows.item(selectedRowIndex));
-        }
-        break;
-      case "o":
-      case "O":
-        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
-          openSelectedRowDoi(rows.item(selectedRowIndex));
-        }
-        break;
-    }
-  });
+  document.addEventListener("keydown", handleKeyboardShortcuts);
 });
+
+/**
+ * Checks if keyboard shortcuts should be ignored based on active element
+ * @returns {boolean} True if shortcuts should be ignored
+ */
+function shouldIgnoreShortcuts() {
+  const activeTag = document.activeElement ? document.activeElement.tagName : "";
+  return activeTag === "SELECT" || activeTag === "INPUT" || activeTag === "BUTTON";
+}
+
+/**
+ * Handles jumping from search input to first result row
+ * @param {KeyboardEvent} event - The keyboard event
+ * @param {NodeList} rows - The result table rows
+ * @param {HTMLInputElement} queryInputField - The search input field
+ * @returns {boolean} True if the event was handled
+ */
+function handleSearchInputArrowKeys(event, rows, queryInputField) {
+  if (document.activeElement !== queryInputField) {
+    return false;
+  }
+  if ((event.key === "ArrowDown" || event.key === "ArrowUp") && rows.length > 0) {
+    event.preventDefault();
+    queryInputField.blur();
+    selectedRowIndex = 0;
+    const firstRow = rows.item(0);
+    if (firstRow) {
+      firstRow.classList.add("selected");
+      firstRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+  return true;
+}
+
+/**
+ * Executes keyboard shortcut action on selected row
+ * @param {string} key - The pressed key
+ * @param {NodeList} rows - The result table rows
+ */
+function executeRowShortcut(key, rows) {
+  if (selectedRowIndex < 0 || selectedRowIndex >= rows.length) {
+    return;
+  }
+  const selectedRow = rows.item(selectedRowIndex);
+  switch (key.toLowerCase()) {
+    case "c":
+      copySelectedRowBibtex(selectedRow);
+      break;
+    case "d":
+      openSelectedRowDblp(selectedRow);
+      break;
+    case "o":
+      openSelectedRowDoi(selectedRow);
+      break;
+  }
+}
+
+/**
+ * Handles arrow key navigation in results table
+ * @param {KeyboardEvent} event - The keyboard event
+ * @param {NodeList} rows - The result table rows
+ * @returns {boolean} True if the event was handled
+ */
+function handleArrowNavigation(event, rows) {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    navigateRows(rows, 1);
+    return true;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    navigateRows(rows, -1);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Main keyboard shortcut handler
+ * @param {KeyboardEvent} event - The keyboard event
+ */
+function handleKeyboardShortcuts(event) {
+  const rows = document.querySelectorAll("#results-table tbody tr");
+  const queryInputField = document.getElementById("paperTitle");
+
+  if (handleSearchInputArrowKeys(event, rows, queryInputField)) {
+    return;
+  }
+
+  if (shouldIgnoreShortcuts() || rows.length === 0) {
+    return;
+  }
+
+  if (handleArrowNavigation(event, rows)) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+  if (key === "c" || key === "d" || key === "o") {
+    executeRowShortcut(event.key, rows);
+  }
+}
 
 // =====================================
 // Core Functions
@@ -258,6 +328,24 @@ function requestSearchDblp(q, offset = 0) {
 }
 
 /**
+ * Resets filter and sort settings to defaults
+ */
+function resetFiltersAndSort() {
+  currentSort = { field: "none", direction: "asc" };
+  currentFilters = {
+    article: true,
+    inproceedings: true,
+    book: true,
+    incollection: true,
+    editor: true,
+    misc: true,
+    refwork: true
+  };
+  originalPublications = [];
+  keepFilterDropdownOpen = false;
+}
+
+/**
  * Clears the current search results and optionally the search input
  * @param {boolean} [clearTitle=true] - Whether to also clear the search input field
  */
@@ -266,6 +354,7 @@ function requestClearResults(clearTitle = true) {
   if (clearTitle) {
     document.getElementById("paperTitle").value = "";
   }
+  resetFiltersAndSort();
   updatePublicationsCount("RESET", 0, 0, 0);
   clearResultsTable();
   updatePaginationControls(0, 0, 0);
@@ -339,8 +428,10 @@ function clearResultsTable() {
 function createTypeCell(type) {
   const cell = document.createElement("td");
   const img = document.createElement("img");
-  img.className = type || "";
-  img.title = type || "";
+  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
+  const safeType = validTypes.includes(type) ? type : "misc";
+  img.className = safeType;
+  img.title = safeType;
   img.src = "../images/pub-type.png";
   cell.appendChild(img);
   return cell;
@@ -454,10 +545,309 @@ function createPublicationRow(result, index) {
 }
 
 /**
- * Builds and displays the publications results table using safe DOM methods
+ * Safely checks if a publication type is enabled in filters
+ * @param {string} type - The publication type
+ * @returns {boolean} True if the type is enabled
+ */
+function isTypeFilterEnabled(type) {
+  switch (type) {
+    case "article":
+      return currentFilters.article !== false;
+    case "inproceedings":
+      return currentFilters.inproceedings !== false;
+    case "book":
+      return currentFilters.book !== false;
+    case "incollection":
+      return currentFilters.incollection !== false;
+    case "editor":
+      return currentFilters.editor !== false;
+    case "misc":
+      return currentFilters.misc !== false;
+    case "refwork":
+      return currentFilters.refwork !== false;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Gets the sortable value for a publication based on field
+ * @param {Object} pub - The publication object
+ * @param {string} field - The field to sort by
+ * @returns {string|number} The sortable value
+ */
+function getSortValue(pub, field) {
+  if (field === "year") {
+    return parseInt(pub.year, 10) || 0;
+  }
+  if (field === "venue") {
+    return (pub.venue || "").toLowerCase();
+  }
+  if (field === "author") {
+    return Array.isArray(pub.authors) && pub.authors.length > 0
+      ? pub.authors[0].toLowerCase()
+      : "";
+  }
+  return "";
+}
+
+/**
+ * Compares two values for sorting
+ * @param {string|number} valA - First value
+ * @param {string|number} valB - Second value
+ * @param {string} direction - Sort direction ("asc" or "desc")
+ * @returns {number} Comparison result
+ */
+function compareValues(valA, valB, direction) {
+  let comparison = 0;
+  if (valA < valB) {
+    comparison = -1;
+  } else if (valA > valB) {
+    comparison = 1;
+  }
+  return direction === "desc" ? -comparison : comparison;
+}
+
+/**
+ * Applies current sort and filter settings to publications
+ * @param {Object[]} publications - Original array of publication objects
+ * @returns {Object[]} Filtered and sorted publications array
+ */
+function applyFiltersAndSort(publications) {
+  if (!publications || publications.length === 0) {
+    return [];
+  }
+
+  // Apply filters
+  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
+  let filtered = publications.filter(function(pub) {
+    const type = validTypes.includes(pub.type) ? pub.type : "misc";
+    return isTypeFilterEnabled(type);
+  });
+
+  // Apply sorting
+  if (currentSort.field !== "none") {
+    filtered = filtered.slice().sort(function(a, b) {
+      const valA = getSortValue(a, currentSort.field);
+      const valB = getSortValue(b, currentSort.field);
+      return compareValues(valA, valB, currentSort.direction);
+    });
+  }
+
+  return filtered;
+}
+
+/**
+ * Gets the sort indicator character for a column
+ * @param {string} field - The field name
+ * @returns {string} Sort indicator character
+ */
+function getSortIndicator(field) {
+  if (field === "none") {
+    // Title column shows indicator only when in default order
+    return currentSort.field === "none" ? "\u2022" : ""; // • or empty
+  }
+  if (currentSort.field !== field) {
+    return "\u2195"; // ↕ (unsorted)
+  }
+  return currentSort.direction === "asc" ? "\u2191" : "\u2193"; // ↑ or ↓
+}
+
+/**
+ * Handles click on a sortable column header
+ * @param {string} field - The field to sort by ("none" resets to default order)
+ */
+function handleSortClick(field) {
+  if (field === "none") {
+    // Reset to default API order
+    currentSort = { field: "none", direction: "asc" };
+  } else if (currentSort.field === field) {
+    // Toggle direction if same field
+    currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+  } else {
+    // New field, default to descending for year, ascending for others
+    currentSort.field = field;
+    currentSort.direction = field === "year" ? "desc" : "asc";
+  }
+  rebuildTableWithFilters();
+}
+
+/**
+ * Creates a sortable table header cell
+ * @param {string} text - Header text
+ * @param {string} field - Field name for sorting
+ * @returns {HTMLTableCellElement} The header cell
+ */
+function createSortableHeader(text, field) {
+  const th = document.createElement("th");
+  th.scope = "col";
+  th.className = "sortable-header";
+  th.dataset.field = field;
+  th.title = field === "none" ? "Click to reset to default order" : "Click to sort by " + text;
+
+  const textSpan = document.createElement("span");
+  textSpan.textContent = text;
+  th.appendChild(textSpan);
+
+  const indicator = document.createElement("span");
+  indicator.className = "sort-indicator";
+  indicator.textContent = getSortIndicator(field);
+  th.appendChild(indicator);
+
+  th.addEventListener("click", function() {
+    handleSortClick(field);
+  });
+
+  return th;
+}
+
+/**
+ * Checks if any filters are active (not all selected)
+ * @returns {boolean} True if filtering is active
+ */
+function hasActiveFilters() {
+  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
+  return validTypes.some(function(type) {
+    return !isTypeFilterEnabled(type);
+  });
+}
+
+/**
+ * Creates the type column header with filter dropdown
+ * @returns {HTMLTableCellElement} The header cell with filter
+ */
+function createTypeFilterHeader() {
+  const th = document.createElement("th");
+  th.scope = "col";
+  th.className = "filter-header";
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "filter-header-wrapper";
+
+  const filterBtn = document.createElement("button");
+  filterBtn.className = "filter-btn" + (hasActiveFilters() ? " active" : "");
+  filterBtn.title = "Filter by type";
+  filterBtn.textContent = "\u25BC"; // ▼
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "filter-dropdown" + (keepFilterDropdownOpen ? " show" : "");
+  keepFilterDropdownOpen = false;
+
+  const filterTypes = [
+    { type: "article", label: "Articles", color: "#c32b72" },
+    { type: "inproceedings", label: "Conference", color: "#196ca3" },
+    { type: "book", label: "Books", color: "#f8c91f" },
+    { type: "incollection", label: "Chapters", color: "#ef942d" },
+    { type: "editor", label: "Editorship", color: "#33c3ba" },
+    { type: "misc", label: "Misc", color: "#606b70" },
+    { type: "refwork", label: "Reference", color: "#96ad2d" }
+  ];
+
+  filterTypes.forEach(function(ft) {
+    const item = document.createElement("label");
+    item.className = "filter-dropdown-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.type = ft.type;
+    checkbox.checked = currentFilters[ft.type] !== false;
+
+    checkbox.addEventListener("change", function(e) {
+      e.stopPropagation();
+      currentFilters[this.dataset.type] = this.checked;
+      keepFilterDropdownOpen = true;
+      rebuildTableWithFilters();
+    });
+
+    const colorBox = document.createElement("span");
+    colorBox.className = "filter-color-box";
+    colorBox.style.backgroundColor = ft.color;
+
+    const label = document.createElement("span");
+    label.textContent = ft.label;
+
+    item.appendChild(checkbox);
+    item.appendChild(colorBox);
+    item.appendChild(label);
+    dropdown.appendChild(item);
+  });
+
+  filterBtn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    const wasOpen = dropdown.classList.contains("show");
+    // Close any other open dropdowns first
+    document.querySelectorAll(".filter-dropdown.show").forEach(function(d) {
+      d.classList.remove("show");
+    });
+    if (!wasOpen) {
+      dropdown.classList.add("show");
+    }
+  });
+
+  // Close on click outside (using wrapper to scope the handler)
+  dropdown.addEventListener("click", function(e) {
+    e.stopPropagation();
+  });
+
+  wrapper.appendChild(filterBtn);
+  wrapper.appendChild(dropdown);
+  th.appendChild(wrapper);
+
+  return th;
+}
+
+// Global click handler to close filter dropdowns (added once)
+document.addEventListener("click", function() {
+  document.querySelectorAll(".filter-dropdown.show").forEach(function(d) {
+    d.classList.remove("show");
+  });
+});
+
+/**
+ * Rebuilds the table with current filter and sort settings
+ */
+function rebuildTableWithFilters() {
+  const filtered = applyFiltersAndSort(originalPublications);
+  displayTableWithPublications(filtered);
+}
+
+/**
+ * Creates the table header row with sort/filter controls
+ * @returns {HTMLTableSectionElement} The thead element
+ */
+function createTableHeader() {
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  // Type column with filter dropdown
+  headerRow.appendChild(createTypeFilterHeader());
+
+  // Title column (click to reset to default API order)
+  headerRow.appendChild(createSortableHeader("Title", "none"));
+
+  // Sortable columns: Authors, Year, Venue
+  headerRow.appendChild(createSortableHeader("Authors", "author"));
+  headerRow.appendChild(createSortableHeader("Year", "year"));
+  headerRow.appendChild(createSortableHeader("Venue", "venue"));
+
+  // Non-sortable columns: DOI, Access, BibTeX
+  const nonSortableHeaders = ["DOI", "Access", "BibTeX"];
+  nonSortableHeaders.forEach(function(headerText) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+  return thead;
+}
+
+/**
+ * Displays publications in the table (internal function)
  * @param {Object[]} publications - Array of publication objects to display
  */
-function buildAndDisplayTable(publications) {
+function displayTableWithPublications(publications) {
   const results = document.getElementById("results");
   if (!results) return;
 
@@ -467,40 +857,35 @@ function buildAndDisplayTable(publications) {
   // Clear existing content
   results.textContent = "";
 
-  if (!publications || publications.length === 0) {
+  // Don't show anything if no original publications
+  if (!originalPublications || originalPublications.length === 0) {
     return;
   }
 
-  // Create table
+  // Create table (always show header so filters remain accessible)
   const table = document.createElement("table");
   table.id = "results-table";
   table.className = "table table-striped table-hover";
 
-  // Create header
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-
-  const thTitle = document.createElement("th");
-  thTitle.scope = "col";
-  thTitle.colSpan = 2;
-  thTitle.textContent = "Title";
-  headerRow.appendChild(thTitle);
-
-  const otherHeaders = ["Authors", "Year", "Venue", "DOI", "Access", "BibTeX"];
-  otherHeaders.forEach((headerText) => {
-    const th = document.createElement("th");
-    th.scope = "col";
-    th.textContent = headerText;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
+  // Create header with integrated sort/filter controls
+  table.appendChild(createTableHeader());
 
   // Create body
   const tbody = document.createElement("tbody");
-  publications.forEach((result, index) => {
-    tbody.appendChild(createPublicationRow(result, index));
-  });
+  if (!publications || publications.length === 0) {
+    // Show message row when all results are filtered out
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = 8;
+    emptyCell.className = "no-results-message";
+    emptyCell.textContent = "No publications match the current filters.";
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+  } else {
+    publications.forEach((result, index) => {
+      tbody.appendChild(createPublicationRow(result, index));
+    });
+  }
   table.appendChild(tbody);
 
   // Add keyboard shortcuts hint above the table
@@ -513,6 +898,19 @@ function buildAndDisplayTable(publications) {
 
   // Add event listeners for copy buttons
   addCopyBibtexButtonEventListener();
+}
+
+/**
+ * Builds and displays the publications results table using safe DOM methods
+ * @param {Object[]} publications - Array of publication objects to display
+ */
+function buildAndDisplayTable(publications) {
+  // Store original publications for filtering/sorting
+  originalPublications = publications || [];
+
+  // Apply filters and sort, then display
+  const filtered = applyFiltersAndSort(originalPublications);
+  displayTableWithPublications(filtered);
 }
 
 /**
