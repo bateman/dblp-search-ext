@@ -153,12 +153,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Keyboard navigation and shortcuts
   document.addEventListener("keydown", function (event) {
-    // Skip if user is typing in the search input
+    const rows = document.querySelectorAll("#results-table tbody tr");
+
+    // Handle arrow keys in search input to jump to results
     if (document.activeElement === queryInputField) {
+      if ((event.key === "ArrowDown" || event.key === "ArrowUp") && rows.length > 0) {
+        event.preventDefault();
+        queryInputField.blur();
+        selectedRowIndex = 0;
+        const firstRow = rows.item(0);
+        if (firstRow) {
+          firstRow.classList.add("selected");
+          firstRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
       return;
     }
 
-    const rows = document.querySelectorAll("#results-table tbody tr");
     if (rows.length === 0) {
       return;
     }
