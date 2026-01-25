@@ -737,13 +737,13 @@ function createTypeFilterHeader() {
   keepFilterDropdownOpen = false;
 
   const filterTypes = [
-    { type: "article", label: "Articles", color: "#c32b72" },
-    { type: "inproceedings", label: "Conference", color: "#196ca3" },
-    { type: "book", label: "Books", color: "#f8c91f" },
-    { type: "incollection", label: "Chapters", color: "#ef942d" },
-    { type: "editor", label: "Editorship", color: "#33c3ba" },
+    { type: "article", label: "Article", color: "#c32b72" },
+    { type: "inproceedings", label: "Conf", color: "#196ca3" },
+    { type: "book", label: "Book", color: "#f8c91f" },
+    { type: "incollection", label: "Chapter", color: "#ef942d" },
+    { type: "editor", label: "Editor", color: "#33c3ba" },
     { type: "misc", label: "Misc", color: "#606b70" },
-    { type: "refwork", label: "Reference", color: "#96ad2d" }
+    { type: "refwork", label: "Ref", color: "#96ad2d" }
   ];
 
   filterTypes.forEach(function(ft) {

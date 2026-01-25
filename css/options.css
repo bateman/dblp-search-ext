@@ -58,6 +58,17 @@ input[type="checkbox"] {
     background-color: #f9f9f9;
 }
 
+.available-fields {
+    margin-top: 0;
+}
+
+.available-fields .fields-container {
+    margin-top: 4px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+}
+
 .fields-container {
     display: flex;
     flex-direction: row;
@@ -118,7 +129,7 @@ input[type="checkbox"] {
 }
 
 .dropzone-area {
-    margin-top: 12px;
+    margin-top: 4px;
 }
 
 .dropzone {

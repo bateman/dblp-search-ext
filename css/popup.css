@@ -383,7 +383,7 @@ img.footer-gh {
 }
 
 .filter-dropdown {
-    display: none;
+    display: none !important;
     position: absolute;
     top: 100%;
     left: 0;
@@ -392,7 +392,7 @@ img.footer-gh {
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     z-index: 100;
-    padding: 4px 0;
+    padding: 2px 0;
 }
 
 .filter-dropdown.show {
@@ -403,10 +403,10 @@ img.footer-gh {
     display: flex !important;
     align-items: center;
     justify-content: flex-start;
-    gap: 6px;
-    padding: 5px 10px;
+    gap: 3px;
+    padding: 3px 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     color: #333;
     white-space: nowrap;
     width: fit-content;
@@ -417,16 +417,17 @@ img.footer-gh {
 }
 
 .filter-dropdown-item input[type="checkbox"] {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
     margin: 0;
     cursor: pointer;
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
 .filter-color-box {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 2px;
     display: inline-block;
     flex-shrink: 0;
