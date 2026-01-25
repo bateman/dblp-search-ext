@@ -67,8 +67,19 @@ img {
 }
 
 #results {
+    display: block;
     width: 100%;
     border-collapse: collapse;
+}
+
+#keyboard-hint {
+    display: block;
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    padding: 2px 0;
+    margin-top: -6px;
+    margin-bottom: 4px;
 }
 
 #count {
@@ -116,6 +127,16 @@ img {
 
 #results tbody tr:hover {
     background-color: #fdf9e7;
+}
+
+#results tbody tr.selected {
+    background-color: #d4e8fc;
+    outline: 2px solid #2e7fca;
+    outline-offset: -2px;
+}
+
+#results tbody tr.selected:hover {
+    background-color: #c5dff7;
 }
 
 a {

@@ -9,6 +9,9 @@ import { updateStatus } from "./commons.js";
 console.log("popup.js loaded");
 var browser = window.msBrowser || window.browser || window.chrome;
 
+// Track currently selected row for keyboard navigation
+var selectedRowIndex = -1;
+
 // =====================================
 // Event Listeners
 // =====================================
@@ -147,6 +150,59 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
   });
+
+  // Keyboard navigation and shortcuts
+  document.addEventListener("keydown", function (event) {
+    const rows = document.querySelectorAll("#results-table tbody tr");
+
+    // Handle arrow keys in search input to jump to results
+    if (document.activeElement === queryInputField) {
+      if ((event.key === "ArrowDown" || event.key === "ArrowUp") && rows.length > 0) {
+        event.preventDefault();
+        queryInputField.blur();
+        selectedRowIndex = 0;
+        const firstRow = rows.item(0);
+        if (firstRow) {
+          firstRow.classList.add("selected");
+          firstRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+      return;
+    }
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        navigateRows(rows, 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        navigateRows(rows, -1);
+        break;
+      case "c":
+      case "C":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          copySelectedRowBibtex(rows.item(selectedRowIndex));
+        }
+        break;
+      case "d":
+      case "D":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          openSelectedRowDblp(rows.item(selectedRowIndex));
+        }
+        break;
+      case "o":
+      case "O":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          openSelectedRowDoi(rows.item(selectedRowIndex));
+        }
+        break;
+    }
+  });
 });
 
 // =====================================
@@ -276,12 +332,137 @@ function clearResultsTable() {
 }
 
 /**
+ * Creates a table cell with a type icon
+ * @param {string} type - Publication type
+ * @returns {HTMLTableCellElement} The created cell
+ */
+function createTypeCell(type) {
+  const cell = document.createElement("td");
+  const img = document.createElement("img");
+  img.className = type || "";
+  img.title = type || "";
+  img.src = "../images/pub-type.png";
+  cell.appendChild(img);
+  return cell;
+}
+
+/**
+ * Creates a table cell with a linked title
+ * @param {string} title - Publication title
+ * @param {string} permaLink - DBLP permalink
+ * @returns {HTMLTableCellElement} The created cell
+ */
+function createTitleCell(title, permaLink) {
+  const cell = document.createElement("td");
+  const link = document.createElement("a");
+  link.href = isValidURL(permaLink) ? permaLink : "#";
+  link.target = "_blank";
+  link.title = permaLink || "";
+  link.textContent = title;
+  cell.appendChild(link);
+  return cell;
+}
+
+/**
+ * Creates a table cell with DOI link
+ * @param {string} doi - DOI identifier
+ * @param {string} doiURL - DOI URL
+ * @returns {HTMLTableCellElement} The created cell
+ */
+function createDoiCell(doi, doiURL) {
+  const cell = document.createElement("td");
+  const link = document.createElement("a");
+  link.href = isValidURL(doiURL) ? doiURL : "#";
+  link.target = "_blank";
+  link.textContent = doi;
+  cell.appendChild(link);
+  return cell;
+}
+
+/**
+ * Creates an access indicator cell
+ * @param {string} access - Access type (open/closed)
+ * @returns {HTMLTableCellElement} The created cell
+ */
+function createAccessCell(access) {
+  const cell = document.createElement("td");
+  cell.className = "center";
+  const img = document.createElement("img");
+  img.className = "access";
+  const validAccess = ["open", "closed"].includes(access) ? access : "closed";
+  img.src = `../images/${validAccess}-access.png`;
+  img.title = `This publication is ${validAccess} access`;
+  cell.appendChild(img);
+  return cell;
+}
+
+/**
+ * Creates a BibTeX copy button cell
+ * @param {string} bibtexLink - URL to fetch BibTeX
+ * @returns {HTMLTableCellElement} The created cell
+ */
+function createBibtexCell(bibtexLink) {
+  const cell = document.createElement("td");
+  cell.className = "center";
+  const button = document.createElement("button");
+  button.className = "copyBibtexButton";
+  button.title = "Copy BibTex";
+  if (isValidURL(bibtexLink)) {
+    button.dataset.url = bibtexLink;
+  }
+  const img = document.createElement("img");
+  img.src = "../images/copy.png";
+  button.appendChild(img);
+  cell.appendChild(button);
+  return cell;
+}
+
+/**
+ * Creates a publication row for the results table
+ * @param {Object} result - Publication data
+ * @param {number} index - Row index
+ * @returns {HTMLTableRowElement} The created row
+ */
+function createPublicationRow(result, index) {
+  const row = document.createElement("tr");
+  row.dataset.index = index;
+  row.dataset.dblpUrl = result.permaLink || "";
+  row.dataset.doiUrl = result.doiURL || "";
+  row.dataset.bibtexUrl = result.bibtexLink || "";
+
+  row.appendChild(createTypeCell(result.type));
+  row.appendChild(createTitleCell(result.title, result.permaLink));
+
+  const authorsCell = document.createElement("td");
+  const authors = Array.isArray(result.authors) ? result.authors : [];
+  authorsCell.textContent = authors.join(", ");
+  row.appendChild(authorsCell);
+
+  const yearCell = document.createElement("td");
+  yearCell.textContent = result.year;
+  row.appendChild(yearCell);
+
+  const venueCell = document.createElement("td");
+  venueCell.textContent = result.venue;
+  row.appendChild(venueCell);
+
+  row.appendChild(createDoiCell(result.doi, result.doiURL));
+  row.appendChild(createAccessCell(result.access));
+  row.appendChild(createBibtexCell(result.bibtexLink));
+
+  return row;
+}
+
+/**
  * Builds and displays the publications results table using safe DOM methods
  * @param {Object[]} publications - Array of publication objects to display
  */
 function buildAndDisplayTable(publications) {
   const results = document.getElementById("results");
   if (!results) return;
+
+  // Reset keyboard navigation selection
+  resetSelectedRow();
 
   // Clear existing content
   results.textContent = "";
@@ -317,92 +498,16 @@ function buildAndDisplayTable(publications) {
 
   // Create body
   const tbody = document.createElement("tbody");
-  publications.forEach((result) => {
-    const row = document.createElement("tr");
-
-    // Type icon cell
-    const typeCell = document.createElement("td");
-    const typeImg = document.createElement("img");
-    typeImg.className = result.type || "";
-    typeImg.title = result.type || "";
-    typeImg.src = "../images/pub-type.png";
-    typeCell.appendChild(typeImg);
-    row.appendChild(typeCell);
-
-    // Title cell with validated URL
-    const titleCell = document.createElement("td");
-    const titleLink = document.createElement("a");
-    if (isValidURL(result.permaLink)) {
-      titleLink.href = result.permaLink;
-    } else {
-      titleLink.href = "#";
-    }
-    titleLink.target = "_blank";
-    titleLink.title = result.permaLink || "";
-    titleLink.textContent = result.title;
-    titleCell.appendChild(titleLink);
-    row.appendChild(titleCell);
-
-    // Authors cell
-    const authorsCell = document.createElement("td");
-    const authors = Array.isArray(result.authors) ? result.authors : [];
-    authorsCell.textContent = authors.join(", ");
-    row.appendChild(authorsCell);
-
-    // Year cell
-    const yearCell = document.createElement("td");
-    yearCell.textContent = result.year;
-    row.appendChild(yearCell);
-
-    // Venue cell
-    const venueCell = document.createElement("td");
-    venueCell.textContent = result.venue;
-    row.appendChild(venueCell);
-
-    // DOI cell with validated URL
-    const doiCell = document.createElement("td");
-    const doiLink = document.createElement("a");
-    if (isValidURL(result.doiURL)) {
-      doiLink.href = result.doiURL;
-    } else {
-      doiLink.href = "#";
-    }
-    doiLink.target = "_blank";
-    doiLink.textContent = result.doi;
-    doiCell.appendChild(doiLink);
-    row.appendChild(doiCell);
-
-    // Access cell
-    const accessCell = document.createElement("td");
-    accessCell.className = "center";
-    const accessImg = document.createElement("img");
-    accessImg.className = "access";
-    const validAccess = ["open", "closed"].includes(result.access)
-      ? result.access
-      : "closed";
-    accessImg.src = `../images/${validAccess}-access.png`;
-    accessImg.title = `This publication is ${validAccess} access`;
-    accessCell.appendChild(accessImg);
-    row.appendChild(accessCell);
-
-    // BibTeX cell
-    const bibtexCell = document.createElement("td");
-    bibtexCell.className = "center";
-    const bibtexButton = document.createElement("button");
-    bibtexButton.className = "copyBibtexButton";
-    bibtexButton.title = "Copy BibTex";
-    if (isValidURL(result.bibtexLink)) {
-      bibtexButton.dataset.url = result.bibtexLink;
-    }
-    const bibtexImg = document.createElement("img");
-    bibtexImg.src = "../images/copy.png";
-    bibtexButton.appendChild(bibtexImg);
-    bibtexCell.appendChild(bibtexButton);
-    row.appendChild(bibtexCell);
-
-    tbody.appendChild(row);
+  publications.forEach((result, index) => {
+    tbody.appendChild(createPublicationRow(result, index));
   });
   table.appendChild(tbody);
+
+  // Add keyboard shortcuts hint above the table
+  const hint = document.createElement("div");
+  hint.id = "keyboard-hint";
+  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D for DBLP, O for DOI";
+  results.appendChild(hint);
 
   results.appendChild(table);
 
@@ -522,6 +627,92 @@ function addCopyBibtexButtonEventListener() {
       window.copyBibtexToClipboard(url);
     });
   });
+}
+
+// =====================================
+// Keyboard Navigation Functions
+// =====================================
+
+/**
+ * Navigates through result rows using arrow keys
+ * @param {NodeList} rows - List of table row elements
+ * @param {number} direction - Direction to navigate (1 for down, -1 for up)
+ */
+function navigateRows(rows, direction) {
+  // Remove selection from current row
+  const currentRow = rows.item(selectedRowIndex);
+  if (currentRow) {
+    currentRow.classList.remove("selected");
+  }
+
+  // Calculate new index
+  if (selectedRowIndex === -1) {
+    // No row selected yet, always start from first row
+    selectedRowIndex = 0;
+  } else {
+    selectedRowIndex += direction;
+  }
+
+  // Clamp to valid range
+  if (selectedRowIndex < 0) {
+    selectedRowIndex = 0;
+  } else if (selectedRowIndex >= rows.length) {
+    selectedRowIndex = rows.length - 1;
+  }
+
+  // Select new row
+  const newRow = rows.item(selectedRowIndex);
+  if (newRow) {
+    newRow.classList.add("selected");
+    newRow.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+/**
+ * Resets the selected row index (called when table is rebuilt)
+ */
+function resetSelectedRow() {
+  selectedRowIndex = -1;
+}
+
+/**
+ * Copies BibTeX for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function copySelectedRowBibtex(row) {
+  const bibtexUrl = row.dataset.bibtexUrl;
+  if (bibtexUrl && isValidURL(bibtexUrl)) {
+    window.copyBibtexToClipboard(bibtexUrl);
+    updateStatus("Copying BibTeX...", 2000);
+  } else {
+    updateStatus("No BibTeX available", 2000);
+  }
+}
+
+/**
+ * Opens DBLP page for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function openSelectedRowDblp(row) {
+  const dblpUrl = row.dataset.dblpUrl;
+  if (dblpUrl && isValidURL(dblpUrl)) {
+    browser.tabs.create({ url: dblpUrl });
+  } else {
+    updateStatus("No DBLP link available", 2000);
+  }
+}
+
+/**
+ * Opens DOI page for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function openSelectedRowDoi(row) {
+  const doiUrl = row.dataset.doiUrl;
+  if (doiUrl && isValidURL(doiUrl)) {
+    browser.tabs.create({ url: doiUrl });
+  } else {
+    updateStatus("No DOI link available", 2000);
+  }
 }
 
 // =====================================
