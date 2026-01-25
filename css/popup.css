@@ -71,6 +71,14 @@ img {
     border-collapse: collapse;
 }
 
+#keyboard-hint {
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    padding: 4px 0;
+    margin-bottom: 2px;
+}
+
 #count {
     font-weight: bold; 
     color: #2e7fca; /* this is for the info message in the count div */
