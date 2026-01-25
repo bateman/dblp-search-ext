@@ -593,8 +593,8 @@ function navigateRows(rows, direction) {
 
   // Calculate new index
   if (selectedRowIndex === -1) {
-    // No row selected yet, start from first (down) or last (up)
-    selectedRowIndex = direction === 1 ? 0 : rows.length - 1;
+    // No row selected yet, always start from first row
+    selectedRowIndex = 0;
   } else {
     selectedRowIndex += direction;
   }
