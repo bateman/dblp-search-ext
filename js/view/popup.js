@@ -459,7 +459,7 @@ function buildAndDisplayTable(publications) {
   // Add keyboard shortcuts hint above the table
   const hint = document.createElement("div");
   hint.id = "keyboard-hint";
-  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy, D for DBLP, O for DOI";
+  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D for DBLP, O for DOI";
   results.appendChild(hint);
 
   results.appendChild(table);
