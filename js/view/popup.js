@@ -9,6 +9,9 @@ import { updateStatus } from "./commons.js";
 console.log("popup.js loaded");
 var browser = window.msBrowser || window.browser || window.chrome;
 
+// Track currently selected row for keyboard navigation
+var selectedRowIndex = -1;
+
 // =====================================
 // Event Listeners
 // =====================================
@@ -147,6 +150,48 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
   });
+
+  // Keyboard navigation and shortcuts
+  document.addEventListener("keydown", function (event) {
+    // Skip if user is typing in the search input
+    if (document.activeElement === queryInputField) {
+      return;
+    }
+
+    const rows = document.querySelectorAll("#results-table tbody tr");
+    if (rows.length === 0) {
+      return;
+    }
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        navigateRows(rows, 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        navigateRows(rows, -1);
+        break;
+      case "c":
+      case "C":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          copySelectedRowBibtex(rows[selectedRowIndex]);
+        }
+        break;
+      case "d":
+      case "D":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          openSelectedRowDblp(rows[selectedRowIndex]);
+        }
+        break;
+      case "o":
+      case "O":
+        if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+          openSelectedRowDoi(rows[selectedRowIndex]);
+        }
+        break;
+    }
+  });
 });
 
 // =====================================
@@ -283,6 +328,9 @@ function buildAndDisplayTable(publications) {
   const results = document.getElementById("results");
   if (!results) return;
 
+  // Reset keyboard navigation selection
+  resetSelectedRow();
+
   // Clear existing content
   results.textContent = "";
 
@@ -317,8 +365,12 @@ function buildAndDisplayTable(publications) {
 
   // Create body
   const tbody = document.createElement("tbody");
-  publications.forEach((result) => {
+  publications.forEach((result, index) => {
     const row = document.createElement("tr");
+    row.dataset.index = index;
+    row.dataset.dblpUrl = result.permaLink || "";
+    row.dataset.doiUrl = result.doiURL || "";
+    row.dataset.bibtexUrl = result.bibtexLink || "";
 
     // Type icon cell
     const typeCell = document.createElement("td");
@@ -522,6 +574,88 @@ function addCopyBibtexButtonEventListener() {
       window.copyBibtexToClipboard(url);
     });
   });
+}
+
+// =====================================
+// Keyboard Navigation Functions
+// =====================================
+
+/**
+ * Navigates through result rows using arrow keys
+ * @param {NodeList} rows - List of table row elements
+ * @param {number} direction - Direction to navigate (1 for down, -1 for up)
+ */
+function navigateRows(rows, direction) {
+  // Remove selection from current row
+  if (selectedRowIndex >= 0 && selectedRowIndex < rows.length) {
+    rows[selectedRowIndex].classList.remove("selected");
+  }
+
+  // Calculate new index
+  if (selectedRowIndex === -1) {
+    // No row selected yet, start from first (down) or last (up)
+    selectedRowIndex = direction === 1 ? 0 : rows.length - 1;
+  } else {
+    selectedRowIndex += direction;
+  }
+
+  // Clamp to valid range
+  if (selectedRowIndex < 0) {
+    selectedRowIndex = 0;
+  } else if (selectedRowIndex >= rows.length) {
+    selectedRowIndex = rows.length - 1;
+  }
+
+  // Select new row
+  rows[selectedRowIndex].classList.add("selected");
+  rows[selectedRowIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+/**
+ * Resets the selected row index (called when table is rebuilt)
+ */
+function resetSelectedRow() {
+  selectedRowIndex = -1;
+}
+
+/**
+ * Copies BibTeX for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function copySelectedRowBibtex(row) {
+  const bibtexUrl = row.dataset.bibtexUrl;
+  if (bibtexUrl && isValidURL(bibtexUrl)) {
+    window.copyBibtexToClipboard(bibtexUrl);
+    updateStatus("Copying BibTeX...", 2000);
+  } else {
+    updateStatus("No BibTeX available", 2000);
+  }
+}
+
+/**
+ * Opens DBLP page for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function openSelectedRowDblp(row) {
+  const dblpUrl = row.dataset.dblpUrl;
+  if (dblpUrl && isValidURL(dblpUrl)) {
+    browser.tabs.create({ url: dblpUrl });
+  } else {
+    updateStatus("No DBLP link available", 2000);
+  }
+}
+
+/**
+ * Opens DOI page for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function openSelectedRowDoi(row) {
+  const doiUrl = row.dataset.doiUrl;
+  if (doiUrl && isValidURL(doiUrl)) {
+    browser.tabs.create({ url: doiUrl });
+  } else {
+    updateStatus("No DOI link available", 2000);
+  }
 }
 
 // =====================================
