@@ -78,7 +78,7 @@ img {
     color: #888;
     text-align: center;
     padding: 2px 0;
-    margin-top: -6px;
+    margin-top: 2px;
     margin-bottom: 4px;
 }
 
@@ -271,4 +271,116 @@ img.footer-gh {
     #results tbody td:nth-child(5) {
         display: none;
     }
+}
+
+/* Sortable column headers */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable-header:hover {
+    background-color: #256ba3;
+}
+
+.sort-indicator {
+    margin-left: 4px;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.sortable-header:hover .sort-indicator {
+    opacity: 1;
+}
+
+/* Filter header with dropdown */
+.filter-header {
+    position: relative;
+    padding: 6px !important;
+    width: 24px;
+}
+
+.filter-header-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.filter-btn {
+    background: transparent;
+    border: none;
+    color: #fdd700;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 4px;
+    margin: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    opacity: 1;
+}
+
+.filter-btn.active {
+    color: #fff;
+}
+
+.filter-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 100;
+    padding: 4px 0;
+}
+
+.filter-dropdown.show {
+    display: block !important;
+}
+
+.filter-dropdown-item {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #333;
+    white-space: nowrap;
+    width: fit-content;
+}
+
+.filter-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.filter-dropdown-item input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.filter-color-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+td.no-results-message,
+.no-results-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
 }
