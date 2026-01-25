@@ -61,7 +61,8 @@ export class PublicationModel {
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
-      this.status = response.statusText;
+      // HTTP/2 returns empty statusText on Chrome, so use "OK" for successful responses
+      this.status = response.ok ? "OK" : (response.statusText || "Error");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${this.status}`);
       }

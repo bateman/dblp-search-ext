@@ -136,35 +136,43 @@ document.addEventListener("DOMContentLoaded", function () {
       `Popup.js received message from '${message.script}': ${message.type}`
     );
     if (message.type === "RESPONSE_SEARCH_PUBLICATIONS") {
+      // Ensure all values have valid defaults to prevent NaN/undefined display
+      const responseStatus = message.responseStatus || "OK";
+      const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
+      const sentHits = typeof message.sentHits === "number" ? message.sentHits : 0;
+      const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
+      const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
+      const publications = message.publications || [];
+
       console.log(
         "Popup.js updating publications count: ",
-        message.responseStatus,
-        message.totalHits,
-        message.sentHits,
-        message.excludedCount,
-        message.currentOffset
+        responseStatus,
+        totalHits,
+        sentHits,
+        excludedCount,
+        currentOffset
       );
       updatePublicationsCount(
-        message.responseStatus,
-        message.totalHits,
-        message.sentHits,
-        message.excludedCount
+        responseStatus,
+        totalHits,
+        sentHits,
+        excludedCount
       );
       console.log("Popup.js updating publications table.");
-      buildAndDisplayTable(message.publications);
+      buildAndDisplayTable(publications);
       updatePaginationControls(
-        message.totalHits,
-        message.sentHits,
-        message.currentOffset || 0
+        totalHits,
+        sentHits,
+        currentOffset
       );
       saveResultsToStorage(
         queryInputField.value,
-        message.responseStatus,
-        message.totalHits,
-        message.sentHits,
-        message.excludedCount,
-        message.publications,
-        message.currentOffset || 0
+        responseStatus,
+        totalHits,
+        sentHits,
+        excludedCount,
+        publications,
+        currentOffset
       );
     }
   });
@@ -934,22 +942,32 @@ function restoreResultsFromStorage() {
     },
     function (items) {
       console.log("Restoring results from storage: ", items);
-      if (items.search.publications && items.search.publications.length > 0) {
+      // Apply defaults for potentially missing fields (storage only does shallow merge)
+      const search = items.search || {};
+      const status = search.status || "";
+      const totalHits = typeof search.totalHits === "number" ? search.totalHits : 0;
+      const sentHits = typeof search.sentHits === "number" ? search.sentHits : 0;
+      const excludedCount = typeof search.excludedCount === "number" ? search.excludedCount : 0;
+      const currentOffset = typeof search.currentOffset === "number" ? search.currentOffset : 0;
+      const publications = search.publications || [];
+      const paperTitle = search.paperTitle || "";
+
+      if (publications.length > 0) {
         updatePublicationsCount(
-          items.search.status,
-          items.search.totalHits,
-          items.search.sentHits,
-          items.search.excludedCount
+          status,
+          totalHits,
+          sentHits,
+          excludedCount
         );
-        buildAndDisplayTable(items.search.publications);
+        buildAndDisplayTable(publications);
         updatePaginationControls(
-          items.search.totalHits,
-          items.search.sentHits,
-          items.search.currentOffset || 0
+          totalHits,
+          sentHits,
+          currentOffset
         );
-        var queryInputField = document.getElementById("paperTitle");
+        const queryInputField = document.getElementById("paperTitle");
         if (queryInputField) {
-          queryInputField.value = items.search.paperTitle;
+          queryInputField.value = paperTitle;
           queryInputField.focus();
         }
       }
