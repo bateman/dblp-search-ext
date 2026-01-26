@@ -1023,12 +1023,12 @@ function restorePopupWidth() {
   browser.storage.local.get(
     {
       options: {
-        popupWidth: 650,
+        popupWidth: 800,
       },
     },
     function (items) {
       const width = Math.min(
-        Math.max(items.options.popupWidth || 650, 500),
+        Math.max(items.options.popupWidth || 800, 500),
         800
       );
       document.body.style.width = width + "px";

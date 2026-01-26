@@ -498,7 +498,7 @@ function saveOptions() {
   if (isNaN(popupWidth) || popupWidth < 500 || popupWidth > 800) {
     updateStatus("Error: Popup width must be between 500 and 800", 3000);
     // Reset to default value
-    popupWidth = 650;
+    popupWidth = 800;
     document.getElementById("popupWidth").value = popupWidth;
     return;
   }
@@ -543,7 +543,7 @@ function restoreOptions() {
         venueUppercase: false,
         removeTimestampBiburlBibsource: true,
         removeUrl: false,
-        popupWidth: 650,
+        popupWidth: 800,
       },
     },
     function (items) {
@@ -558,7 +558,7 @@ function restoreOptions() {
         items.options.removeTimestampBiburlBibsource;
       document.getElementById("removeUrl").checked = items.options.removeUrl;
       document.getElementById("popupWidth").value =
-        items.options.popupWidth || 650;
+        items.options.popupWidth || 800;
 
       // Show/hide drag & drop based on checkbox state
       toggleDragDropVisibility();
