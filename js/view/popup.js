@@ -552,6 +552,15 @@ function createPublicationRow(result, index) {
   row.appendChild(createAccessCell(result.access));
   row.appendChild(createBibtexCell(result.bibtexLink));
 
+  // Add click handler to select row
+  row.addEventListener("click", function (e) {
+    // Don't select if clicking on a link or button (or their children)
+    if (e.target.closest("a") || e.target.closest("button")) {
+      return;
+    }
+    selectRow(index);
+  });
+
   return row;
 }
 
@@ -1092,6 +1101,30 @@ function navigateRows(rows, direction) {
  */
 function resetSelectedRow() {
   selectedRowIndex = -1;
+}
+
+/**
+ * Selects a specific row by its index (used for click selection)
+ * @param {number} index - The index of the row to select
+ */
+function selectRow(index) {
+  const rows = document.querySelectorAll("#resultsTable tbody tr");
+  if (index < 0 || index >= rows.length) {
+    return;
+  }
+
+  // Remove selection from current row
+  const currentRow = rows.item(selectedRowIndex);
+  if (currentRow) {
+    currentRow.classList.remove("selected");
+  }
+
+  // Select new row
+  selectedRowIndex = index;
+  const newRow = rows.item(selectedRowIndex);
+  if (newRow) {
+    newRow.classList.add("selected");
+  }
 }
 
 /**
