@@ -1108,7 +1108,7 @@ function resetSelectedRow() {
  * @param {number} index - The index of the row to select
  */
 function selectRow(index) {
-  const rows = document.querySelectorAll("#resultsTable tbody tr");
+  const rows = document.querySelectorAll("#results-table tbody tr");
   if (index < 0 || index >= rows.length) {
     return;
   }
