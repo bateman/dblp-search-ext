@@ -469,6 +469,28 @@ function capitalize(str) {
 // =====================================
 
 /**
+ * Validates the max results input value
+ * @param {string} input - The input value to validate
+ * @returns {{valid: boolean, value: number}} Validation result with parsed value
+ */
+function validateMaxResults(input) {
+  const value = parseInt(input, 10);
+  const valid = !isNaN(value) && value >= 1 && value <= 1000;
+  return { valid, value: valid ? value : 30 };
+}
+
+/**
+ * Validates the popup width input value
+ * @param {string} input - The input value to validate
+ * @returns {{valid: boolean, value: number}} Validation result with parsed value
+ */
+function validatePopupWidth(input) {
+  const value = parseInt(input, 10);
+  const valid = !isNaN(value) && value >= 500 && value <= 800;
+  return { valid, value: valid ? value : 800 };
+}
+
+/**
  * Saves all user options to browser storage
  */
 function saveOptions() {
@@ -484,24 +506,22 @@ function saveOptions() {
   var popupWidthInput = document.getElementById("popupWidth").value;
 
   // Validate maxResults input
-  var maxResults = parseInt(maxResultsInput, 10);
-  if (isNaN(maxResults) || maxResults < 1 || maxResults > 1000) {
+  var maxResultsValidation = validateMaxResults(maxResultsInput);
+  if (!maxResultsValidation.valid) {
     updateStatus("Error: Max results must be between 1 and 1000", 3000);
-    // Reset to default value
-    maxResults = 30;
-    document.getElementById("maxResults").value = maxResults;
+    document.getElementById("maxResults").value = maxResultsValidation.value;
     return;
   }
+  var maxResults = maxResultsValidation.value;
 
   // Validate popupWidth input
-  var popupWidth = parseInt(popupWidthInput, 10);
-  if (isNaN(popupWidth) || popupWidth < 500 || popupWidth > 800) {
+  var popupWidthValidation = validatePopupWidth(popupWidthInput);
+  if (!popupWidthValidation.valid) {
     updateStatus("Error: Popup width must be between 500 and 800", 3000);
-    // Reset to default value
-    popupWidth = 800;
-    document.getElementById("popupWidth").value = popupWidth;
+    document.getElementById("popupWidth").value = popupWidthValidation.value;
     return;
   }
+  var popupWidth = popupWidthValidation.value;
 
   // Validate citation key fields
   if (keyRenaming && citationKeyFields.length === 0) {

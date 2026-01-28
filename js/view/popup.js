@@ -934,6 +934,34 @@ function buildAndDisplayTable(publications) {
 }
 
 /**
+ * Safely extracts a numeric value with a default fallback
+ * @param {*} value - The value to check
+ * @param {number} defaultValue - Default value if not a number
+ * @returns {number} The numeric value or default
+ */
+function getNumericValue(value, defaultValue) {
+  return typeof value === "number" ? value : defaultValue;
+}
+
+/**
+ * Parses search data from storage with default values applied
+ * @param {Object} items - Storage items object
+ * @returns {Object} Parsed search data with defaults
+ */
+function parseSearchWithDefaults(items) {
+  const search = items.search || {};
+  return {
+    status: search.status || "",
+    totalHits: getNumericValue(search.totalHits, 0),
+    sentHits: getNumericValue(search.sentHits, 0),
+    excludedCount: getNumericValue(search.excludedCount, 0),
+    currentOffset: getNumericValue(search.currentOffset, 0),
+    publications: search.publications || [],
+    paperTitle: search.paperTitle || ""
+  };
+}
+
+/**
  * Restores previous search results from browser local storage
  */
 function restoreResultsFromStorage() {
@@ -951,34 +979,28 @@ function restoreResultsFromStorage() {
     },
     function (items) {
       console.log("Restoring results from storage: ", items);
-      // Apply defaults for potentially missing fields (storage only does shallow merge)
-      const search = items.search || {};
-      const status = search.status || "";
-      const totalHits = typeof search.totalHits === "number" ? search.totalHits : 0;
-      const sentHits = typeof search.sentHits === "number" ? search.sentHits : 0;
-      const excludedCount = typeof search.excludedCount === "number" ? search.excludedCount : 0;
-      const currentOffset = typeof search.currentOffset === "number" ? search.currentOffset : 0;
-      const publications = search.publications || [];
-      const paperTitle = search.paperTitle || "";
+      const searchData = parseSearchWithDefaults(items);
 
-      if (publications.length > 0) {
-        updatePublicationsCount(
-          status,
-          totalHits,
-          sentHits,
-          excludedCount
-        );
-        buildAndDisplayTable(publications);
-        updatePaginationControls(
-          totalHits,
-          sentHits,
-          currentOffset
-        );
-        const queryInputField = document.getElementById("paperTitle");
-        if (queryInputField) {
-          queryInputField.value = paperTitle;
-          queryInputField.focus();
-        }
+      if (searchData.publications.length === 0) {
+        return;
+      }
+
+      updatePublicationsCount(
+        searchData.status,
+        searchData.totalHits,
+        searchData.sentHits,
+        searchData.excludedCount
+      );
+      buildAndDisplayTable(searchData.publications);
+      updatePaginationControls(
+        searchData.totalHits,
+        searchData.sentHits,
+        searchData.currentOffset
+      );
+      const queryInputField = document.getElementById("paperTitle");
+      if (queryInputField) {
+        queryInputField.value = searchData.paperTitle;
+        queryInputField.focus();
       }
     }
   );
