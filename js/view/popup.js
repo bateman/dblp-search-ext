@@ -7,14 +7,14 @@
 import { updateStatus } from "./commons.js";
 
 console.log("popup.js loaded");
-var browser = window.msBrowser || window.browser || window.chrome;
+const browser = window.msBrowser || window.browser || window.chrome;
 
 // Track currently selected row for keyboard navigation
-var selectedRowIndex = -1;
+let selectedRowIndex = -1;
 
 // Track current sort and filter settings
-var currentSort = { field: "none", direction: "asc" };
-var currentFilters = {
+let currentSort = { field: "none", direction: "asc" };
+let currentFilters = {
   article: true,
   inproceedings: true,
   book: true,
@@ -25,10 +25,10 @@ var currentFilters = {
 };
 
 // Store original publications for filtering/sorting
-var originalPublications = [];
+let originalPublications = [];
 
 // Track if filter dropdown should stay open after rebuild
-var keepFilterDropdownOpen = false;
+let keepFilterDropdownOpen = false;
 
 // =====================================
 // Event Listeners
@@ -58,14 +58,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // if the content of the popup was saved in the local storage, then restore it
   restoreResultsFromStorage();
 
-  var queryInputField = document.getElementById("paperTitle");
+  const queryInputField = document.getElementById("paperTitle");
   if (queryInputField) {
     queryInputField.focus();
   }
 
   // Get the highlighted text from the current tab
   browser.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    var tab = tabs[0]; // Now 'tab' is defined
+    const tab = tabs[0]; // Now 'tab' is defined
     if (
       tab.url &&
       (tab.url.startsWith("http://") || tab.url.startsWith("https://"))
@@ -381,9 +381,9 @@ function updatePublicationsCount(
   sentHits,
   excludedCount
 ) {
-  var count = document.getElementById("count");
+  const count = document.getElementById("count");
   if (count) {
-    var message = "";
+    let message = "";
     if (responseStatus === "RESET") {
       message = "";
       count.classList.remove("error");
@@ -1199,7 +1199,7 @@ function openSelectedRowDoi(row) {
  * @returns {string} Author surname with numeric suffixes removed
  */
 function extractAuthorFromKey(key) {
-  var name = key.split("/")[2].replace(",", "");
+  let name = key.split("/")[2].replace(",", "");
   name = name.replace(/\d+/g, "");
   name = name.replace(/[A-Z]+$/, "");
   return name;
@@ -1220,7 +1220,7 @@ function extractVenueFromKey(key) {
  * @returns {string|null} Four-digit year or null if not found
  */
 function extractYearFromBibtex(data) {
-  var yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
+  const yearMatch = data.match(/year\s*=\s*\{(\d+)\},/);
   if (!yearMatch || yearMatch.length < 2) {
     return null;
   }
@@ -1300,11 +1300,11 @@ function extractFirstTitleWord(data) {
  * @returns {string} Formatted citation key
  */
 function buildCitationKey(fields, author, year, venue, title, authorCapitalize, venueUppercase) {
-  var authorValue = author.toLowerCase();
+  let authorValue = author.toLowerCase();
   if (authorCapitalize) {
     authorValue = authorValue.charAt(0).toUpperCase() + authorValue.slice(1);
   }
-  var venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
+  const venueValue = venueUppercase ? venue.toUpperCase() : venue.toLowerCase();
 
   return fields.map(function(f) {
     switch (f) {
@@ -1377,10 +1377,10 @@ window.copyBibtexToClipboard = function (url) {
           },
         },
         function (items) {
-          var keyRenaming = items.options.keyRenaming;
-          var citationKeyFields = items.options.citationKeyFields;
-          var authorCapitalize = items.options.authorCapitalize;
-          var venueUppercase = items.options.venueUppercase;
+          const keyRenaming = items.options.keyRenaming;
+          let citationKeyFields = items.options.citationKeyFields;
+          const authorCapitalize = items.options.authorCapitalize;
+          const venueUppercase = items.options.venueUppercase;
 
           // Handle migration from old format
           if (!citationKeyFields && items.options.citationKeyPattern) {
@@ -1391,23 +1391,23 @@ window.copyBibtexToClipboard = function (url) {
           }
 
           if (keyRenaming) {
-            var keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
+            const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
             if (!keyMatch || keyMatch.length < 1) {
               console.error("Could not find the citation key in the BibTeX");
               updateStatus("Error: Invalid BibTeX format", 3000);
               return;
             }
-            var key = keyMatch[0];
-            var author = extractAuthorFromKey(key);
-            var venue = extractVenueFromKey(key);
-            var year = extractYearFromBibtex(data);
+            const key = keyMatch[0];
+            const author = extractAuthorFromKey(key);
+            const venue = extractVenueFromKey(key);
+            const year = extractYearFromBibtex(data);
             if (!year) {
               console.error("Could not find the year in the BibTeX");
               updateStatus("Error: Invalid BibTeX format (missing year)", 3000);
               return;
             }
-            var title = extractFirstTitleWord(data);
-            var newCitationKey = buildCitationKey(
+            const title = extractFirstTitleWord(data);
+            const newCitationKey = buildCitationKey(
               citationKeyFields, author, year, venue, title,
               authorCapitalize, venueUppercase
             );

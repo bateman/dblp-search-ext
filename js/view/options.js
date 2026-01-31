@@ -6,7 +6,7 @@
 
 import { updateStatus } from "./commons.js";
 
-var browser = window.msBrowser || window.browser || window.chrome;
+const browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
 
 /**
@@ -443,7 +443,7 @@ function updatePreview() {
   const venueUppercase = document.getElementById("venueUppercase").checked;
 
   const key = fields.map((f) => {
-    var value = getSampleValue(f);
+    let value = getSampleValue(f);
     if (f === "author" && authorCapitalize) {
       value = value.charAt(0).toUpperCase() + value.slice(1);
     }
@@ -494,34 +494,34 @@ function validatePopupWidth(input) {
  * Saves all user options to browser storage
  */
 function saveOptions() {
-  var maxResultsInput = document.getElementById("maxResults").value;
-  var keyRenaming = document.getElementById("renamingCheckbox").checked;
-  var citationKeyFields = getSelectedFields();
-  var authorCapitalize = document.getElementById("authorCapitalize").checked;
-  var venueUppercase = document.getElementById("venueUppercase").checked;
-  var removeTimestampBiburlBibsource = document.getElementById(
+  const maxResultsInput = document.getElementById("maxResults").value;
+  const keyRenaming = document.getElementById("renamingCheckbox").checked;
+  const citationKeyFields = getSelectedFields();
+  const authorCapitalize = document.getElementById("authorCapitalize").checked;
+  const venueUppercase = document.getElementById("venueUppercase").checked;
+  const removeTimestampBiburlBibsource = document.getElementById(
     "removeTimestampBiburlBibsource"
   ).checked;
-  var removeUrl = document.getElementById("removeUrl").checked;
-  var popupWidthInput = document.getElementById("popupWidth").value;
+  const removeUrl = document.getElementById("removeUrl").checked;
+  const popupWidthInput = document.getElementById("popupWidth").value;
 
   // Validate maxResults input
-  var maxResultsValidation = validateMaxResults(maxResultsInput);
+  const maxResultsValidation = validateMaxResults(maxResultsInput);
   if (!maxResultsValidation.valid) {
     updateStatus("Error: Max results must be between 1 and 1000", 3000);
     document.getElementById("maxResults").value = maxResultsValidation.value;
     return;
   }
-  var maxResults = maxResultsValidation.value;
+  const maxResults = maxResultsValidation.value;
 
   // Validate popupWidth input
-  var popupWidthValidation = validatePopupWidth(popupWidthInput);
+  const popupWidthValidation = validatePopupWidth(popupWidthInput);
   if (!popupWidthValidation.valid) {
     updateStatus("Error: Popup width must be between 500 and 800", 3000);
     document.getElementById("popupWidth").value = popupWidthValidation.value;
     return;
   }
-  var popupWidth = popupWidthValidation.value;
+  const popupWidth = popupWidthValidation.value;
 
   // Validate citation key fields
   if (keyRenaming && citationKeyFields.length === 0) {
@@ -584,7 +584,7 @@ function restoreOptions() {
       toggleDragDropVisibility();
 
       // Handle migration from old format
-      var fields = items.options.citationKeyFields;
+      let fields = items.options.citationKeyFields;
       if (!fields && items.options.citationKeyPattern) {
         // Convert old pattern to new fields array
         fields = items.options.citationKeyPattern.split("-");

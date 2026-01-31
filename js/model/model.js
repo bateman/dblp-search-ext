@@ -7,7 +7,7 @@
  */
 
 console.log("model.js loaded");
-var browser = browser || chrome;
+const browser = globalThis.browser || chrome;
 
 /**
  * Model class for managing publication data from DBLP API.
@@ -46,7 +46,7 @@ export class PublicationModel {
   async searchPublications(query, offset = 0) {
     console.log(`Searching publications matching: ${query} (offset: ${offset})`);
     this.currentOffset = offset;
-    var url = `https://dblp.org/search/publ/api?q=${encodeURIComponent(
+    let url = `https://dblp.org/search/publ/api?q=${encodeURIComponent(
       query
     )}&format=json`;
     url = await this.getUrlWithMaxResults(url);
@@ -107,9 +107,9 @@ export class PublicationModel {
           },
         },
         function (items) {
-          var maxResults = items.options.maxResults;
+          let maxResults = items.options.maxResults;
           maxResults = Math.min(Math.max(maxResults, 1), 1000);
-          var url = baseUrl + "&h=" + maxResults;
+          const url = baseUrl + "&h=" + maxResults;
           resolve(url);
         }
       );

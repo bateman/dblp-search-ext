@@ -7,7 +7,7 @@
  */
 
 console.log("view.js loaded");
-var browser = browser || chrome;
+const browser = globalThis.browser || chrome;
 
 /**
  * View class for sending publication data to the popup for rendering.

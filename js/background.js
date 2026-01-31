@@ -6,7 +6,7 @@
  * manages context menus, and coordinates between MVC components.
  */
 
-var browser = browser || chrome;
+const browser = globalThis.browser || chrome;
 console.log("background.js loaded");
 
 // Instantiate the MVC classes
