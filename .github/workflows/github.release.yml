@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: '${{ secrets.RELEASE_TOKEN }}'
         with:
-          name: ${{ fromJson(env.manifest).version }}
-          tag_name: '${{ fromJson(env.manifest).version }}'
+          name: v${{ fromJson(env.manifest).version }}
+          tag_name: 'v${{ fromJson(env.manifest).version }}'
           generate_release_notes: true
           files: release.zip  
