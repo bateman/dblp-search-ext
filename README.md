@@ -123,20 +123,28 @@ Use `DEFAULT_URL="https://example.com"` to set the opening page for run commands
 
 ### Release Workflow
 
+To release a new version:
+
 ```bash
+make release/check     # 1. Check if commits exist since last tag
+make bump/patch        # 2. Bump version (or bump/minor, bump/major)
+git add -A && git commit -m "Bump version to X.Y.Z"  # 3. Commit changes
+make release           # 4. Push commits and tag (triggers CI/CD)
+```
+
+Available commands:
+
+```bash
+make release/check     # Check if a new release is needed
 make bump/patch        # Bump patch version (1.0.0 -> 1.0.1)
 make bump/minor        # Bump minor version (1.0.0 -> 1.1.0)
 make bump/major        # Bump major version (1.0.0 -> 2.0.0)
-make tag/apply         # Create tag from current manifest version
-make tag/push          # Push tag to origin (triggers CI/CD release to stores)
+make tag/apply         # Create local tag from manifest version
+make release           # Push commits and tag to origin (alias: tag/push)
 make tag/delete        # Delete the tag for the current version
-make release/check     # Check if a new release is needed
-make release           # Alias for tag/push
 ```
 
-Use `COMMIT=1` with bump commands to auto-commit the version change.
-
-Version is stored in `manifest.json` and synced to `manifest.firefox.json`.
+Version is stored in `manifest.json` and `manifest.firefox.json` (both are updated).
 
 ### Testing
 

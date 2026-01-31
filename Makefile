@@ -35,7 +35,6 @@ PROJECT_REPO ?= $(shell url=$$($(GIT) config --get remote.origin.url); echo $${u
 GITHUB_USER_NAME ?= $(shell echo $(PROJECT_REPO) | $(AWK) -F/ 'NF>=4{print $$4}')
 GITHUB_USER_EMAIL ?= $(shell $(GIT) config --get user.email || echo '')
 DEFAULT_URL ?= "https://scholar.google.com"
-COMMIT ?=
 SAFARI_DEV_ID := dev.fcalefato.$(APP_NAME)
 
 # Dirs
@@ -58,7 +57,6 @@ JS_FILES := $(wildcard $(JS)/*.js)
 CHROME_BUILD_TIMESTAMP := .chrome.stamp
 FIREFOX_BUILD_TIMESTAMP := .firefox.stamp
 SAFARI_BUILD_TIMESTAMP := .safari.stamp
-STAGING_STAMP := .staging.stamp
 RELEASE_STAMP := .release.stamp
 STAMP_FILES := $(wildcard .*.stamp)
 
@@ -205,33 +203,17 @@ build/clean:  ## Clean up build directory and remove all timestamps
 
 #-- Release
 
-.PHONY: staging
-staging: | dep/git
-	@if $(GIT) diff --cached --quiet; then \
-		echo "true" > $(STAGING_STAMP); \
-	else \
-		echo "false" > $(STAGING_STAMP); \
-	fi; \
-	echo -e "$(CYAN)\nChecking the staging area...$(RESET)"; \
-	echo -e "  $(CYAN)Staging area empty:$(RESET) $$(cat $(STAGING_STAMP))"
-
 define update_version
     echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1)$(RESET)" && \
     cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) $(MANIFEST) && \
     cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
-    if [ "$(COMMIT)" = "1" ]; then \
-        $(GIT) add $(MANIFEST) $(MANIFEST_FIREFOX) && \
-        $(GIT) commit -m "Bump version to $(1)" && \
-        echo -e "$(GREEN)Version updated and committed.$(RESET)" ; \
-    else \
-        echo -e "$(GREEN)Version updated. Use COMMIT=1 to auto-commit.$(RESET)" ; \
-    fi
+    echo -e "$(GREEN)Version updated.$(RESET)"
 endef
 
 .PHONY: bump/patch
-bump/patch: | release/check staging  ## Bump patch version (e.g., 1.0.0 -> 1.0.1). Use COMMIT=1 to auto-commit
+bump/patch: | release/check  ## Bump patch version (e.g., 1.0.0 -> 1.0.1)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF++; print $$0}') ; \
@@ -239,7 +221,7 @@ bump/patch: | release/check staging  ## Bump patch version (e.g., 1.0.0 -> 1.0.1
 	fi
 
 .PHONY: bump/minor
-bump/minor: | release/check staging  ## Bump minor version (e.g., 1.0.0 -> 1.1.0). Use COMMIT=1 to auto-commit
+bump/minor: | release/check  ## Bump minor version (e.g., 1.0.0 -> 1.1.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$(NF-1)++; $$NF=0; print $$0}') ; \
@@ -247,7 +229,7 @@ bump/minor: | release/check staging  ## Bump minor version (e.g., 1.0.0 -> 1.1.0
 	fi
 
 .PHONY: bump/major
-bump/major: | release/check staging  ## Bump major version (e.g., 1.0.0 -> 2.0.0). Use COMMIT=1 to auto-commit
+bump/major: | release/check  ## Bump major version (e.g., 1.0.0 -> 2.0.0)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
 		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$1++; $$2=0; $$3=0; print $$0}') ; \
@@ -255,7 +237,7 @@ bump/major: | release/check staging  ## Bump major version (e.g., 1.0.0 -> 2.0.0
 	fi
 
 .PHONY: tag/apply
-tag/apply: | dep/git  ## Create and apply tag from current manifest version
+tag/apply: | dep/git  ## Create local tag from manifest version
 	@$(eval TAG := v$(APP_VERSION))
 	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
 		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
@@ -266,7 +248,7 @@ tag/apply: | dep/git  ## Create and apply tag from current manifest version
 	fi
 
 .PHONY: tag/push
-tag/push: | dep/git  ## Push the tag to origin - triggers the release action (alias: make release)
+tag/push: | dep/git tag/apply  ## Push local tag to origin (triggers release action)
 	@$(eval TAG := $(shell echo v$(APP_VERSION)))
 	@$(eval REMOTE_TAGS := $(shell $(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'))
 	@if echo $(REMOTE_TAGS) | grep -q $(TAG); then \
@@ -274,8 +256,7 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action (al
 	else \
 		echo -e "$(CYAN)\nPushing pending commits to origin...$(RESET)" ; \
 		$(GIT) push origin main ; \
-		echo -e "$(CYAN)\nTagging version $(TAG) and pushing to origin...$(RESET)" ; \
-		$(GIT) tag $(TAG) ; \
+		echo -e "$(CYAN)\nPushing tag $(TAG) to origin...$(RESET)" ; \
 		$(GIT) push origin $(TAG) ; \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	fi
