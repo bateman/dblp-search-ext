@@ -111,3 +111,48 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 No npm packages. Pure vanilla JavaScript with ES6 modules.
 
 Build tools required: `jq`, `zip`, `git`. For Firefox: `web-ext`. For Safari: Xcode.
+
+## MCP Servers
+
+Two MCP servers are available for development assistance:
+
+### Codacy
+
+Use Codacy tools to check code quality and security before committing changes.
+
+**Key tools:**
+- `codacy_list_repository_issues` - List code quality issues (best practices, complexity, style)
+- `codacy_search_repository_srm_items` - List security vulnerabilities (SAST, Secrets, SCA, IaC)
+- `codacy_get_file_issues` - Get issues for a specific file
+- `codacy_get_repository_with_analysis` - Get overall repository metrics (Grade, Issues, Coverage)
+- `codacy_cli_analyze` - Run local analysis without waiting for remote scan
+
+**Usage guidelines:**
+- Run `codacy_list_repository_issues` after making changes to catch quality regressions
+- Use `codacy_search_repository_srm_items` for security-focused reviews
+- Check `codacy_get_file_issues` when modifying specific files
+- Use filters: `levels` for severity, `categories` for issue type (security, performance, codestyle, etc.)
+
+**Repository info** (extracted from git remote):
+- Provider: `gh` (GitHub)
+- Organization: `bateman`
+- Repository: `dblp-search-ext`
+
+### Context7
+
+Use Context7 to get up-to-date documentation for browser extension APIs and JavaScript.
+
+**Tools:**
+- `resolve-library-id` - Find Context7 library ID (must call first)
+- `query-docs` - Get documentation and code examples
+
+**Useful libraries for this project:**
+- Browser extension APIs (WebExtensions)
+- MDN Web Docs for DOM APIs
+- JavaScript language features
+
+**Example workflow:**
+```
+1. resolve-library-id with query "chrome extension api"
+2. query-docs with the returned library ID and specific question
+```
