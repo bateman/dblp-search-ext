@@ -298,8 +298,13 @@ release/check: | dep/git  ## Check if a new release is needed
 	if [ "$$BEHIND_AHEAD" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi; \
 	echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"; \
 	echo -e "  $(CYAN)Current tag:$(RESET) $$TAG"; \
-	echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $$(echo $$BEHIND_AHEAD | tr '[:space:]' '/')"; \
-	echo -e "  $(CYAN)Needs release:$(RESET) $$(cat $(RELEASE_STAMP))"
+	echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $$(echo $$BEHIND_AHEAD | $(AWK) '{behind=$$1; ahead=$$2; bc=(behind>0 ? "$(RED)" : "$(RESET)"); ac=(ahead>0 ? "$(GREEN)" : "$(RESET)"); print bc "↓" behind "$(RESET)/" ac "↑" ahead "$(RESET)"}')"; \
+	NEEDS=$$(cat $(RELEASE_STAMP)); \
+	if [ "$$NEEDS" = "true" ]; then \
+		echo -e "  $(CYAN)Needs release:$(RESET) $(GREEN)$$NEEDS$(RESET)"; \
+	else \
+		echo -e "  $(CYAN)Needs release:$(RESET) $(ORANGE)$$NEEDS$(RESET)"; \
+	fi
 
 .PHONY: release
 release: tag/push  ## Triggers the release action - pushes the tag to origin (alias: tag/push)
