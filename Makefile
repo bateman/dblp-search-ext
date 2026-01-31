@@ -119,24 +119,24 @@ dep/macos:
 .PHONY: dep/chrome
 dep/chrome: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Google Chrome is installed...$(RESET)"
-	@ls /Applications | grep -x "$(CHROME_APP)" || echo -e "$(RED)Google Chrome is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(CHROME_APP)" || { echo -e "$(RED)Google Chrome is not installed.$(RESET)"; exit 1; }
 
 .PHONY: dep/firefox
 dep/firefox: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Firefox Developer Edition is installed...$(RESET)"
-	@ls /Applications | grep -x "$(FIREFOX_APP)" || echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(FIREFOX_APP)" || { echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"; exit 1; }
 	@echo -e "$(CYAN)\nChecking if web-ext is installed...$(RESET)"
-	@web-ext --version || echo -e "$(RED)web-ext is not installed.$(RESET)"
+	@web-ext --version || { echo -e "$(RED)web-ext is not installed.$(RESET)"; exit 1; }
 
 .PHONY: dep/edge
 dep/edge: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Microsoft Edge is installed...$(RESET)"
-	@ls /Applications | grep -x "$(EDGE_APP)" || echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(EDGE_APP)" || { echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"; exit 1; }
 
 .PHONY: dep/safari
 dep/safari: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
-	@ls /Applications | grep -x "$(SAFARI_APP)" || echo -e "$(RED)Safari is not installed.$(RESET)"
+	@ls /Applications | grep -x "$(SAFARI_APP)" || { echo -e "$(RED)Safari is not installed.$(RESET)"; exit 1; }
 
 #-- Build targets
 
@@ -188,15 +188,11 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 	@echo -e "$(GREEN)Done$(RESET)"
 
 .PHONY: build/edge
-build/edge:  ## Build Edge extension zip (same as Chrome)
-	$(MAKE) build/chrome
+build/edge: build/chrome  ## Build Edge extension zip (same as Chrome)
 
 .PHONY: build/all
-build/all:  ## Build all extensions (alias: build)
-	@echo -e "$(CYAN)\nBuilding all extensions...$(RESET)"
-	$(MAKE) build/chrome
-	$(MAKE) build/firefox
-	$(MAKE) build/safari
+build/all: build/chrome build/firefox build/safari  ## Build all extensions (alias: build)
+	@echo -e "$(CYAN)\nAll extensions built.$(RESET)"
 
 .PHONY: build/clean
 build/clean:  ## Clean up build directory and remove all timestamps
@@ -286,20 +282,20 @@ tag/push: | dep/git  ## Push the tag to origin - triggers the release action (al
 
 .PHONY: tag/delete
 tag/delete: | dep/git  ## Delete the tag for the current version
-	$(eval tag_exists=$(shell $(GIT) rev-parse $(APP_VERSION) >/dev/null 2>&1 && echo 1 || echo 0))
-	@if [ "$(tag_exists)" = "1" ]; then \
-		echo -e "$(CYAN)\nDeleting tag $(APP_VERSION)...$(RESET)"; \
-		$(GIT) tag -d $(APP_VERSION) && $(GIT) push origin :refs/tags/$(APP_VERSION); \
+	@$(eval TAG := v$(APP_VERSION))
+	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
+		echo -e "$(CYAN)\nDeleting tag $(TAG)...$(RESET)"; \
+		$(GIT) tag -d $(TAG) && $(GIT) push origin :refs/tags/$(TAG); \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
 	else \
-		echo -e "$(ORANGE)Current $(APP_VERSION) is not tagged.$(RESET)"; \
+		echo -e "$(ORANGE)Tag $(TAG) does not exist.$(RESET)"; \
 	fi
 
 .PHONY: release/check
 release/check: | dep/git  ## Check if a new release is needed
 	@$(eval TAG := $(shell $(GIT) describe --tags --abbrev=0))
 	@$(eval BEHIND_AHEAD := $(shell $(GIT) rev-list --left-right --count $(TAG)...origin/main))
-	@$(shell if [ "$(BEHIND_AHEAD)" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi)
+	@if [ "$(BEHIND_AHEAD)" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi
 	@echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"
 	@echo -e "  $(CYAN)Current tag:$(RESET) $(TAG)"
 	@echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $(shell echo ${BEHIND_AHEAD} | tr '[:space:]' '/' | $(SED) 's/\/$$//')"
