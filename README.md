@@ -70,8 +70,9 @@ Contributions are welcome! Please submit a pull request or create an issue to co
 ### Build Commands
 
 ```bash
+make build             # Build all extensions (alias for build/all)
 make build/chrome      # Build Chrome extension ZIP
-make build/firefox     # Build Firefox XPI addon
+make build/firefox     # Build Firefox XPI addon and sources
 make build/safari      # Build Safari app-extension (macOS + Xcode required)
 make build/edge        # Build Edge extension (same as Chrome)
 make build/all         # Build all extensions
@@ -113,6 +114,8 @@ make run/edge          # Launch Edge with extension
 make info              # Show development environment info
 ```
 
+Use `DEFAULT_URL="https://example.com"` to set the opening page for run commands.
+
 > [!NOTE]
 > * Browser must not be running before executing `make run/*` commands
 > * Unlike Chrome, Edge does not run in development mode
@@ -121,11 +124,17 @@ make info              # Show development environment info
 ### Release Workflow
 
 ```bash
-make tag/patch         # Bump patch version (1.0.0 -> 1.0.1)
-make tag/minor         # Bump minor version (1.0.0 -> 1.1.0)
-make tag/major         # Bump major version (1.0.0 -> 2.0.0)
-make tag/push          # Push to origin (triggers CI/CD release to stores)
+make bump/patch        # Bump patch version (1.0.0 -> 1.0.1)
+make bump/minor        # Bump minor version (1.0.0 -> 1.1.0)
+make bump/major        # Bump major version (1.0.0 -> 2.0.0)
+make tag/apply         # Create tag from current manifest version
+make tag/push          # Push tag to origin (triggers CI/CD release to stores)
+make tag/delete        # Delete the tag for the current version
+make release/check     # Check if a new release is needed
+make release           # Alias for tag/push
 ```
+
+Use `COMMIT=1` with bump commands to auto-commit the version change.
 
 Version is stored in `manifest.json` and synced to `manifest.firefox.json`.
 
