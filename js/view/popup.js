@@ -5,13 +5,11 @@
  */
 
 import { updateStatus } from "./commons.js";
-import { isValidURL, getNumericValue, parseSearchWithDefaults } from "../utils/validation.js";
+import { isValidURL, parseSearchWithDefaults } from "../utils/validation.js";
 import {
   extractAuthorFromKey,
   extractVenueFromKey,
   extractYearFromBibtex,
-  findMatchingBrace,
-  findFirstSignificantWord,
   extractFirstTitleWord,
   buildCitationKey,
   cleanBibtexMetadata,
