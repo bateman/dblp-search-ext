@@ -64,6 +64,15 @@ describe("extractYearFromBibtex", () => {
     expect(extractYearFromBibtex("year={2021},")).toBe("2021");
     expect(extractYearFromBibtex("year = {2021},")).toBe("2021");
   });
+
+  it("returns null when year is last field without trailing comma", () => {
+    const bibtex = `@article{key,
+  author = {Smith},
+  year = {2023}
+}`;
+    // The regex requires a trailing comma after the year value
+    expect(extractYearFromBibtex(bibtex)).toBe(null);
+  });
 });
 
 describe("findMatchingBrace", () => {
@@ -83,6 +92,21 @@ describe("findMatchingBrace", () => {
 
   it("returns index after closing brace", () => {
     expect(findMatchingBrace("}", 0)).toBe(1);
+  });
+
+  it("works with non-zero startIndex", () => {
+    // "prefix {inner}" - start at index 8 (after the {), find closing } at index 13
+    const data = "prefix {inner}";
+    expect(findMatchingBrace(data, 8)).toBe(14);
+  });
+
+  it("handles empty string", () => {
+    expect(findMatchingBrace("", 0)).toBe(-1);
+  });
+
+  it("handles deeply nested braces", () => {
+    // braceCount starts at 1. "{{{}}}}": {→2, {→3, {→4, }→3, }→2, }→1, }→0 → endIndex=7
+    expect(findMatchingBrace("{{{}}}}", 0)).toBe(7);
   });
 });
 
@@ -138,6 +162,22 @@ describe("extractFirstTitleWord", () => {
   year = {2023},
 }`;
     expect(extractFirstTitleWord(bibtex)).toBe("novel");
+  });
+
+  it("handles empty title field", () => {
+    const bibtex = `@article{key,
+  title = {},
+  year = {2023},
+}`;
+    expect(extractFirstTitleWord(bibtex)).toBe("");
+  });
+
+  it("matches title field case-insensitively", () => {
+    const bibtex = `@article{key,
+  Title = {Performance Analysis},
+  year = {2023},
+}`;
+    expect(extractFirstTitleWord(bibtex)).toBe("performance");
   });
 });
 
@@ -195,6 +235,33 @@ describe("buildCitationKey", () => {
     );
     expect(key).toBe("smith2023");
   });
+
+  it("returns empty string for empty fields array", () => {
+    const key = buildCitationKey(
+      [],
+      "smith", "2023", "tse", "testing",
+      false, false
+    );
+    expect(key).toBe("");
+  });
+
+  it("applies both authorCapitalize and venueUppercase together", () => {
+    const key = buildCitationKey(
+      ["author", "dash", "venue", "year"],
+      "smith", "2023", "tse", "testing",
+      true, true
+    );
+    expect(key).toBe("Smith-TSE2023");
+  });
+
+  it("handles empty author string", () => {
+    const key = buildCitationKey(
+      ["author", "year"],
+      "", "2023", "tse", "testing",
+      true, false
+    );
+    expect(key).toBe("2023");
+  });
 });
 
 describe("cleanBibtexMetadata", () => {
@@ -226,6 +293,29 @@ describe("cleanBibtexMetadata", () => {
     expect(result).toContain("author = {Smith}");
     expect(result).toContain("year = {2023}");
   });
+
+  it("does not corrupt BibTeX without metadata fields", () => {
+    const bibtex = `@article{key,
+  author = {Smith},
+  title = {Test},
+  year = {2023}
+}`;
+    const result = cleanBibtexMetadata(bibtex);
+    expect(result).toContain("author = {Smith}");
+    expect(result).toContain("title = {Test}");
+    expect(result).toContain("year = {2023}");
+  });
+
+  it("produces no double blank lines", () => {
+    const bibtex = `@article{key,
+  author = {Smith},
+  timestamp = {Mon, 01 Jan 2023 00:00:00 +0100},
+  biburl = {https://dblp.org/rec/key.bib},
+  bibsource = {dblp}
+}`;
+    const result = cleanBibtexMetadata(bibtex);
+    expect(result).not.toMatch(/\n\s*\n/);
+  });
 });
 
 describe("removeUrlFromBibtex", () => {
@@ -249,5 +339,15 @@ describe("removeUrlFromBibtex", () => {
     const result = removeUrlFromBibtex(bibtex);
     expect(result).toContain("author");
     expect(result).toContain("year");
+  });
+
+  it("removes URL as last field with trailing comma", () => {
+    const bibtex = `@article{key,
+  author = {Smith},
+  url = {https://example.com/paper},
+}`;
+    const result = removeUrlFromBibtex(bibtex);
+    expect(result).not.toContain("url");
+    expect(result).toContain("author");
   });
 });

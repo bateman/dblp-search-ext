@@ -101,4 +101,25 @@ describe("extractDOI", () => {
   it("handles URL query parameters", () => {
     expect(extractDOI("10.1000/xyz123?ref=abc&type=pdf")).toBe("10.1000/xyz123");
   });
+
+  it("strips fragment syntax with URL-like parameters", () => {
+    expect(extractDOI("10.1000/xyz123#section=intro&page=1")).toBe("10.1000/xyz123");
+  });
+
+  it("preserves colons and semicolons in DOIs", () => {
+    expect(extractDOI("10.1000/a:b;c")).toBe("10.1000/a:b;c");
+  });
+
+  it("returns null for whitespace-only input", () => {
+    expect(extractDOI("   ")).toBe(null);
+  });
+
+  it("handles mixed-case doi: prefix", () => {
+    expect(extractDOI("Doi: 10.1000/xyz123")).toBe("10.1000/xyz123");
+  });
+
+  it("strips trailing quotes", () => {
+    expect(extractDOI("10.1000/xyz123\"")).toBe("10.1000/xyz123");
+    expect(extractDOI("10.1000/xyz123'")).toBe("10.1000/xyz123");
+  });
 });

@@ -49,7 +49,7 @@ export function validatePopupWidth(input) {
  * @returns {number} The numeric value or default
  */
 export function getNumericValue(value, defaultValue) {
-  return typeof value === "number" ? value : defaultValue;
+  return typeof value === "number" && isFinite(value) ? value : defaultValue;
 }
 
 /**

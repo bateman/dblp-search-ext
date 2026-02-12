@@ -140,6 +140,16 @@ describe("PublicationModel", () => {
       const pub = { venue: "Springer", type: "Books and Theses", volume: "1" };
       expect(model.constructVenue(pub)).toBe("Springer");
     });
+
+    it("appends number without volume for journal articles", () => {
+      const pub = { venue: "TSE", type: "Journal Articles", number: "3" };
+      expect(model.constructVenue(pub)).toBe("TSE(3)");
+    });
+
+    it("returns plain venue for article without volume or number", () => {
+      const pub = { venue: "TSE", type: "Journal Articles" };
+      expect(model.constructVenue(pub)).toBe("TSE");
+    });
   });
 
   describe("createPublication", () => {
@@ -182,6 +192,20 @@ describe("PublicationModel", () => {
       };
       const result = model.createPublication(pub, ["Smith"], "ICSE");
       expect(result.doi).toBe("N/A");
+    });
+
+    it("handles missing ee and pages fields", () => {
+      const pub = {
+        type: "Journal Articles",
+        title: "Test",
+        url: "https://dblp.org/rec/journals/tse/Smith23",
+        year: "2023",
+        doi: "10.1000/xyz",
+        access: "open",
+      };
+      const result = model.createPublication(pub, ["Smith"], "TSE");
+      expect(result.doiURL).toBe(undefined);
+      expect(result.pages).toBe(undefined);
     });
   });
 
@@ -242,6 +266,45 @@ describe("PublicationModel", () => {
       expect(result.publications).toHaveLength(1);
       expect(result.excludedCount).toBe(1);
       expect(result.publications[0].title).toBe("Regular Paper");
+    });
+
+    it("returns empty results for empty input array", () => {
+      const result = model.parsePublications([]);
+      expect(result.publications).toHaveLength(0);
+      expect(result.excludedCount).toBe(0);
+    });
+
+    it("handles all entries being excluded", () => {
+      const pubsInfo = [
+        {
+          info: {
+            key: "journals/corr/abs-2301-00001",
+            type: "Informal and Other Publications",
+            title: "Paper 1",
+            url: "https://dblp.org/rec/journals/corr/abs-2301-00001",
+            authors: { author: { text: "Smith" } },
+            year: "2023",
+            venue: "CoRR",
+            access: "open",
+          },
+        },
+        {
+          info: {
+            key: "journals/corr/abs-2301-00002",
+            type: "Informal and Other Publications",
+            title: "Paper 2",
+            url: "https://dblp.org/rec/journals/corr/abs-2301-00002",
+            authors: { author: { text: "Doe" } },
+            year: "2023",
+            venue: "CoRR",
+            access: "open",
+          },
+        },
+      ];
+
+      const result = model.parsePublications(pubsInfo);
+      expect(result.publications).toHaveLength(0);
+      expect(result.excludedCount).toBe(2);
     });
   });
 
@@ -408,6 +471,77 @@ describe("PublicationModel", () => {
       expect(model.totalHits).toBe(0);
       expect(model.sentHits).toBe(0);
       expect(model.publications).toEqual([]);
+    });
+
+    it("does not crash when no subscriber is set", async () => {
+      // model.notify is null by default — should not throw
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await expect(model.searchPublications("query")).resolves.not.toThrow();
+      expect(model.status).toBe("OK");
+    });
+
+    it("appends offset as &f= parameter in fetch URL", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await model.searchPublications("test", 50);
+
+      const fetchUrl = globalThis.fetch.mock.calls[0][0];
+      expect(fetchUrl).toContain("&f=50");
+    });
+
+    it("does not append &f= when offset is 0", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await model.searchPublications("test", 0);
+
+      const fetchUrl = globalThis.fetch.mock.calls[0][0];
+      expect(fetchUrl).not.toContain("&f=");
+    });
+
+    it("encodes query parameter in URL", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await model.searchPublications("test query & special");
+
+      const fetchUrl = globalThis.fetch.mock.calls[0][0];
+      expect(fetchUrl).toContain("q=test%20query%20%26%20special");
     });
   });
 });

@@ -45,6 +45,16 @@ describe("isValidURL", () => {
     expect(isValidURL("not-a-url")).toBe(false);
     expect(isValidURL("://missing-protocol")).toBe(false);
   });
+
+  it("rejects file: and blob: protocols", () => {
+    expect(isValidURL("file:///etc/passwd")).toBe(false);
+    expect(isValidURL("blob:https://example.com/uuid")).toBe(false);
+  });
+
+  it("accepts URLs with ports and authentication", () => {
+    expect(isValidURL("http://localhost:3000")).toBe(true);
+    expect(isValidURL("https://user:pass@example.com")).toBe(true);
+  });
 });
 
 describe("validateMaxResults", () => {
@@ -73,6 +83,11 @@ describe("validateMaxResults", () => {
   it("returns default value of 30 when invalid", () => {
     const result = validateMaxResults("invalid");
     expect(result.value).toBe(30);
+  });
+
+  it("truncates float strings to integer", () => {
+    expect(validateMaxResults("10.5")).toEqual({ valid: true, value: 10 });
+    expect(validateMaxResults("999.9")).toEqual({ valid: true, value: 999 });
   });
 });
 
@@ -115,6 +130,16 @@ describe("getNumericValue", () => {
     expect(getNumericValue(undefined, 10)).toBe(10);
     expect(getNumericValue(null, 5)).toBe(5);
     expect(getNumericValue(true, 0)).toBe(0);
+  });
+
+  it("returns the default for NaN", () => {
+    expect(getNumericValue(NaN, 0)).toBe(0);
+    expect(getNumericValue(NaN, 42)).toBe(42);
+  });
+
+  it("returns the default for Infinity", () => {
+    expect(getNumericValue(Infinity, 0)).toBe(0);
+    expect(getNumericValue(-Infinity, 5)).toBe(5);
   });
 });
 
