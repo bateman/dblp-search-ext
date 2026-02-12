@@ -1,0 +1,13 @@
+{
+  "name": "dblp-search-ext",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cross-browser extension for searching publications on dblp.org",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}

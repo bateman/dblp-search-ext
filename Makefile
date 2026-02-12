@@ -136,6 +136,18 @@ dep/safari: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
 	@ls /Applications | grep -x "$(SAFARI_APP)" || { echo -e "$(RED)Safari is not installed.$(RESET)"; exit 1; }
 
+#-- Test
+
+.PHONY: test
+test:  ## Run unit tests
+	@echo -e "$(CYAN)\nRunning unit tests...$(RESET)"
+	@npx vitest run
+	@echo -e "$(GREEN)Done.$(RESET)"
+
+.PHONY: test/watch
+test/watch:  ## Run unit tests in watch mode
+	@npx vitest
+
 #-- Build targets
 
 .PHONY: build
