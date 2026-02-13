@@ -5,8 +5,14 @@
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
 
+![Edge Add-on Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.version&label=edge%20add-on&prefix=v&style=flat-square&logo=microsoftedge&logoColor=white&color=blue)
+![Edge Add-on Users](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.activeInstallCount&label=users&suffix=%20users&style=flat-square&color=green)
+![Edge Add-on Rating](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.averageRating&label=rating&suffix=/5&style=flat-square&color=brightgreen)
+![Edge Add-on Stars](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.ratingCount&label=stars&style=flat-square&color=brightgreen)
+
+
 ![Mozilla Add-on Version](https://img.shields.io/amo/v/dblp-search?style=flat-square)
-![Mozilla Add-on Users](https://img.shields.io/amo/users/dblp-search?style=flat-square)
+![Mozilla Add-on Users](https://img.shields.io/amo/users/dblp-search?style=flat-square&color=brightgreen)
 ![Mozilla Add-on Downloads](https://img.shields.io/amo/dw/dblp-search?style=flat-square)
 ![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=flat-square)
 ![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=flat-square)
