@@ -296,7 +296,7 @@ tag/delete: | dep/git  ## Delete the tag for the current version
 .PHONY: release/check
 release/check: | dep/git  ## Check if a new release is needed
 	@TAG=$$($(GIT) describe --tags --abbrev=0); \
-	BEHIND_AHEAD=$$($(GIT) rev-list --left-right --count $$TAG...origin/main); \
+	BEHIND_AHEAD=$$($(GIT) rev-list --left-right --count $$TAG...HEAD); \
 	if [ "$$BEHIND_AHEAD" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi; \
 	echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"; \
 	echo -e "  $(CYAN)Current tag:$(RESET) $$TAG"; \
