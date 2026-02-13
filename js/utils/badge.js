@@ -1,4 +1,4 @@
-/*global chrome, setTimeout, clearTimeout, console*/
+/*global chrome*/
 
 /**
  * @file badge.js
