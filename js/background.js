@@ -14,6 +14,7 @@ import { PublicationController } from "./controller/controller.js";
 import { PublicationModel } from "./model/model.js";
 import { PublicationView } from "./view/view.js";
 import { extractDOI } from "./utils/doi.js";
+import { flashBadge } from "./utils/badge.js";
 
 /** @type {PublicationModel} */
 const model = new PublicationModel();
@@ -23,60 +24,13 @@ const view = new PublicationView();
 const controller = new PublicationController(model, view);
 
 /**
- * Tracks badge timeout ID to prevent race conditions during badge updates
- * @type {number|null}
- */
-let badgeTimeoutId = null;
-
-/**
  * Shows feedback to user when selected text is not a valid DOI
  * Uses flashing badge (visual) and console warning (debugging)
  * @param {string} text - The selected text that failed validation
  */
 function showInvalidDOIFeedback(text) {
-  // Console warning for debugging (includes selected text)
   console.warn("Selected text is not a valid DOI format:", text);
-
-  // Clear any existing timeout to prevent race conditions
-  if (badgeTimeoutId) {
-    clearTimeout(badgeTimeoutId);
-    badgeTimeoutId = null;
-  }
-
-  // Flash the badge to make it more noticeable
-  const flashCount = 3;
-  const flashInterval = 300; // ms between flashes
-  let flashes = 0;
-
-  function flash() {
-    try {
-      const isVisible = flashes % 2 === 0;
-      browser.action.setBadgeText({ text: isVisible ? "!" : "" });
-      browser.action.setBadgeBackgroundColor({ color: "#b91a2d" });
-      browser.action.setTitle({ title: "Invalid DOI format" });
-
-      flashes++;
-      if (flashes < flashCount * 2) {
-        badgeTimeoutId = setTimeout(flash, flashInterval);
-      } else {
-        // Keep badge visible after flashing, then clear after 3 seconds
-        browser.action.setBadgeText({ text: "!" });
-        badgeTimeoutId = setTimeout(() => {
-          try {
-            browser.action.setBadgeText({ text: "" });
-            browser.action.setTitle({ title: "dblp Search" });
-          } catch (error) {
-            console.error("Failed to clear badge:", error);
-          }
-          badgeTimeoutId = null;
-        }, 3000);
-      }
-    } catch (error) {
-      console.error("Failed to set badge:", error);
-    }
-  }
-
-  flash();
+  flashBadge();
 }
 
 /**
@@ -99,8 +53,30 @@ function handleMessageError(error, message, sendResponse) {
 }
 
 /**
+ * Maps message types to their handler functions and log descriptions.
+ * Each handler returns an object with:
+ * - action: Promise from the controller method
+ * - log: Human-readable description for logging
+ * @type {Object<string, function(Object): {action: Promise, log: string}>}
+ */
+const messageHandlers = {
+  REQUEST_SEARCH_PUBLICATIONS: (msg) => ({
+    action: controller.handleSearch(msg.query, msg.offset || 0),
+    log: `search for '${msg.query}' (offset: ${msg.offset || 0})`,
+  }),
+  REQUEST_NEXT_PAGE: (msg) => ({
+    action: controller.handleNextPage(msg.query, msg.currentOffset, msg.maxResults),
+    log: `next page of '${msg.query}'`,
+  }),
+  REQUEST_PREVIOUS_PAGE: (msg) => ({
+    action: controller.handlePreviousPage(msg.query, msg.currentOffset, msg.maxResults),
+    log: `previous page of '${msg.query}'`,
+  }),
+};
+
+/**
  * Message listener for handling requests from popup and other extension components.
- * Processes search requests and pagination commands.
+ * Processes search requests and pagination commands via the dispatcher map.
  * @param {Object} message - The message object from the sender
  * @param {string} message.type - Message type (REQUEST_SEARCH_PUBLICATIONS, REQUEST_NEXT_PAGE, REQUEST_PREVIOUS_PAGE)
  * @param {string} message.script - The script that sent the message
@@ -113,65 +89,30 @@ function handleMessageError(error, message, sendResponse) {
  * @returns {boolean} True if response will be sent asynchronously, false otherwise
  */
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Ignore messages not meant for background.js
   if (!message.type || !message.type.startsWith("REQUEST_")) {
     return false;
   }
 
-  try {
-    if (message.type === "REQUEST_SEARCH_PUBLICATIONS") {
-      // handleSearch returns a promise, so we need to return true to indicate
-      // that the response will be sent asynchronously
-      const offset = message.offset || 0;
-      controller
-        .handleSearch(message.query, offset)
-        .then(() => {
-          console.log(
-            `Background.js completed a request to search for '${message.query}' (offset: ${offset}) sent by '${message.script}'.`
-          );
-          sendResponse({
-            script: "background.js",
-            success: true,
-            response: `Search for '${message.query}' completed.`,
-          });
-        })
-        .catch((error) => handleMessageError(error, message, sendResponse));
-      return true; // Will respond asynchronously
-    } else if (message.type === "REQUEST_NEXT_PAGE") {
-      controller
-        .handleNextPage(message.query, message.currentOffset, message.maxResults)
-        .then(() => {
-          console.log(
-            `Background.js completed request for next page of '${message.query}'.`
-          );
-          sendResponse({
-            script: "background.js",
-            success: true,
-            response: "Next page loaded.",
-          });
-        })
-        .catch((error) => handleMessageError(error, message, sendResponse));
-      return true;
-    } else if (message.type === "REQUEST_PREVIOUS_PAGE") {
-      controller
-        .handlePreviousPage(message.query, message.currentOffset, message.maxResults)
-        .then(() => {
-          console.log(
-            `Background.js completed request for previous page of '${message.query}'.`
-          );
-          sendResponse({
-            script: "background.js",
-            success: true,
-            response: "Previous page loaded.",
-          });
-        })
-        .catch((error) => handleMessageError(error, message, sendResponse));
-      return true;
-    }
-  } catch (error) {
-    handleMessageError(error, message, sendResponse);
+  const handler = messageHandlers[message.type];
+  if (!handler) {
+    return false;
   }
-  return false;
+
+  const { action, log } = handler(message);
+  action
+    .then(() => {
+      console.log(
+        `Background.js completed ${log} sent by '${message.script}'.`
+      );
+      sendResponse({
+        script: "background.js",
+        success: true,
+        response: `Completed ${log}.`,
+      });
+    })
+    .catch((error) => handleMessageError(error, message, sendResponse));
+
+  return true; // Will respond asynchronously
 });
 
 /**

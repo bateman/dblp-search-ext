@@ -105,6 +105,7 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 - Handle promise rejections with `.catch()` or try/catch
 - Avoid code duplication and keep functions focused
 - Keep cyclomatic complexity below 8 (extract helper functions if needed)
+- In `/*global*/` comments, only declare non-standard globals like `chrome`. Do NOT declare browser built-ins (`setTimeout`, `clearTimeout`, `console`, etc.) — the remote Codacy ESLint config recognizes them and `no-redeclare` with `builtinGlobals: true` will flag them as violations
 
 ## Dependencies
 
@@ -128,6 +129,7 @@ Use Codacy tools to check code quality and security before committing changes.
 - `codacy_cli_analyze` - Run local analysis without waiting for remote scan
 
 **Usage guidelines:**
+- **Every code change must be verified with `codacy_cli_analyze` before committing** to avoid decreasing code quality grades
 - Run `codacy_list_repository_issues` after making changes to catch quality regressions
 - Use `codacy_search_repository_srm_items` for security-focused reviews
 - Check `codacy_get_file_issues` when modifying specific files
