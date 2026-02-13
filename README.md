@@ -4,11 +4,13 @@
 ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/stars/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
 ![Chrome Web Store](https://img.shields.io/chrome-web-store/rating-count/onilpcgmnpikffebghpncnnapebndpaj?style=flat-square)
+![Chrome Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/chrome-release.yml?style=flat-square&label=Chrome%20release)
 
 ![Edge Add-on Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.version&label=edge%20add-on&prefix=v&style=flat-square&logo=microsoftedge&logoColor=white&color=blue)
 ![Edge Add-on Users](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.activeInstallCount&label=users&suffix=%20users&style=flat-square&color=green)
 ![Edge Add-on Rating](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.averageRating&label=rating&suffix=/5&style=flat-square&color=brightgreen)
 ![Edge Add-on Stars](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fpgaajpodajaanapcpehobkdmkjpbhobd&query=$.ratingCount&label=stars&style=flat-square&color=brightgreen)
+![Edge Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/edge-release.yml?style=flat-square&label=Edge%20release)
 
 
 ![Mozilla Add-on Version](https://img.shields.io/amo/v/dblp-search?style=flat-square)
@@ -16,12 +18,11 @@
 ![Mozilla Add-on Downloads](https://img.shields.io/amo/dw/dblp-search?style=flat-square)
 ![Mozilla Add-on Rating](https://img.shields.io/amo/rating/dblp-search?style=flat-square)
 ![Mozilla Add-on Stars](https://img.shields.io/amo/stars/dblp-search?style=flat-square)
+![Firefox Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/firefox-release.yml?style=flat-square&label=Firefox%20release)
 
 ![GitHub manifest version](https://img.shields.io/github/manifest-json/v/bateman/dblp-search-ext?style=flat-square&label=MANIFEST)
 ![GitHub Release](https://img.shields.io/github/v/release/bateman/dblp-search-ext?style=flat-square&label=GitHub%20release)
-![Chrome Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/chrome-release.yml?style=flat-square&label=Chrome%20release)
-![Edge Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/edge-release.yml?style=flat-square&label=Edge%20release)
-![Firefox Release](https://img.shields.io/github/actions/workflow/status/bateman/dblp-search-ext/firefox-release.yml?style=flat-square&label=Firefox%20release)
+
 
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/bateman/dblp-search-ext?style=flat-square)
 ![GitHub language count](https://img.shields.io/github/languages/count/bateman/dblp-search-ext?style=flat-square)
