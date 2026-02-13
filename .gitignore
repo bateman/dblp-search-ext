@@ -5,3 +5,4 @@ store/auth/
 scripts/
 .vscode/
 .qodo
+node_modules/

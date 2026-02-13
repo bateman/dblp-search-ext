@@ -13,6 +13,8 @@ SED_INPLACE := $(shell if $(SED) --version >/dev/null 2>&1; then echo "$(SED) -i
 AWK := $(shell command -v awk 2> /dev/null)
 GIT := $(shell command -v git 2> /dev/null)
 GIT_VERSION := $(shell $(GIT) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
+NPM := $(shell command -v npm 2> /dev/null)
+NPM_VERSION := $(shell npm --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
 XCRUN := $(shell command -v xcrun 2> /dev/null)
 XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
 XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || printf '\033[31mnot installed\033[0m')
@@ -86,6 +88,7 @@ info:  ## Show development environment info
 	@echo -e "  $(CYAN)Shell:$(RESET) $(SHELL) - $(shell $(SHELL) --version | head -n 1)"
 	@echo -e "  $(CYAN)Make:$(RESET) $(MAKE_VERSION)"
 	@echo -e "  $(CYAN)Git:$(RESET) $(GIT_VERSION)"
+	@echo -e "  $(CYAN)npm:$(RESET) $(NPM_VERSION)"
 	@echo -e "  $(CYAN)xcrun:$(RESET) $(XCRUN_VERSION)"
 	@echo -e "  $(CYAN)xcodebuild:$(RESET) $(XCODEBUILD)"
 	@echo -e "$(MAGENTA)Project:$(RESET)"
@@ -135,6 +138,22 @@ dep/edge: | dep/macos
 dep/safari: | dep/macos
 	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
 	@ls /Applications | grep -x "$(SAFARI_APP)" || { echo -e "$(RED)Safari is not installed.$(RESET)"; exit 1; }
+
+#-- Test
+
+node_modules: package.json
+	@echo -e "$(CYAN)Installing dependencies...$(RESET)"
+	@npm install
+
+.PHONY: test
+test: node_modules  ## Run unit tests
+	@echo -e "$(CYAN)\nRunning unit tests...$(RESET)"
+	@npx vitest run
+	@echo -e "$(GREEN)Done.$(RESET)"
+
+.PHONY: test/watch
+test/watch: node_modules  ## Run unit tests in watch mode
+	@npx vitest
 
 #-- Build targets
 
@@ -209,6 +228,8 @@ define update_version
     mv $(MANIFEST_TMP) $(MANIFEST) && \
     cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
+    cat package.json | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
+    mv $(MANIFEST_TMP) package.json && \
     echo -e "$(GREEN)Version updated.$(RESET)"
 endef
 

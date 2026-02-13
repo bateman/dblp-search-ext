@@ -5,6 +5,7 @@
  */
 
 import { updateStatus } from "./commons.js";
+import { validateMaxResults, validatePopupWidth } from "../utils/validation.js";
 
 const browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
@@ -468,27 +469,6 @@ function capitalize(str) {
 // Save/Restore Functions
 // =====================================
 
-/**
- * Validates the max results input value
- * @param {string} input - The input value to validate
- * @returns {{valid: boolean, value: number}} Validation result with parsed value
- */
-function validateMaxResults(input) {
-  const value = parseInt(input, 10);
-  const valid = !isNaN(value) && value >= 1 && value <= 1000;
-  return { valid, value: valid ? value : 30 };
-}
-
-/**
- * Validates the popup width input value
- * @param {string} input - The input value to validate
- * @returns {{valid: boolean, value: number}} Validation result with parsed value
- */
-function validatePopupWidth(input) {
-  const value = parseInt(input, 10);
-  const valid = !isNaN(value) && value >= 500 && value <= 800;
-  return { valid, value: valid ? value : 800 };
-}
 
 /**
  * Saves all user options to browser storage
