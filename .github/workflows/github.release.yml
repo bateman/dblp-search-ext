@@ -20,7 +20,7 @@ jobs:
         run: echo "manifest=$(jq -c . < manifest.json)" >> $GITHUB_ENV
 
       - name: Create zip file
-        run: zip -r release.zip .
+        run: zip -r release.zip . -x ".git/*"
 
       - name: Create Release
         id: create_release

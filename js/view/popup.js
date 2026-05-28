@@ -450,6 +450,7 @@ function createTitleCell(title, permaLink) {
   const link = document.createElement("a");
   link.href = isValidURL(permaLink) ? permaLink : "#";
   link.target = "_blank";
+  link.rel = "noopener noreferrer";
   link.title = permaLink || "";
   link.textContent = title;
   cell.appendChild(link);
@@ -467,6 +468,7 @@ function createDoiCell(doi, doiURL) {
   const link = document.createElement("a");
   link.href = isValidURL(doiURL) ? doiURL : "#";
   link.target = "_blank";
+  link.rel = "noopener noreferrer";
   link.textContent = doi;
   cell.appendChild(link);
   return cell;
