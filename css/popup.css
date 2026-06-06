@@ -443,3 +443,52 @@ td.no-results-message,
     color: #666;
     font-style: italic;
 }
+
+/* Right-click context menu for result rows */
+.context-menu {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    min-width: 160px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    padding: 4px 0;
+}
+
+.context-menu.show {
+    display: block;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    color: #333;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.context-menu-item:hover:not(:disabled) {
+    background-color: #2e7fca;
+    color: #fff;
+    border: none;
+}
+
+.context-menu-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.context-menu-item img {
+    width: 14px;
+    height: 14px;
+}

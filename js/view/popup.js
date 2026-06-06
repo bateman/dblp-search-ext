@@ -582,6 +582,11 @@ function createPublicationRow(result, index) {
     selectRow(index);
   });
 
+  // Add right-click handler to open the actions context menu
+  row.addEventListener("contextmenu", function (e) {
+    showContextMenu(e, row);
+  });
+
   return row;
 }
 
@@ -837,11 +842,12 @@ function createTypeFilterHeader() {
   return th;
 }
 
-// Global click handler to close filter dropdowns (added once)
+// Global click handler to close filter dropdowns and context menu (added once)
 document.addEventListener("click", function() {
   document.querySelectorAll(".filter-dropdown.show").forEach(function(d) {
     d.classList.remove("show");
   });
+  hideContextMenu();
 });
 
 /**
@@ -932,7 +938,7 @@ function displayTableWithPublications(publications) {
   // Add keyboard shortcuts hint above the table
   const hint = document.createElement("div");
   hint.id = "keyboard-hint";
-  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D to download, B for DBLP, O for DOI";
+  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D to download, B for DBLP, O for DOI \u2014 or right-click a row for actions";
   results.appendChild(hint);
 
   results.appendChild(table);
@@ -1209,6 +1215,192 @@ function openSelectedRowDoi(row) {
     updateStatus("No DOI link available", 2000);
   }
 }
+
+
+// =====================================
+// Context Menu Functions
+// =====================================
+
+// Available actions in the row right-click context menu
+const CONTEXT_MENU_ITEMS = [
+  { action: "copy", label: "Copy BibTeX", icon: "../images/copy.png" },
+  { action: "download", label: "Download BibTeX", icon: "../images/download.png" },
+  { action: "dblp", label: "Open on dblp", icon: "../images/open-in-tab.png" },
+  { action: "doi", label: "Resolve DOI", icon: "../images/open-in-tab.png" },
+];
+
+// Reusable context menu element and its current target row
+let contextMenuEl = null;
+let contextMenuTargetRow = null;
+
+/**
+ * Returns the relevant URL on a row for a given context menu action
+ * @param {HTMLTableRowElement} row - The target row element
+ * @param {string} action - The action identifier
+ * @returns {string} The URL associated with the action (may be empty)
+ */
+function getRowUrlForAction(row, action) {
+  switch (action) {
+    case "copy":
+    case "download":
+      return row.dataset.bibtexUrl;
+    case "dblp":
+      return row.dataset.dblpUrl;
+    case "doi":
+      return row.dataset.doiUrl;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Executes a context menu action on the target row
+ * @param {string} action - The action identifier
+ * @param {HTMLTableRowElement} row - The target row element
+ */
+function executeContextMenuAction(action, row) {
+  switch (action) {
+    case "copy":
+      copySelectedRowBibtex(row);
+      break;
+    case "download":
+      downloadSelectedRowBibtex(row);
+      break;
+    case "dblp":
+      openSelectedRowDblp(row);
+      break;
+    case "doi":
+      openSelectedRowDoi(row);
+      break;
+  }
+}
+
+/**
+ * Creates a single context menu item button
+ * @param {Object} item - The item descriptor (action, label, icon)
+ * @returns {HTMLButtonElement} The created menu item
+ */
+function createContextMenuItem(item) {
+  const button = document.createElement("button");
+  button.className = "context-menu-item";
+  button.dataset.action = item.action;
+
+  const img = document.createElement("img");
+  img.src = item.icon;
+  button.appendChild(img);
+
+  const label = document.createElement("span");
+  label.textContent = item.label;
+  button.appendChild(label);
+
+  button.addEventListener("click", function (e) {
+    e.stopPropagation();
+    const row = contextMenuTargetRow;
+    hideContextMenu();
+    if (row) {
+      executeContextMenuAction(item.action, row);
+    }
+  });
+
+  return button;
+}
+
+/**
+ * Builds the context menu element once and appends it to the document body
+ * @returns {HTMLDivElement} The context menu element
+ */
+function buildContextMenu() {
+  const menu = document.createElement("div");
+  menu.id = "context-menu";
+  menu.className = "context-menu";
+  CONTEXT_MENU_ITEMS.forEach(function (item) {
+    menu.appendChild(createContextMenuItem(item));
+  });
+  document.body.appendChild(menu);
+  return menu;
+}
+
+/**
+ * Enables or disables menu items based on the target row's available URLs
+ * @param {HTMLTableRowElement} row - The target row element
+ */
+function updateContextMenuItemStates(row) {
+  contextMenuEl.querySelectorAll(".context-menu-item").forEach(function (button) {
+    const url = getRowUrlForAction(row, button.dataset.action);
+    button.disabled = !(url && isValidURL(url));
+  });
+}
+
+/**
+ * Positions the context menu at the cursor, keeping it within the viewport
+ * @param {HTMLDivElement} menu - The context menu element
+ * @param {number} x - Cursor X coordinate (clientX)
+ * @param {number} y - Cursor Y coordinate (clientY)
+ */
+function positionContextMenu(menu, x, y) {
+  // Show invisibly first to measure its size before clamping
+  menu.style.visibility = "hidden";
+  menu.classList.add("show");
+  const rect = menu.getBoundingClientRect();
+
+  let left = x;
+  let top = y;
+  if (left + rect.width > window.innerWidth) {
+    left = window.innerWidth - rect.width - 4;
+  }
+  if (top + rect.height > window.innerHeight) {
+    top = window.innerHeight - rect.height - 4;
+  }
+
+  menu.style.left = Math.max(left, 0) + "px";
+  menu.style.top = Math.max(top, 0) + "px";
+  menu.style.visibility = "visible";
+}
+
+/**
+ * Opens the context menu for a row at the cursor position
+ * @param {MouseEvent} event - The contextmenu event
+ * @param {HTMLTableRowElement} row - The row that was right-clicked
+ */
+function showContextMenu(event, row) {
+  event.preventDefault();
+  if (!contextMenuEl) {
+    contextMenuEl = buildContextMenu();
+  }
+  contextMenuTargetRow = row;
+  selectRow(parseInt(row.dataset.index, 10));
+  updateContextMenuItemStates(row);
+  positionContextMenu(contextMenuEl, event.clientX, event.clientY);
+}
+
+/**
+ * Hides the context menu and clears its target row
+ */
+function hideContextMenu() {
+  if (contextMenuEl) {
+    contextMenuEl.classList.remove("show");
+    contextMenuEl.style.visibility = "";
+  }
+  contextMenuTargetRow = null;
+}
+
+// Dismiss the context menu on scroll, window resize, or the Escape key
+window.addEventListener("scroll", hideContextMenu, true);
+window.addEventListener("resize", hideContextMenu);
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") {
+    hideContextMenu();
+  }
+});
+
+// Dismiss the menu when right-clicking anywhere outside a results row. The
+// row's own contextmenu handler runs first and re-opens it, so this only
+// closes a stranded menu (e.g. when right-clicking blank space or the header).
+document.addEventListener("contextmenu", function (event) {
+  if (!event.target.closest("#results-table tbody tr")) {
+    hideContextMenu();
+  }
+});
 
 
 // =====================================
