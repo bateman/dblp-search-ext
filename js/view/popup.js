@@ -14,6 +14,7 @@ import {
   buildCitationKey,
   cleanBibtexMetadata,
   removeUrlFromBibtex,
+  buildBibtexFilename,
 } from "../utils/bibtex.js";
 
 console.log("popup.js loaded");
@@ -239,6 +240,9 @@ function executeRowShortcut(key, rows) {
       copySelectedRowBibtex(selectedRow);
       break;
     case "d":
+      downloadSelectedRowBibtex(selectedRow);
+      break;
+    case "b":
       openSelectedRowDblp(selectedRow);
       break;
     case "o":
@@ -288,7 +292,7 @@ function handleKeyboardShortcuts(event) {
   }
 
   const key = event.key.toLowerCase();
-  if (key === "c" || key === "d" || key === "o") {
+  if (["c", "d", "b", "o"].includes(key)) {
     executeRowShortcut(event.key, rows);
   }
 }
@@ -492,23 +496,44 @@ function createAccessCell(access) {
 }
 
 /**
- * Creates a BibTeX copy button cell
+ * Creates a BibTeX action button (copy or download)
+ * @param {string} bibtexLink - URL to fetch BibTeX
+ * @param {string} className - CSS class for the button
+ * @param {string} title - Tooltip text
+ * @param {string} iconSrc - Path to the button icon
+ * @returns {HTMLButtonElement} The created button
+ */
+function createBibtexButton(bibtexLink, className, title, iconSrc) {
+  const button = document.createElement("button");
+  button.className = className;
+  button.title = title;
+  if (isValidURL(bibtexLink)) {
+    button.dataset.url = bibtexLink;
+  }
+  const img = document.createElement("img");
+  img.src = iconSrc;
+  button.appendChild(img);
+  return button;
+}
+
+/**
+ * Creates a BibTeX actions cell with copy and download buttons
  * @param {string} bibtexLink - URL to fetch BibTeX
  * @returns {HTMLTableCellElement} The created cell
  */
 function createBibtexCell(bibtexLink) {
   const cell = document.createElement("td");
   cell.className = "center";
-  const button = document.createElement("button");
-  button.className = "copyBibtexButton";
-  button.title = "Copy BibTex";
-  if (isValidURL(bibtexLink)) {
-    button.dataset.url = bibtexLink;
-  }
-  const img = document.createElement("img");
-  img.src = "../images/copy.png";
-  button.appendChild(img);
-  cell.appendChild(button);
+  cell.appendChild(
+    createBibtexButton(
+      bibtexLink, "copyBibtexButton", "Copy BibTeX", "../images/copy.png"
+    )
+  );
+  cell.appendChild(
+    createBibtexButton(
+      bibtexLink, "downloadBibtexButton", "Download BibTeX", "../images/download.png"
+    )
+  );
   return cell;
 }
 
@@ -907,13 +932,14 @@ function displayTableWithPublications(publications) {
   // Add keyboard shortcuts hint above the table
   const hint = document.createElement("div");
   hint.id = "keyboard-hint";
-  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D for DBLP, O for DOI";
+  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D to download, B for DBLP, O for DOI";
   results.appendChild(hint);
 
   results.appendChild(table);
 
-  // Add event listeners for copy buttons
+  // Add event listeners for copy and download buttons
   addCopyBibtexButtonEventListener();
+  addDownloadBibtexButtonEventListener();
 }
 
 /**
@@ -1048,6 +1074,18 @@ function addCopyBibtexButtonEventListener() {
   });
 }
 
+/**
+ * Adds click event listeners to all BibTeX download buttons
+ */
+function addDownloadBibtexButtonEventListener() {
+  document.querySelectorAll(".downloadBibtexButton").forEach((button) => {
+    button.addEventListener("click", function () {
+      const url = this.getAttribute("data-url");
+      window.downloadBibtex(url);
+    });
+  });
+}
+
 // =====================================
 // Keyboard Navigation Functions
 // =====================================
@@ -1133,6 +1171,20 @@ function copySelectedRowBibtex(row) {
 }
 
 /**
+ * Downloads BibTeX for the selected row
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function downloadSelectedRowBibtex(row) {
+  const bibtexUrl = row.dataset.bibtexUrl;
+  if (bibtexUrl && isValidURL(bibtexUrl)) {
+    window.downloadBibtex(bibtexUrl);
+    updateStatus("Downloading BibTeX...", 2000);
+  } else {
+    updateStatus("No BibTeX available", 2000);
+  }
+}
+
+/**
  * Opens DBLP page for the selected row
  * @param {HTMLTableRowElement} row - The selected row element
  */
@@ -1164,94 +1216,226 @@ function openSelectedRowDoi(row) {
 // =====================================
 
 /**
+ * Resolves the citation key fields from user options, handling migration from
+ * the old pattern format and falling back to a default.
+ * @param {Object} options - User options from storage
+ * @returns {string[]} The ordered citation key fields
+ */
+function resolveCitationKeyFields(options) {
+  let citationKeyFields = options.citationKeyFields;
+  // Handle migration from old format
+  if (!citationKeyFields && options.citationKeyPattern) {
+    citationKeyFields = options.citationKeyPattern.split("-");
+  }
+  if (!citationKeyFields || citationKeyFields.length === 0) {
+    citationKeyFields = ["author", "year", "venue"];
+  }
+  return citationKeyFields;
+}
+
+/**
+ * Renames the DBLP citation key in a BibTeX entry using the user's preferences.
+ * @param {string} data - BibTeX entry string
+ * @param {RegExpMatchArray|null} keyMatch - Match of the DBLP key in the entry
+ * @param {Object} options - User options from storage
+ * @returns {{data: string, citationKey: string}} Entry and new key
+ * @throws {Error} When the BibTeX format is invalid (missing key or year)
+ */
+function renameCitationKey(data, keyMatch, options) {
+  if (!keyMatch || keyMatch.length < 1) {
+    throw new Error("Invalid BibTeX format");
+  }
+  const key = keyMatch[0];
+  const year = extractYearFromBibtex(data);
+  if (!year) {
+    throw new Error("Invalid BibTeX format (missing year)");
+  }
+  const newCitationKey = buildCitationKey(
+    resolveCitationKeyFields(options),
+    extractAuthorFromKey(key),
+    year,
+    extractVenueFromKey(key),
+    extractFirstTitleWord(data),
+    options.authorCapitalize,
+    options.venueUppercase
+  );
+  return {
+    data: data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ","),
+    citationKey: newCitationKey,
+  };
+}
+
+/**
+ * Applies the user's BibTeX options (key renaming, metadata cleanup) to raw
+ * BibTeX text and returns both the processed text and its citation key.
+ * @param {string} rawData - Raw BibTeX fetched from DBLP
+ * @param {Object} options - User options from storage
+ * @returns {{data: string, citationKey: string|null}} Processed result
+ * @throws {Error} When the BibTeX format is invalid and renaming is requested
+ */
+function processBibtexData(rawData, options) {
+  let data = rawData;
+  const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
+  let citationKey = keyMatch ? keyMatch[1] : null;
+
+  if (options.keyRenaming) {
+    const renamed = renameCitationKey(data, keyMatch, options);
+    data = renamed.data;
+    citationKey = renamed.citationKey;
+  }
+
+  if (options.removeTimestampBiburlBibsource) {
+    data = cleanBibtexMetadata(data);
+  }
+
+  if (options.removeUrl) {
+    data = removeUrlFromBibtex(data);
+  }
+
+  return { data, citationKey };
+}
+
+/**
+ * Fetches BibTeX from URL and applies the user's processing options.
+ * @param {string} url - URL to fetch BibTeX from
+ * @returns {Promise<{data: string, citationKey: string|null}>} Processed result
+ */
+function fetchAndProcessBibtex(url) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  return fetch(url, { signal: controller.signal })
+    .then((response) => response.text())
+    .then(
+      (data) =>
+        new Promise((resolve, reject) => {
+          browser.storage.local.get(
+            {
+              options: {
+                keyRenaming: true,
+                citationKeyFields: ["author", "year", "venue"],
+                authorCapitalize: false,
+                venueUppercase: false,
+                removeTimestampBiburlBibsource: true,
+                removeUrl: false,
+              },
+            },
+            function (items) {
+              try {
+                resolve(processBibtexData(data, items.options));
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        })
+    )
+    .finally(() => clearTimeout(timeoutId));
+}
+
+/**
+ * Reports a BibTeX fetch/processing error to the user.
+ * @param {Error} err - The error that occurred
+ */
+function handleBibtexError(err) {
+  if (err.name === "AbortError") {
+    console.error("Request timeout: Could not fetch BibTeX in time");
+    updateStatus("Error: BibTeX request timeout", 3000);
+  } else if (err.message && err.message.indexOf("Invalid BibTeX") === 0) {
+    console.error("Could not process BibTeX: ", err);
+    updateStatus("Error: " + err.message, 3000);
+  } else {
+    console.error("Could not fetch BibTeX: ", err);
+    updateStatus("Error: Could not fetch BibTeX", 3000);
+  }
+}
+
+/**
  * Fetches BibTeX from URL, applies user options, and copies to clipboard
  * @param {string} url - URL to fetch BibTeX from
  */
 window.copyBibtexToClipboard = function (url) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-  fetch(url, { signal: controller.signal })
-    .then((response) => {
-      clearTimeout(timeoutId);
-      return response.text();
+  fetchAndProcessBibtex(url)
+    .then(({ data }) => {
+      navigator.clipboard.writeText(data).catch(function (err) {
+        console.error("Could not copy BibTeX to clipboard: ", err);
+      });
     })
-    .then((data) => {
-      // If the keyRenaming option is enabled, then rename the citation key
-      // before copying the BibTeX to the clipboard
-      browser.storage.local.get(
-        {
-          options: {
-            keyRenaming: true,
-            citationKeyFields: ["author", "year", "venue"],
-            authorCapitalize: false,
-            venueUppercase: false,
-            removeTimestampBiburlBibsource: true,
-            removeUrl: false,
-          },
-        },
-        function (items) {
-          const keyRenaming = items.options.keyRenaming;
-          let citationKeyFields = items.options.citationKeyFields;
-          const authorCapitalize = items.options.authorCapitalize;
-          const venueUppercase = items.options.venueUppercase;
+    .catch(handleBibtexError);
+};
 
-          // Handle migration from old format
-          if (!citationKeyFields && items.options.citationKeyPattern) {
-            citationKeyFields = items.options.citationKeyPattern.split("-");
-          }
-          if (!citationKeyFields || citationKeyFields.length === 0) {
-            citationKeyFields = ["author", "year", "venue"];
-          }
+/**
+ * Schedules revocation of a blob object URL after the browser has had time to
+ * read it. Revoking synchronously can abort an in-flight download.
+ * @param {string} blobUrl - The object URL to revoke
+ */
+function revokeBlobUrlLater(blobUrl) {
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+}
 
-          if (keyRenaming) {
-            const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
-            if (!keyMatch || keyMatch.length < 1) {
-              console.error("Could not find the citation key in the BibTeX");
-              updateStatus("Error: Invalid BibTeX format", 3000);
-              return;
-            }
-            const key = keyMatch[0];
-            const author = extractAuthorFromKey(key);
-            const venue = extractVenueFromKey(key);
-            const year = extractYearFromBibtex(data);
-            if (!year) {
-              console.error("Could not find the year in the BibTeX");
-              updateStatus("Error: Invalid BibTeX format (missing year)", 3000);
-              return;
-            }
-            const title = extractFirstTitleWord(data);
-            const newCitationKey = buildCitationKey(
-              citationKeyFields, author, year, venue, title,
-              authorCapitalize, venueUppercase
-            );
-            data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ",");
-          }
-
-          if (items.options.removeTimestampBiburlBibsource) {
-            data = cleanBibtexMetadata(data);
-          }
-
-          if (items.options.removeUrl) {
-            data = removeUrlFromBibtex(data);
-          }
-
-          navigator.clipboard.writeText(data).catch(function(err) {
-            console.error("Could not copy BibTeX to clipboard: ", err);
-          });
-        }
-      );
+/**
+ * Saves a blob via the downloads API (Chrome, Edge, Firefox). The download is
+ * owned by the browser, so it survives the popup closing.
+ * @param {string} blobUrl - Object URL of the blob to save
+ * @param {string} filename - Suggested filename
+ */
+function downloadViaApi(blobUrl, filename) {
+  Promise.resolve(
+    browser.downloads.download({
+      url: blobUrl,
+      filename: filename,
+      saveAs: false,
+    })
+  )
+    .then(() => {
+      // Only report success once the browser has accepted the download
+      updateStatus("Downloaded " + filename, 2000);
     })
     .catch((err) => {
-      clearTimeout(timeoutId);
-      if (err.name === "AbortError") {
-        console.error("Request timeout: Could not fetch BibTeX in time");
-        updateStatus("Error: BibTeX request timeout", 3000);
+      console.error("Could not download BibTeX: ", err);
+      updateStatus("Error: Could not download BibTeX", 3000);
+    })
+    .finally(() => revokeBlobUrlLater(blobUrl));
+}
+
+/**
+ * Saves a blob via a temporary anchor click. Fallback for browsers without the
+ * downloads API (Safari does not implement browser.downloads).
+ * @param {string} blobUrl - Object URL of the blob to save
+ * @param {string} filename - Suggested filename
+ */
+function downloadViaAnchor(blobUrl, filename) {
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  updateStatus("Downloaded " + filename, 2000);
+  revokeBlobUrlLater(blobUrl);
+}
+
+/**
+ * Fetches BibTeX from URL, applies user options, and downloads it as a .bib
+ * file named after the citation key.
+ * @param {string} url - URL to fetch BibTeX from
+ */
+window.downloadBibtex = function (url) {
+  fetchAndProcessBibtex(url)
+    .then(({ data, citationKey }) => {
+      const filename = buildBibtexFilename(citationKey);
+      const blob = new Blob([data], { type: "application/x-bibtex" });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Prefer the downloads API where available (Chrome, Edge, Firefox); fall
+      // back to an anchor click on Safari, which does not implement it.
+      if (browser.downloads && typeof browser.downloads.download === "function") {
+        downloadViaApi(blobUrl, filename);
       } else {
-        console.error("Could not fetch BibTeX: ", err);
-        updateStatus("Error: Could not fetch BibTeX", 3000);
+        downloadViaAnchor(blobUrl, filename);
       }
-    });
+    })
+    .catch(handleBibtexError);
 };
 
 // =====================================

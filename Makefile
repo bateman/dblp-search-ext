@@ -165,14 +165,24 @@ build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and source
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
-	@mv $(MANIFEST) $(MANIFEST_TMP)
-	@mv $(MANIFEST_FIREFOX) $(MANIFEST)
-	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store
-	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION)-sources.zip $(JS_FILES)
-	@cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
-	@cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
-	@mv $(MANIFEST) $(MANIFEST_FIREFOX)
-	@mv $(MANIFEST_TMP) $(MANIFEST)
+	@# Swap in the Firefox manifest, build, then restore. The swap, build, and
+	@# restore run in a single shell so the EXIT trap always restores the
+	@# manifests even if a build step fails mid-recipe.
+	@restore_manifests() { \
+		if [ -f $(MANIFEST_TMP) ]; then \
+			if [ ! -f $(MANIFEST_FIREFOX) ] && [ -f $(MANIFEST) ]; then \
+				mv $(MANIFEST) $(MANIFEST_FIREFOX); \
+			fi; \
+			mv $(MANIFEST_TMP) $(MANIFEST); \
+		fi; \
+	}; \
+	trap restore_manifests EXIT; \
+	mv $(MANIFEST) $(MANIFEST_TMP); \
+	mv $(MANIFEST_FIREFOX) $(MANIFEST); \
+	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store; \
+	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION)-sources.zip $(JS_FILES); \
+	cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION); \
+	cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
