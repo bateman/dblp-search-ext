@@ -154,3 +154,14 @@ export function removeUrlFromBibtex(data) {
   data = data.replace(/\n\s*\n/g, "\n");
   return data;
 }
+
+/**
+ * Builds a safe download filename from a citation key by stripping any
+ * character outside [A-Za-z0-9._-] and appending the .bib extension.
+ * @param {string|null} citationKey - The citation key to base the name on
+ * @returns {string} A sanitized filename ending in .bib
+ */
+export function buildBibtexFilename(citationKey) {
+  const base = (citationKey || "reference").replace(/[^A-Za-z0-9._-]/g, "_");
+  return base + ".bib";
+}

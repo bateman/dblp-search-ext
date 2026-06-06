@@ -9,6 +9,7 @@ import {
   buildCitationKey,
   cleanBibtexMetadata,
   removeUrlFromBibtex,
+  buildBibtexFilename,
 } from "../../js/utils/bibtex.js";
 
 describe("extractAuthorFromKey", () => {
@@ -349,5 +350,46 @@ describe("removeUrlFromBibtex", () => {
     const result = removeUrlFromBibtex(bibtex);
     expect(result).not.toContain("url");
     expect(result).toContain("author");
+  });
+});
+
+describe("buildBibtexFilename", () => {
+  it("appends the .bib extension to a clean citation key", () => {
+    expect(buildBibtexFilename("Calefato2023ESEM")).toBe("Calefato2023ESEM.bib");
+  });
+
+  it("keeps dots, underscores, and hyphens", () => {
+    expect(buildBibtexFilename("calefato_2023-esem.v2")).toBe(
+      "calefato_2023-esem.v2.bib"
+    );
+  });
+
+  it("replaces path separators and colons in raw DBLP keys", () => {
+    // The unrenamed key (e.g. "DBLP:journals/tse/Smith21") must not produce
+    // directory separators in the filename.
+    expect(buildBibtexFilename("DBLP:journals/tse/Smith21")).toBe(
+      "DBLP_journals_tse_Smith21.bib"
+    );
+  });
+
+  it("replaces whitespace and other unsafe characters with underscores", () => {
+    expect(buildBibtexFilename("a b/c\\d:e*f?")).toBe("a_b_c_d_e_f_.bib");
+  });
+
+  it("falls back to 'reference' for a null citation key", () => {
+    expect(buildBibtexFilename(null)).toBe("reference.bib");
+  });
+
+  it("falls back to 'reference' for an empty citation key", () => {
+    expect(buildBibtexFilename("")).toBe("reference.bib");
+  });
+
+  it("falls back to 'reference' for an undefined citation key", () => {
+    expect(buildBibtexFilename(undefined)).toBe("reference.bib");
+  });
+
+  it("does not collapse repeated unsafe characters", () => {
+    // Each unsafe char maps to one underscore (no collapsing).
+    expect(buildBibtexFilename("a///b")).toBe("a___b.bib");
   });
 });

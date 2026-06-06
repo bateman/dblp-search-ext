@@ -1,0 +1,64 @@
+Permission Justifications
+=========================
+
+Paste these into the store consoles when submitting/updating the extension:
+- Chrome Web Store: Developer Dashboard > (item) > Privacy practices > "Permission justification" (one box per permission) + Single purpose + Host permission justification + Remote code.
+- Microsoft Edge Add-ons: uses the same package as Chrome; reuse the text below.
+- Firefox (AMO): paste the relevant items into the "Notes to reviewer" field; AMO does not have per-permission boxes but reviewers check that each requested permission is used.
+
+Single purpose
+--------------
+Search academic publications on dblp.org and copy or download their BibTeX entries. Everything the extension does serves this one purpose.
+
+Permissions
+-----------
+
+activeTab
+  When the user opens the popup, the extension reads the current tab's text
+  selection (via scripting, below) to pre-fill it as the search query. Access
+  is limited to the active tab and only on the user's action.
+
+storage
+  Stores the user's settings locally (citation-key format, maximum results,
+  popup width, and which BibTeX fields to remove) and the most recent search
+  state so results persist between sessions. Nothing is sent off the device.
+
+contextMenus
+  Adds two right-click menu items, shown only when text is selected:
+  "Search highlighted text on dblp" (opens a dblp.org search for the
+  selection) and "Resolve DOI" (opens the selected DOI on doi.org). Both act
+  only on the user's click.
+
+scripting
+  On the user's action (opening the popup), injects a tiny script into the
+  active tab that returns window.getSelection().toString(), so highlighted
+  text can be used as the search query. No other scripting is performed.
+
+clipboardWrite
+  Writes the selected publication's BibTeX entry to the clipboard when the
+  user clicks the "Copy BibTeX" button.
+
+downloads
+  Saves a publication's BibTeX entry as a .bib file when the user clicks the
+  "Download BibTeX" button. The file is generated locally from the BibTeX
+  record fetched from dblp.org and is only created in response to that click.
+
+Host permission (https://dblp.org/*)
+------------------------------------
+The extension makes network requests only to dblp.org: it queries the official
+dblp.org search API (https://dblp.org/search/publ/api) and fetches the public
+BibTeX records linked from the results. This is the only host requiring a host
+permission. (On the user's action it may also open a dblp.org search page or a
+doi.org page in a new browser tab; opening a URL in a tab is ordinary
+navigation and needs no host permission.)
+
+Remote code
+-----------
+No. The extension executes no remote code. All scripts are bundled in the
+package, and the content security policy is "script-src 'self'; object-src 'self'".
+
+Data usage
+----------
+The extension does not collect, sell, or transfer any personal or sensitive
+user data. Search queries are sent to dblp.org to return results; settings and
+search state stay in local browser storage. See PRIVACY.md.

@@ -32,7 +32,7 @@
 ![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=flat-square)
 
 
-A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying BibTeX entries.
+A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying or downloading their BibTeX entries.
 
 <p align="center">
     <img src="store/screenshots/Screenshot-1.png">
@@ -54,13 +54,18 @@ A simple cross-browser extension to ease the process of searching publications o
 
 - **Search Papers**: Enter the paper's title in the input field or highlight any text on the current web page, then click the search button. The extension will search dblp.org for matching publications and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
+- **Download BibTeX Entries**: Next to the copy button, a 'Download BibTeX' button saves the entry as a `.bib` file named after its citation key.
+- **Sort & Filter Results**: Click the Authors, Year, or Venue column headers to sort, the Title header to restore the default order, and the Type header to filter results by publication type.
+- **Keyboard Navigation**: Use ↑/↓ to move between results, and `C` to copy BibTeX, `D` to download BibTeX, `B` to open the dblp page, and `O` to open the DOI for the selected result.
+- **Context Menu**: Right-click selected text on any page to "Search highlighted text on dblp" or "Resolve DOI".
 - **Customizable BibTeX Citation Keys**: Replace dblp default citation keys with a custom format. Use the drag-and-drop builder in Options to arrange fields (Author, Year, Venue, Title) and separators (dash, underscore) in any order. Additional formatting options include capitalizing the author's name and uppercasing the venue (e.g., `Calefato2023ESEM`, `calefato_2023_esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
 - **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows the current page, total pages, and result count. Pagination state persists across browser sessions.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
+- **Configurable Popup Width**: Set the default popup width (500-800 px) in Options; narrower widths automatically hide some table columns.
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
 - **Remove duplicates**: Useless, duplicated CoRR abs entries are filtered out.
-- **Remove BibTeX fields**: When copying BibTeX entries, the extension can remove the `timestamp`, `bibsource`, `biburl`, and `url` fields.
+- **Remove BibTeX fields**: When copying or downloading BibTeX entries, the extension can remove the `timestamp`, `bibsource`, `biburl`, and `url` fields.
 
 ## Usage
 
@@ -68,7 +73,7 @@ A simple cross-browser extension to ease the process of searching publications o
 2. Click on the extension icon to open the pop-up.
 3. Enter the title of the paper you want to search for in the input field. Alternatively, highlight some text on the current web page.
 4. Click the 'Search' button to start the search.
-5. The search results will be displayed in the pop-up. Click the 'Copy BibTeX' button next to a result to copy its BibTeX entry to your clipboard.
+5. The search results will be displayed in the pop-up. Next to each result, click the 'Copy BibTeX' button to copy its BibTeX entry to your clipboard, or the 'Download BibTeX' button to save it as a `.bib` file.
 
 ## Contributions
 
@@ -84,6 +89,7 @@ make build/safari      # Build Safari app-extension (macOS + Xcode required)
 make build/edge        # Build Edge extension (same as Chrome)
 make build/all         # Build all extensions
 make build/clean       # Clean build directory and stamps
+make test              # Run the unit-test suite
 ```
 
 > [!NOTE]
@@ -151,11 +157,20 @@ make release           # Push commits and tag to origin (alias: tag/push)
 make tag/delete        # Delete the tag for the current version
 ```
 
-Version is stored in `manifest.json` and `manifest.firefox.json` (both are updated).
+Version is stored in `manifest.json`, `manifest.firefox.json`, and `package.json` (all three are kept in sync by `make bump/*`).
 
 ### Testing
 
-No automated test suite. Testing is manual:
+The project has an automated unit-test suite ([Vitest](https://vitest.dev)) covering the model, controller, and the BibTeX, DOI, and validation utilities:
+
+```bash
+make test              # Run the unit tests once
+make test/watch        # Run the unit tests in watch mode
+```
+
+Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm install`).
+
+Manual testing in the browser is still recommended for UI changes:
 
 1. Run `make run/chrome` (or firefox/safari/edge)
 2. Test the modified functionality in the browser
