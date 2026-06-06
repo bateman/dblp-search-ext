@@ -1216,6 +1216,56 @@ function openSelectedRowDoi(row) {
 // =====================================
 
 /**
+ * Resolves the citation key fields from user options, handling migration from
+ * the old pattern format and falling back to a default.
+ * @param {Object} options - User options from storage
+ * @returns {string[]} The ordered citation key fields
+ */
+function resolveCitationKeyFields(options) {
+  let citationKeyFields = options.citationKeyFields;
+  // Handle migration from old format
+  if (!citationKeyFields && options.citationKeyPattern) {
+    citationKeyFields = options.citationKeyPattern.split("-");
+  }
+  if (!citationKeyFields || citationKeyFields.length === 0) {
+    citationKeyFields = ["author", "year", "venue"];
+  }
+  return citationKeyFields;
+}
+
+/**
+ * Renames the DBLP citation key in a BibTeX entry using the user's preferences.
+ * @param {string} data - BibTeX entry string
+ * @param {RegExpMatchArray|null} keyMatch - Match of the DBLP key in the entry
+ * @param {Object} options - User options from storage
+ * @returns {{data: string, citationKey: string}} Entry and new key
+ * @throws {Error} When the BibTeX format is invalid (missing key or year)
+ */
+function renameCitationKey(data, keyMatch, options) {
+  if (!keyMatch || keyMatch.length < 1) {
+    throw new Error("Invalid BibTeX format");
+  }
+  const key = keyMatch[0];
+  const year = extractYearFromBibtex(data);
+  if (!year) {
+    throw new Error("Invalid BibTeX format (missing year)");
+  }
+  const newCitationKey = buildCitationKey(
+    resolveCitationKeyFields(options),
+    extractAuthorFromKey(key),
+    year,
+    extractVenueFromKey(key),
+    extractFirstTitleWord(data),
+    options.authorCapitalize,
+    options.venueUppercase
+  );
+  return {
+    data: data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ","),
+    citationKey: newCitationKey,
+  };
+}
+
+/**
  * Applies the user's BibTeX options (key renaming, metadata cleanup) to raw
  * BibTeX text and returns both the processed text and its citation key.
  * @param {string} rawData - Raw BibTeX fetched from DBLP
@@ -1225,40 +1275,13 @@ function openSelectedRowDoi(row) {
  */
 function processBibtexData(rawData, options) {
   let data = rawData;
-  const keyRenaming = options.keyRenaming;
-  let citationKeyFields = options.citationKeyFields;
-  const authorCapitalize = options.authorCapitalize;
-  const venueUppercase = options.venueUppercase;
-
-  // Handle migration from old format
-  if (!citationKeyFields && options.citationKeyPattern) {
-    citationKeyFields = options.citationKeyPattern.split("-");
-  }
-  if (!citationKeyFields || citationKeyFields.length === 0) {
-    citationKeyFields = ["author", "year", "venue"];
-  }
-
   const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
   let citationKey = keyMatch ? keyMatch[1] : null;
 
-  if (keyRenaming) {
-    if (!keyMatch || keyMatch.length < 1) {
-      throw new Error("Invalid BibTeX format");
-    }
-    const key = keyMatch[0];
-    const author = extractAuthorFromKey(key);
-    const venue = extractVenueFromKey(key);
-    const year = extractYearFromBibtex(data);
-    if (!year) {
-      throw new Error("Invalid BibTeX format (missing year)");
-    }
-    const title = extractFirstTitleWord(data);
-    const newCitationKey = buildCitationKey(
-      citationKeyFields, author, year, venue, title,
-      authorCapitalize, venueUppercase
-    );
-    data = data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ",");
-    citationKey = newCitationKey;
+  if (options.keyRenaming) {
+    const renamed = renameCitationKey(data, keyMatch, options);
+    data = renamed.data;
+    citationKey = renamed.citationKey;
   }
 
   if (options.removeTimestampBiburlBibsource) {
