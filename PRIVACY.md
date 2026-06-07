@@ -8,4 +8,6 @@ The extension stores settings and recent search state locally in your browser us
 
 When you copy a BibTeX entry, the extension fetches the public BibTeX record from dblp and writes it to your clipboard. When you download a BibTeX entry, the extension fetches the same public record from dblp and saves it as a `.bib` file to your device using the browser's download feature. Neither action sends data to the developer.
 
+The extension also adds right-click menu items (shown when text is selected) that open a dblp.org search or resolve a selected DOI by opening the corresponding `doi.org` page in a new browser tab. These open public pages and send no data to the developer.
+
 The extension uses only the permissions needed to provide these features.
