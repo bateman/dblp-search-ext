@@ -39,8 +39,9 @@ export class PublicationView {
    * @param {number} totalHits - Total number of matching publications
    * @param {number} sentHits - Number of publications in current response
    * @param {number} excludedCount - Number of excluded publications
+   * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
    */
-  update(responseStatus, publications, totalHits, sentHits, excludedCount) {
+  update(responseStatus, publications, totalHits, sentHits, excludedCount, errorMessage = "") {
     // Ensure all values have valid defaults to prevent NaN/undefined on Chrome
     const safeResponseStatus = responseStatus || "OK";
     const safeTotalHits = typeof totalHits === "number" ? totalHits : 0;
@@ -57,6 +58,7 @@ export class PublicationView {
       totalHits: safeTotalHits,
       sentHits: safeSentHits,
       excludedCount: safeExcludedCount,
+      errorMessage: errorMessage || "",
       publications: publications || [],
       currentOffset: this.currentOffset || 0,
     });

@@ -26,6 +26,8 @@ export class PublicationModel {
     this.notify = null;
     /** @type {string} HTTP response status */
     this.status = "";
+    /** @type {string} Human-readable error detail when a search fails ("" on success) */
+    this.errorMessage = "";
     /** @type {number} Total number of hits from DBLP API */
     this.totalHits = 0;
     /** @type {number} Number of hits returned in current response */
@@ -61,12 +63,28 @@ export class PublicationModel {
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
-      // HTTP/2 returns empty statusText on Chrome, so use "OK" for successful responses
-      this.status = response.ok ? "OK" : (response.statusText || "Error");
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${this.status}`);
+        // Preserve the HTTP status code/text so the cause reaches the user.
+        // (statusText is often empty on HTTP/2 in Chrome, so include the code.)
+        const detail = response.statusText
+          ? `${response.status} ${response.statusText}`
+          : `${response.status}`;
+        const httpError = new Error(
+          `The dblp API returned an error (HTTP ${detail}).`
+        );
+        httpError.name = "HttpError";
+        throw httpError;
       }
+      this.status = "OK";
+      this.errorMessage = "";
       const data = await response.json();
+      if (!data || !data.result || !data.result.hits) {
+        // Valid HTTP response but not the shape we expect: treat as a parse error
+        // (and keep it distinct from a network failure, which also throws TypeError)
+        const parseError = new Error("The dblp API returned an unexpected response.");
+        parseError.name = "ParseError";
+        throw parseError;
+      }
       this.totalHits = parseInt(data.result.hits["@total"], 10) || 0;
       this.sentHits = parseInt(data.result.hits["@sent"], 10) || 0;
       if (this.sentHits > 0 && data.result.hits.hit) {
@@ -78,18 +96,48 @@ export class PublicationModel {
         this.excludedCount = 0;
       }
     } catch (error) {
-      if (error.name === "AbortError") {
-        console.error("Request timeout: The dblp API did not respond in time");
-        this.status = "Request Timeout";
-      } else {
-        console.error("There was a problem with the fetch operation: ", error);
-        this.status = "Error";
-      }
+      const { status, message } = this.classifyError(error);
+      this.status = status;
+      this.errorMessage = message;
+      // Reset result counts so a failed search doesn't show stale/zero hits as data
+      this.publications = [];
+      this.totalHits = 0;
+      this.sentHits = 0;
+      this.excludedCount = 0;
+      console.error("Search failed: ", message, error);
     }
     if (this.notify) {
       // Notify the view through controller that the model has changed
       this.notify();
     }
+  }
+
+  /**
+   * Maps a fetch/parse error to a user-facing status and a descriptive message.
+   * @param {Error} error - The error thrown during search
+   * @returns {{status: string, message: string}} Status label and detail message
+   */
+  classifyError(error) {
+    if (error.name === "AbortError") {
+      return {
+        status: "Request Timeout",
+        message: "Request timeout: the dblp API did not respond in time.",
+      };
+    }
+    if (error.name === "HttpError" || error.name === "ParseError") {
+      return { status: "Error", message: error.message };
+    }
+    if (error.name === "TypeError") {
+      // fetch() rejects with a TypeError on network/DNS/CORS failures
+      return {
+        status: "Error",
+        message: "Network error: could not reach the dblp API. Check your connection.",
+      };
+    }
+    return {
+      status: "Error",
+      message: `Could not process the dblp response: ${error.message}`,
+    };
   }
 
   /**

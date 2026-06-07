@@ -4,7 +4,7 @@
  * results display, BibTeX copying, and pagination.
  */
 
-import { updateStatus } from "./commons.js";
+import { updateStatus, clearStatus } from "./commons.js";
 import { isValidURL, parseSearchWithDefaults } from "../utils/validation.js";
 import {
   extractAuthorFromKey,
@@ -37,6 +37,12 @@ let currentFilters = {
 
 // Store original publications for filtering/sorting
 let originalPublications = [];
+
+// Fallback timeout (ms) for the search spinner. The spinner normally clears as
+// soon as a search response arrives; this is only a safety net so it can never
+// hang forever if a response message is lost. The model aborts after 10s, so
+// 15s comfortably covers a worst-case round trip.
+const SEARCH_STATUS_FALLBACK_MS = 15000;
 
 // Track if filter dropdown should stay open after rebuild
 let keepFilterDropdownOpen = false;
@@ -147,6 +153,8 @@ document.addEventListener("DOMContentLoaded", function () {
       `Popup.js received message from '${message.script}': ${message.type}`
     );
     if (message.type === "RESPONSE_SEARCH_PUBLICATIONS") {
+      // Result (or error) is in: stop the search spinner.
+      clearStatus();
       // Ensure all values have valid defaults to prevent NaN/undefined display
       const responseStatus = message.responseStatus || "OK";
       const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
@@ -154,6 +162,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
       const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
       const publications = message.publications || [];
+      const errorMessage = message.errorMessage || "";
 
       console.log(
         "Popup.js updating publications count: ",
@@ -167,7 +176,8 @@ document.addEventListener("DOMContentLoaded", function () {
         responseStatus,
         totalHits,
         sentHits,
-        excludedCount
+        excludedCount,
+        errorMessage
       );
       console.log("Popup.js updating publications table.");
       buildAndDisplayTable(publications);
@@ -336,8 +346,10 @@ function sendMessage(dictObject) {
  * @param {number} [offset=0] - Pagination offset
  */
 function requestSearchDblp(q, offset = 0) {
-  // Update status to let user know search has started.
-  updateStatus("Searching...", 2000);
+  // Update status to let user know search has started. The spinner persists
+  // until the response arrives (cleared in the RESPONSE_SEARCH_PUBLICATIONS
+  // handler); the fallback timeout only guards against a lost response.
+  updateStatus("Searching...", SEARCH_STATUS_FALLBACK_MS);
   // Clear existing results, but not the paperTitle
   requestClearResults(false);
   // Send message to background.js
@@ -388,28 +400,29 @@ function requestClearResults(clearTitle = true) {
  * @param {number} totalHits - Total number of matching publications
  * @param {number} sentHits - Number of publications in current response
  * @param {number} excludedCount - Number of excluded publications
+ * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
  */
 function updatePublicationsCount(
   responseStatus,
   totalHits,
   sentHits,
-  excludedCount
+  excludedCount,
+  errorMessage = ""
 ) {
   const count = document.getElementById("count");
   if (count) {
     let message = "";
     if (responseStatus === "RESET") {
-      message = "";
       count.classList.remove("error");
+    } else if (responseStatus !== "OK") {
+      // On failure, show the cause instead of a misleading "found 0, shown 0"
+      message = errorMessage || `Query failed (${responseStatus}).`;
+      count.classList.add("error");
     } else {
       message = `Query ${responseStatus}: found ${totalHits}, shown ${
         sentHits - excludedCount
       } (${excludedCount} CoRR abs entries ignored)`;
-      if (responseStatus !== "OK") {
-        count.classList.add("error");
-      } else {
-        count.classList.remove("error");
-      }
+      count.classList.remove("error");
     }
     count.textContent = message;
   }
@@ -1757,7 +1770,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   // Previous page buttons (both top and bottom)
   document.querySelectorAll(".prevPageButton").forEach((button) => {
     button.addEventListener("click", function () {
-      updateStatus("Loading...", 2000);
+      updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
       sendMessage({
         script: "popup.js",
         type: "REQUEST_PREVIOUS_PAGE",
@@ -1771,7 +1784,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   // Next page buttons (both top and bottom)
   document.querySelectorAll(".nextPageButton").forEach((button) => {
     button.addEventListener("click", function () {
-      updateStatus("Loading...", 2000);
+      updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
       sendMessage({
         script: "popup.js",
         type: "REQUEST_NEXT_PAGE",

@@ -40,7 +40,8 @@ export class PublicationController {
         this.model.publications,
         this.model.totalHits,
         this.model.sentHits,
-        this.model.excludedCount
+        this.model.excludedCount,
+        this.model.errorMessage
       );
     });
   }
