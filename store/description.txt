@@ -2,10 +2,12 @@ Search academic publications on dblp.org from everywhere. Type a title in the se
 
 # Features
 - Search publications by typing a title or by highlighting text on any page first.
-- Results are shown in a sortable table (type, title, authors, year, venue, DOI, open/closed access).
+- Right-click selected text on any page to search it on dblp or resolve a DOI, without opening the popup.
+- Results are shown in a sortable table (type, title, authors, year, venue, DOI, open/closed access): sort by authors, year, or venue, restore the default order via the title column, and filter by publication type.
 - Entries are color-coded by type (proceedings, books, journals, etc.), matching the dblp.org scheme.
 - Copy button: copy an entry's BibTeX reference to the clipboard.
 - Download button: save an entry as a .bib file, named after its citation key.
+- Keyboard navigation: move between results with the up/down arrows, then press C to copy BibTeX, D to download it, B to open the dblp page, or O to open the DOI.
 - Customizable citation keys: replace dblp's default key with your own format using a drag-and-drop builder (Author, Year, Venue, Title, with dash or underscore separators); optionally capitalize the author name and uppercase the venue (e.g., Calefato2023ESEM, calefato_2023_esem).
 - Clean up BibTeX: optionally remove the timestamp, biburl, bibsource, and url fields.
 - Pagination with Previous/Next, current page, total pages, and result count.

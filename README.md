@@ -56,6 +56,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
 - **Download BibTeX Entries**: Next to the copy button, a 'Download BibTeX' button saves the entry as a `.bib` file named after its citation key.
 - **Sort & Filter Results**: Click the Authors, Year, or Venue column headers to sort, the Title header to restore the default order, and the Type header to filter results by publication type.
+- **Color-Coded Entries**: Results are color-coded by publication type (proceedings, books, journals, etc.), matching the dblp.org scheme.
 - **Keyboard Navigation**: Use ↑/↓ to move between results, and `C` to copy BibTeX, `D` to download BibTeX, `B` to open the dblp page, and `O` to open the DOI for the selected result.
 - **Context Menu**: Right-click selected text on any page to "Search highlighted text on dblp" or "Resolve DOI".
 - **Customizable BibTeX Citation Keys**: Replace dblp default citation keys with a custom format. Use the drag-and-drop builder in Options to arrange fields (Author, Year, Venue, Title) and separators (dash, underscore) in any order. Additional formatting options include capitalizing the author's name and uppercasing the venue (e.g., `Calefato2023ESEM`, `calefato_2023_esem`).
@@ -63,6 +64,7 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Pagination**: Navigate through search results using Previous/Next buttons. Page info shows the current page, total pages, and result count. Pagination state persists across browser sessions.
 - **Save Search State**: The content of the input text field and results are saved in the local storage. This allows you to leave the page and come back later without losing your search results.
 - **Configurable Popup Width**: Set the default popup width (500-800 px) in Options; narrower widths automatically hide some table columns.
+- **Configurable Result Limit**: Set the maximum number of results per query in Options (default 30, capped at 1000).
 - **API**: Versions 2+ are faster and more reliable as they rely on the official DBLP.org API to execute the queries.
 - **Remove duplicates**: Useless, duplicated CoRR abs entries are filtered out.
 - **Remove BibTeX fields**: When copying or downloading BibTeX entries, the extension can remove the `timestamp`, `bibsource`, `biburl`, and `url` fields.
