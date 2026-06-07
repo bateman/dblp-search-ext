@@ -15,6 +15,7 @@ describe("PublicationController", () => {
       totalHits: 0,
       sentHits: 0,
       excludedCount: 0,
+      errorMessage: "",
       currentOffset: 0,
     };
 
@@ -46,12 +47,13 @@ describe("PublicationController", () => {
       mockModel.totalHits = 1;
       mockModel.sentHits = 1;
       mockModel.excludedCount = 0;
+      mockModel.errorMessage = "";
       mockModel.currentOffset = 10;
 
       callback();
 
       expect(mockView.setCurrentOffset).toHaveBeenCalledWith(10);
-      expect(mockView.update).toHaveBeenCalledWith("OK", [{ title: "Test" }], 1, 1, 0);
+      expect(mockView.update).toHaveBeenCalledWith("OK", [{ title: "Test" }], 1, 1, 0, "");
     });
   });
 
