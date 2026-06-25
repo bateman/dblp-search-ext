@@ -172,19 +172,14 @@ document.addEventListener("DOMContentLoaded", function () {
         excludedCount,
         currentOffset
       );
-      updatePublicationsCount(
-        responseStatus,
-        totalHits,
-        sentHits,
-        excludedCount,
-        errorMessage
-      );
+      updatePublicationsCount(responseStatus, totalHits, errorMessage);
       console.log("Popup.js updating publications table.");
       buildAndDisplayTable(publications);
       updatePaginationControls(
         totalHits,
         sentHits,
-        currentOffset
+        currentOffset,
+        excludedCount
       );
       saveResultsToStorage(
         queryInputField.value,
@@ -389,7 +384,7 @@ function requestClearResults(clearTitle = true) {
     document.getElementById("paperTitle").value = "";
   }
   resetFiltersAndSort();
-  updatePublicationsCount("RESET", 0, 0, 0);
+  updatePublicationsCount("RESET", 0);
   clearResultsTable();
   updatePaginationControls(0, 0, 0);
 }
@@ -398,15 +393,11 @@ function requestClearResults(clearTitle = true) {
  * Updates the publication count display in the UI
  * @param {string} responseStatus - HTTP response status or "RESET"
  * @param {number} totalHits - Total number of matching publications
- * @param {number} sentHits - Number of publications in current response
- * @param {number} excludedCount - Number of excluded publications
  * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
  */
 function updatePublicationsCount(
   responseStatus,
   totalHits,
-  sentHits,
-  excludedCount,
   errorMessage = ""
 ) {
   const count = document.getElementById("count");
@@ -419,9 +410,7 @@ function updatePublicationsCount(
       message = errorMessage || `Query failed (${responseStatus}).`;
       count.classList.add("error");
     } else {
-      message = `Query ${responseStatus}: found ${totalHits}, shown ${
-        sentHits - excludedCount
-      } (${excludedCount} CoRR abs entries ignored)`;
+      message = `Query ${responseStatus}: found ${totalHits}`;
       count.classList.remove("error");
     }
     count.textContent = message;
@@ -569,7 +558,10 @@ function createPublicationRow(result, index) {
   const authorsCell = document.createElement("td");
   const authors = Array.isArray(result.authors) ? result.authors : [];
   const authorsText = authors.join(", ");
-  authorsCell.textContent = authorsText;
+  const authorsInner = document.createElement("div");
+  authorsInner.className = "authors-cell";
+  authorsInner.textContent = authorsText;
+  authorsCell.appendChild(authorsInner);
   authorsCell.title = authorsText;
   row.appendChild(authorsCell);
 
@@ -956,9 +948,35 @@ function displayTableWithPublications(publications) {
 
   results.appendChild(table);
 
+  // Clamp the authors column to the height of each row's title
+  clampAuthorsToTitleHeight(table);
+
   // Add event listeners for copy and download buttons
   addCopyBibtexButtonEventListener();
   addDownloadBibtexButtonEventListener();
+}
+
+/**
+ * Limits the authors cell height to the height of the title in the same row.
+ * Authors wrap onto multiple lines and are truncated with an ellipsis when
+ * they exceed the number of lines occupied by the title.
+ * @param {HTMLTableElement} table - The results table
+ */
+function clampAuthorsToTitleHeight(table) {
+  const rows = table.querySelectorAll("tbody tr");
+  rows.forEach(function (row) {
+    const titleLink = row.querySelector("td:nth-child(2) a");
+    const authorsInner = row.querySelector("td:nth-child(3) .authors-cell");
+    if (!titleLink || !authorsInner) return;
+
+    const titleHeight = titleLink.getBoundingClientRect().height;
+    const lineHeight = parseFloat(getComputedStyle(authorsInner).lineHeight);
+    if (!titleHeight || !lineHeight) return;
+
+    const lines = Math.max(1, Math.floor(titleHeight / lineHeight));
+    authorsInner.style.webkitLineClamp = String(lines);
+    authorsInner.style.lineClamp = String(lines);
+  });
 }
 
 /**
@@ -999,17 +1017,13 @@ function restoreResultsFromStorage() {
         return;
       }
 
-      updatePublicationsCount(
-        searchData.status,
-        searchData.totalHits,
-        searchData.sentHits,
-        searchData.excludedCount
-      );
+      updatePublicationsCount(searchData.status, searchData.totalHits);
       buildAndDisplayTable(searchData.publications);
       updatePaginationControls(
         searchData.totalHits,
         searchData.sentHits,
-        searchData.currentOffset
+        searchData.currentOffset,
+        searchData.excludedCount
       );
       const queryInputField = document.getElementById("paperTitle");
       if (queryInputField) {
@@ -1652,8 +1666,9 @@ window.downloadBibtex = function (url) {
  * @param {number} totalHits - Total number of matching publications
  * @param {number} sentHits - Number of publications in current response
  * @param {number} currentOffset - Current pagination offset
+ * @param {number} [excludedCount=0] - Excluded entries (e.g. CoRR abs) in the current page
  */
-function updatePaginationControls(totalHits, sentHits, currentOffset) {
+function updatePaginationControls(totalHits, sentHits, currentOffset, excludedCount = 0) {
   const paginationTop = document.getElementById("pagination");
   const paginationBottom = document.getElementById("pagination-bottom");
 
@@ -1679,6 +1694,8 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
       const totalPages = Math.ceil(totalHits / maxResults);
       const hasNextPage = currentOffset + sentHits < totalHits;
       const hasPrevPage = currentOffset > 0;
+      // Results shown on the current page (fetched minus CoRR abs entries filtered out)
+      const resultsCount = Math.max(0, sentHits - excludedCount);
 
       // Build pagination controls using safe DOM methods
       const paginationControlsTop = createPaginationControls(
@@ -1686,14 +1703,16 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
         hasNextPage,
         currentPage,
         totalPages,
-        totalHits
+        resultsCount,
+        excludedCount
       );
       const paginationControlsBottom = createPaginationControls(
         hasPrevPage,
         hasNextPage,
         currentPage,
         totalPages,
-        totalHits
+        resultsCount,
+        excludedCount
       );
 
       // Clear and update both pagination areas
@@ -1714,7 +1733,8 @@ function updatePaginationControls(totalHits, sentHits, currentOffset) {
  * @param {boolean} hasNextPage - Whether next page is available
  * @param {number} currentPage - Current page number (1-indexed)
  * @param {number} totalPages - Total number of pages
- * @param {number} totalHits - Total number of matching publications
+ * @param {number} resultsCount - Number of results shown on the current page (sent hits minus excluded entries)
+ * @param {number} [excludedCount=0] - Excluded entries (e.g. CoRR abs) on the current page
  * @returns {HTMLDivElement} Container element with pagination controls
  */
 function createPaginationControls(
@@ -1722,7 +1742,8 @@ function createPaginationControls(
   hasNextPage,
   currentPage,
   totalPages,
-  totalHits
+  resultsCount,
+  excludedCount = 0
 ) {
   const container = document.createElement("div");
   container.className = "pagination-controls";
@@ -1741,7 +1762,8 @@ function createPaginationControls(
   // Page info
   const pageInfo = document.createElement("span");
   pageInfo.className = "pagination-info";
-  pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${totalHits} total results)`;
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${resultsCount} results)`;
+  pageInfo.title = `${excludedCount} CoRR abs entries ignored`;
   container.appendChild(pageInfo);
 
   // Next button
@@ -1770,6 +1792,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   // Previous page buttons (both top and bottom)
   document.querySelectorAll(".prevPageButton").forEach((button) => {
     button.addEventListener("click", function () {
+      window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
       sendMessage({
         script: "popup.js",
@@ -1784,6 +1807,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
   // Next page buttons (both top and bottom)
   document.querySelectorAll(".nextPageButton").forEach((button) => {
     button.addEventListener("click", function () {
+      window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
       sendMessage({
         script: "popup.js",

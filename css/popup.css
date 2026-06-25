@@ -2,8 +2,10 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     color: #333;
-    min-width: 500px;
+    min-width: 560px;
     max-width: 800px;
+    box-sizing: border-box;
+    padding: 0 10px 0 5px;
 }
 
 div {
@@ -130,13 +132,34 @@ img {
 /* Col 2: Title - flexible, wraps */
 #results tbody td:nth-child(2) {
     white-space: normal;
+    vertical-align: top;
 }
 
-/* Col 3: Authors - truncate with ellipsis */
+/* Title and authors share the same line-height so the authors clamp,
+   computed from the title height, lines up exactly */
+#results tbody td:nth-child(2) a,
+.authors-cell {
+    line-height: 1.4;
+}
+
+/* Col 3: Authors - wrap, clamped to the title height with ellipsis */
 #results thead th:nth-child(3),
 #results tbody td:nth-child(3) {
     width: 90px;
     max-width: 90px;
+}
+
+#results tbody td:nth-child(3) {
+    white-space: normal;
+    vertical-align: top;
+}
+
+.authors-cell {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
 }
 
 /* Col 4: Year - compact */
@@ -154,11 +177,14 @@ img {
     max-width: 85px;
 }
 
-/* Col 6: DOI - compact */
+/* Col 6: DOI - compact; header centered, values keep the default left align */
 #results thead th:nth-child(6),
 #results tbody td:nth-child(6) {
     width: 35px;
     padding: 8px 4px;
+}
+
+#results thead th:nth-child(6) {
     text-align: center;
 }
 
@@ -321,8 +347,9 @@ img.footer-gh {
     }
 }
 
-/* Also hide Authors (col 3) and Venue (col 5) columns below 550px */
-@media (max-width: 550px) {
+/* Also hide Authors (col 3) and Venue (col 5) columns below 600px
+   (kept above the 560px body min-width so the breakpoint stays reachable) */
+@media (max-width: 600px) {
     #results thead th:nth-child(3),
     #results thead th:nth-child(5),
     #results tbody td:nth-child(3),
