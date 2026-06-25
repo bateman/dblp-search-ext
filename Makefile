@@ -307,9 +307,16 @@ tag/delete: | dep/git  ## Delete the tag for the current version
 release/check: | dep/git  ## Check if a new release is needed
 	@TAG=$$($(GIT) describe --tags --abbrev=0); \
 	BEHIND_AHEAD=$$($(GIT) rev-list --left-right --count $$TAG...HEAD); \
-	if [ "$$BEHIND_AHEAD" = "0	0" ]; then echo "false" > $(RELEASE_STAMP); else echo "true" > $(RELEASE_STAMP); fi; \
+	REMOTE_TAGS=$$($(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'); \
+	if echo "$$REMOTE_TAGS" | grep -q "refs/tags/$$TAG$$"; then TAG_ON_REMOTE="true"; else TAG_ON_REMOTE="false"; fi; \
+	if [ "$$BEHIND_AHEAD" != "0	0" ] || [ "$$TAG_ON_REMOTE" = "false" ]; then echo "true" > $(RELEASE_STAMP); else echo "false" > $(RELEASE_STAMP); fi; \
 	echo -e "$(CYAN)\nChecking if a new release is needed...$(RESET)"; \
 	echo -e "  $(CYAN)Current tag:$(RESET) $$TAG"; \
+	if [ "$$TAG_ON_REMOTE" = "true" ]; then \
+		echo -e "  $(CYAN)Tag on origin:$(RESET) $(GREEN)true$(RESET)"; \
+	else \
+		echo -e "  $(CYAN)Tag on origin:$(RESET) $(RED)false$(RESET)"; \
+	fi; \
 	echo -e "  $(CYAN)Commits behind/ahead:$(RESET) $$(echo $$BEHIND_AHEAD | $(AWK) '{behind=$$1; ahead=$$2; bc=(behind>0 ? "$(RED)" : "$(RESET)"); ac=(ahead>0 ? "$(GREEN)" : "$(RESET)"); print bc "↓" behind "$(RESET)/" ac "↑" ahead "$(RESET)"}')"; \
 	NEEDS=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS" = "true" ]; then \
