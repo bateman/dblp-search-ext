@@ -43,12 +43,14 @@ button:hover {
 }
 
 button.copyBibtexButton:hover,
-button.downloadBibtexButton:hover {
+button.downloadBibtexButton:hover,
+button.saveZoteroButton:hover {
     border: 1px solid transparent;
 }
 
 button.copyBibtexButton:active,
-button.downloadBibtexButton:active {
+button.downloadBibtexButton:active,
+button.saveZoteroButton:active {
     transform: scale(0.95);
     /* Slightly reduce the size of the button when clicked */
     opacity: 0.6;
@@ -58,6 +60,10 @@ button.downloadBibtexButton:active {
 #status {
     color: #0a4da5;
     font-weight: bold;
+}
+
+#status.error {
+    color: #b91a2d; /* same red as #count.error */
 }
 
 img {

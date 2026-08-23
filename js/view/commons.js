@@ -29,6 +29,8 @@ function cancelStatusTimer(id) {
  * When timeout is greater than 0 the status auto-clears after that delay;
  * pass 0 (or a negative value) to keep it visible until cleared explicitly
  * via clearStatus() or a subsequent updateStatus() call.
+ * Messages starting with "Error" get the `error` class (styled red); any
+ * other message clears it.
  * @param {string} message - The status message to display
  * @param {number} [timeout=2000] - Milliseconds before clearing; 0 keeps it persistent
  * @param {string} [id="status"] - ID of the status element to update
@@ -39,6 +41,10 @@ export function updateStatus(message, timeout = 2000, id = "status") {
   if (statusElement) {
     // Cancel any pending auto-clear from a previous update on this element
     cancelStatusTimer(id);
+
+    // Style error messages (the codebase-wide convention prefixes them
+    // with "Error") in red, and reset the style for everything else
+    statusElement.classList.toggle("error", /^Error\b/.test(message));
 
     // Clear existing content
     statusElement.textContent = "";
@@ -85,5 +91,6 @@ export function clearStatus(id = "status") {
   const statusElement = document.getElementById(id);
   if (statusElement) {
     statusElement.textContent = "";
+    statusElement.classList.remove("error");
   }
 }

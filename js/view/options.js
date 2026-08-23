@@ -6,6 +6,13 @@
 
 import { updateStatus } from "./commons.js";
 import { validateMaxResults, validatePopupWidth } from "../utils/validation.js";
+import {
+  isValidZoteroTargetId,
+  buildZoteroTargetPaths,
+  requestZoteroPermission,
+  zoteroFetch,
+  zoteroPermissionFailureMessage,
+} from "../utils/zotero.js";
 
 const browser = window.msBrowser || window.browser || window.chrome;
 console.log("options.js loaded");
@@ -45,6 +52,43 @@ const sampleValues = {
   title: "title",
 };
 
+/**
+ * IDs of the option controls whose change event triggers an autosave. The
+ * citation-key builder saves through its own drag/remove handlers instead.
+ * @type {string[]}
+ */
+const AUTOSAVE_CONTROL_IDS = [
+  "maxResults",
+  "popupWidth",
+  "renamingCheckbox",
+  "authorCapitalize",
+  "venueUppercase",
+  "removeTimestampBiburlBibsource",
+  "removeUrl",
+  "zoteroEnabled",
+  "zoteroTarget",
+];
+
+/**
+ * Pending autosave timer id, or null when none is scheduled
+ * @type {number|null}
+ */
+let autosaveTimer = null;
+
+/**
+ * Schedules a debounced save of all options, coalescing rapid changes
+ * (e.g. successive drags in the citation-key builder).
+ */
+function scheduleAutosave() {
+  if (autosaveTimer !== null) {
+    clearTimeout(autosaveTimer);
+  }
+  autosaveTimer = setTimeout(function () {
+    autosaveTimer = null;
+    saveOptions();
+  }, 400);
+}
+
 // =====================================
 // Event Listeners
 // =====================================
@@ -53,7 +97,15 @@ const sampleValues = {
  * Initializes the options page when DOM is loaded
  */
 document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("saveButton").addEventListener("click", saveOptions);
+  // Autosave: persist the options whenever a control changes
+  AUTOSAVE_CONTROL_IDS.forEach(function (id) {
+    document.getElementById(id).addEventListener("change", scheduleAutosave);
+  });
+
+  // Load the list of Zotero libraries/collections on demand
+  document
+    .getElementById("zoteroLoadTargets")
+    .addEventListener("click", loadZoteroTargets);
 
   // Toggle drag & drop visibility based on checkbox
   const renamingCheckbox = document.getElementById("renamingCheckbox");
@@ -173,64 +225,80 @@ function extractDropData(e) {
 }
 
 /**
+ * Moves an existing dropzone token to a new position (reordering)
+ * @param {HTMLElement} dropzone - The dropzone element
+ * @param {string} field - Field name of the dragged token
+ * @param {string} tokenId - Specific token id (set for separators)
+ * @param {HTMLElement|null} insertPosition - Element to insert before, or null for end
+ */
+function reorderDropzoneToken(dropzone, field, tokenId, insertPosition) {
+  const existingToken = tokenId
+    ? dropzone.querySelector(`[data-token-id="${tokenId}"]`)
+    : dropzone.querySelector(`[data-field="${field}"]`);
+  if (!existingToken) {
+    return;
+  }
+  // Remove from current position, insert at the new one
+  existingToken.remove();
+  if (insertPosition) {
+    dropzone.insertBefore(existingToken, insertPosition);
+  } else {
+    dropzone.appendChild(existingToken);
+  }
+  updatePreview();
+  scheduleAutosave();
+}
+
+/**
+ * Adds a token from the available fields to the dropzone
+ * @param {HTMLElement} dropzone - The dropzone element
+ * @param {string} field - Field name of the dragged token
+ * @param {string} source - ID of the container the token was dragged from
+ * @param {boolean} isSeparator - Whether this is a separator token
+ * @param {HTMLElement|null} insertPosition - Element to insert before, or null for end
+ */
+function addTokenToDropzone(dropzone, field, source, isSeparator, insertPosition) {
+  // Separators can be used multiple times; regular fields only once
+  if (!isSeparator && dropzone.querySelector(`[data-field="${field}"]`)) {
+    return;
+  }
+  const token = document.querySelector(
+    `#${source} .field-token[data-field="${field}"]`
+  );
+  if (!token) {
+    return;
+  }
+  const newToken = createDropzoneToken(field, isSeparator);
+  if (!newToken) {
+    return;
+  }
+  if (insertPosition) {
+    dropzone.insertBefore(newToken, insertPosition);
+  } else {
+    dropzone.appendChild(newToken);
+  }
+  // Hide original token only for non-separators
+  if (!isSeparator) {
+    token.style.display = "none";
+  }
+  updatePreview();
+  scheduleAutosave();
+}
+
+/**
  * Handles drop event on the citation key dropzone
  * @param {DragEvent} e - The drop event
  */
 function handleDrop(e) {
   const { field, source, tokenId, isSeparator } = extractDropData(e);
   const dropzone = document.getElementById("citationKeyDropzone");
-
-  // Determine insert position based on drop location
   const insertPosition = getDropPosition(e, dropzone);
 
-  // If dragging within dropzone (reordering)
   if (source === "citationKeyDropzone") {
-    const existingToken = tokenId
-      ? dropzone.querySelector(`[data-token-id="${tokenId}"]`)
-      : dropzone.querySelector(`[data-field="${field}"]`);
-    if (existingToken) {
-      // Remove from current position
-      existingToken.remove();
-      // Insert at new position
-      if (insertPosition) {
-        dropzone.insertBefore(existingToken, insertPosition);
-      } else {
-        dropzone.appendChild(existingToken);
-      }
-      updatePreview();
-    }
+    reorderDropzoneToken(dropzone, field, tokenId, insertPosition);
     return;
   }
-
-  // For separators, always allow adding (they can be used multiple times)
-  // For regular fields, check if already in dropzone
-  if (!isSeparator) {
-    const existingToken = dropzone.querySelector(`[data-field="${field}"]`);
-    if (existingToken) {
-      return; // Field already in dropzone
-    }
-  }
-
-  // Find the token from available fields
-  const token = document.querySelector(
-    `#${source} .field-token[data-field="${field}"]`
-  );
-  if (token) {
-    // Create a new token for the dropzone with remove button
-    const newToken = createDropzoneToken(field, isSeparator);
-    if (newToken) {
-      if (insertPosition) {
-        dropzone.insertBefore(newToken, insertPosition);
-      } else {
-        dropzone.appendChild(newToken);
-      }
-      // Hide original token only for non-separators
-      if (!isSeparator) {
-        token.style.display = "none";
-      }
-      updatePreview();
-    }
-  }
+  addTokenToDropzone(dropzone, field, source, isSeparator, insertPosition);
 }
 
 /**
@@ -360,6 +428,7 @@ function removeFieldFromDropzone(field, tokenId = null, isSeparator = false) {
   }
 
   updatePreview();
+  scheduleAutosave();
 }
 
 /**
@@ -466,6 +535,125 @@ function capitalize(str) {
 }
 
 // =====================================
+// Zotero Destination Functions
+// =====================================
+
+/**
+ * Handles the "Load from Zotero" button: requests the optional host
+ * permission (must run synchronously in the click handler), then fetches
+ * the list of libraries and collections from the running Zotero app.
+ */
+function loadZoteroTargets() {
+  // Persistent status while the permission prompt is open; replaced as soon
+  // as the request settles
+  updateStatus("Waiting for permission to connect to Zotero...", 0);
+  requestZoteroPermission(browser).then(function (permission) {
+    if (permission !== "granted") {
+      updateStatus(
+        zoteroPermissionFailureMessage(permission, browser.runtime.getManifest()),
+        8000
+      );
+      return;
+    }
+    fetchZoteroTargets();
+  });
+}
+
+/**
+ * Fetches the editable libraries and collections from the local Zotero
+ * connector server and fills the destination dropdown with them.
+ */
+function fetchZoteroTargets() {
+  updateStatus("Loading libraries and collections from Zotero...", 0);
+  zoteroFetch("getSelectedCollection", null, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  })
+    .then((response) => response.json())
+    .then((info) => {
+      const targets = buildZoteroTargetPaths(info.targets);
+      populateZoteroTargetSelect(targets);
+      updateStatus(`Loaded ${targets.length} destinations from Zotero`, 2000);
+    })
+    .catch(() => {
+      updateStatus(
+        "Error: could not reach Zotero. Is the Zotero desktop app running?",
+        4000
+      );
+    });
+}
+
+/**
+ * Fills the destination dropdown with the given targets, keeping the
+ * "Currently selected in Zotero" entry first and preserving the current
+ * choice when it still exists.
+ * @param {{id: string, name: string, level: number, path: string}[]} targets
+ *        Targets with display paths, from buildZoteroTargetPaths()
+ */
+function populateZoteroTargetSelect(targets) {
+  const select = document.getElementById("zoteroTarget");
+  const previous = select.value;
+
+  // Remove everything but the first, fixed option
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+
+  targets.forEach(function (target) {
+    const option = document.createElement("option");
+    option.value = target.id;
+    // Indent nested collections to mirror the Zotero tree. The indent uses
+    // non-breaking spaces (U+00A0): ordinary leading spaces are stripped
+    // from option labels by the HTML renderer
+    option.textContent = "  ".repeat(target.level) + target.name;
+    option.dataset.path = target.path;
+    select.appendChild(option);
+  });
+
+  // Re-select the previous destination if it is still available
+  select.value = previous;
+  if (select.value !== previous) {
+    select.value = "";
+  }
+}
+
+/**
+ * Restores the saved destination into the dropdown without contacting
+ * Zotero: the stored id and display path are enough to show the choice.
+ * @param {string} target - Stored treeViewID ("" for current selection)
+ * @param {string} targetName - Stored display path of the destination
+ */
+function restoreZoteroTargetSelect(target, targetName) {
+  if (!isValidZoteroTargetId(target)) {
+    return;
+  }
+  const select = document.getElementById("zoteroTarget");
+  const option = document.createElement("option");
+  option.value = target;
+  option.textContent = targetName || target;
+  option.dataset.path = targetName || target;
+  select.appendChild(option);
+  select.value = target;
+}
+
+/**
+ * Reads the destination currently chosen in the dropdown.
+ * @returns {{target: string, targetName: string}} The destination to store
+ */
+function readZoteroTargetSelection() {
+  const select = document.getElementById("zoteroTarget");
+  const option = select.selectedOptions.length > 0 ? select.selectedOptions[0] : null;
+  if (!option || !isValidZoteroTargetId(option.value)) {
+    return { target: "", targetName: "" };
+  }
+  return {
+    target: option.value,
+    targetName: option.dataset.path || option.textContent.trim(),
+  };
+}
+
+// =====================================
 // Save/Restore Functions
 // =====================================
 
@@ -483,6 +671,8 @@ function saveOptions() {
     "removeTimestampBiburlBibsource"
   ).checked;
   const removeUrl = document.getElementById("removeUrl").checked;
+  const zoteroEnabled = document.getElementById("zoteroEnabled").checked;
+  const zoteroTargetSelection = readZoteroTargetSelection();
   const popupWidthInput = document.getElementById("popupWidth").value;
 
   // Validate maxResults input
@@ -519,6 +709,9 @@ function saveOptions() {
         venueUppercase: venueUppercase,
         removeTimestampBiburlBibsource: removeTimestampBiburlBibsource,
         removeUrl: removeUrl,
+        zoteroEnabled: zoteroEnabled,
+        zoteroTarget: zoteroTargetSelection.target,
+        zoteroTargetName: zoteroTargetSelection.targetName,
         popupWidth: popupWidth,
       },
     },
@@ -543,6 +736,9 @@ function restoreOptions() {
         venueUppercase: false,
         removeTimestampBiburlBibsource: true,
         removeUrl: false,
+        zoteroEnabled: true,
+        zoteroTarget: "",
+        zoteroTargetName: "",
         popupWidth: 800,
       },
     },
@@ -557,6 +753,14 @@ function restoreOptions() {
       document.getElementById("removeTimestampBiburlBibsource").checked =
         items.options.removeTimestampBiburlBibsource;
       document.getElementById("removeUrl").checked = items.options.removeUrl;
+      // Default to enabled when the option is missing from stored settings
+      // (e.g. after updating from a version that predates it)
+      document.getElementById("zoteroEnabled").checked =
+        items.options.zoteroEnabled !== false;
+      restoreZoteroTargetSelect(
+        items.options.zoteroTarget,
+        items.options.zoteroTargetName
+      );
       document.getElementById("popupWidth").value =
         items.options.popupWidth || 800;
 
