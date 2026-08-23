@@ -95,7 +95,24 @@
     </div>
 
     <div class="options">
-        <button id="saveButton">Save</button>
+        <label class="option">Save BibTeX entries to Zotero</label>
+        <br>
+        <label class="optiondesc">When enabled, a 'Save to Zotero' button next to each result imports the entry into the currently selected collection of the Zotero desktop app. Zotero must be running. On first use, the browser asks for permission to connect to Zotero on your computer (127.0.0.1).</label>
+        <br>
+        <label class="optionval" for="zoteroEnabled">Enable saving to Zotero:</label>
+        <input type="checkbox" id="zoteroEnabled">
+        <br><br>
+        <label class="optiondesc">Entries are saved to the library or collection currently selected in the Zotero window, unless you pin a fixed destination here. Click 'Load from Zotero' (Zotero must be running) to list your libraries and collections.</label>
+        <br>
+        <label class="optionval" for="zoteroTarget">Save destination:</label>
+        <select id="zoteroTarget">
+            <option value="">Currently selected in Zotero</option>
+        </select>
+        <button id="zoteroLoadTargets" type="button">Load from Zotero</button>
+    </div>
+
+    <div class="options">
+        <label class="optiondesc">Changes are saved automatically.</label>
     </div>
     <div id="status"></div>
 </body>

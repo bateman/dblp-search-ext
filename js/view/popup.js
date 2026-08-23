@@ -16,6 +16,12 @@ import {
   removeUrlFromBibtex,
   buildBibtexFilename,
 } from "../utils/bibtex.js";
+import {
+  isValidZoteroTargetId,
+  isZoteroPermissionDeclared,
+  requestZoteroPermission,
+  zoteroPermissionFailureMessage,
+} from "../utils/zotero.js";
 
 console.log("popup.js loaded");
 const browser = window.msBrowser || window.browser || window.chrome;
@@ -37,6 +43,11 @@ let currentFilters = {
 
 // Store original publications for filtering/sorting
 let originalPublications = [];
+
+// Cached "Save to Zotero" option state, refreshed from storage whenever the
+// results table is rebuilt. Used by the keyboard shortcut and context menu,
+// which run synchronously and cannot wait for a storage read.
+let zoteroEnabled = true;
 
 // Fallback timeout (ms) for the search spinner. The spinner normally clears as
 // soon as a search response arrives; this is only a safety net so it can never
@@ -71,6 +82,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Restore popup width from storage
   restorePopupWidth();
+
+  // Prime the cached Save to Zotero option state
+  refreshZoteroButtonVisibility();
 
   // if the content of the popup was saved in the local storage, then restore it
   restoreResultsFromStorage();
@@ -247,6 +261,9 @@ function executeRowShortcut(key, rows) {
     case "d":
       downloadSelectedRowBibtex(selectedRow);
       break;
+    case "z":
+      saveSelectedRowZotero(selectedRow);
+      break;
     case "b":
       openSelectedRowDblp(selectedRow);
       break;
@@ -296,10 +313,24 @@ function handleKeyboardShortcuts(event) {
     return;
   }
 
+  if (hasModifierKey(event)) {
+    return;
+  }
+
   const key = event.key.toLowerCase();
-  if (["c", "d", "b", "o"].includes(key)) {
+  if (["c", "d", "z", "b", "o"].includes(key)) {
     executeRowShortcut(event.key, rows);
   }
+}
+
+/**
+ * Checks whether a keyboard event carries a modifier that makes it a browser
+ * chord (Ctrl+C, Cmd+Z, ...) rather than a row shortcut
+ * @param {KeyboardEvent} event - The keyboard event
+ * @returns {boolean} True when a chord modifier is pressed
+ */
+function hasModifierKey(event) {
+  return event.ctrlKey || event.metaKey || event.altKey;
 }
 
 // =====================================
@@ -536,6 +567,13 @@ function createBibtexCell(bibtexLink) {
       bibtexLink, "downloadBibtexButton", "Download BibTeX", "../images/download.png"
     )
   );
+  const zoteroButton = createBibtexButton(
+    bibtexLink, "saveZoteroButton", "Save to Zotero", "../images/zotero.png"
+  );
+  if (!zoteroEnabled) {
+    zoteroButton.style.display = "none";
+  }
+  cell.appendChild(zoteroButton);
   return cell;
 }
 
@@ -943,7 +981,7 @@ function displayTableWithPublications(publications) {
   // Add keyboard shortcuts hint above the table
   const hint = document.createElement("div");
   hint.id = "keyboard-hint";
-  hint.textContent = "Tip: Use \u2191\u2193 to navigate, C to copy BibTeX, D to download, B for DBLP, O for DOI \u2014 or right-click a row for actions";
+  hint.textContent = buildKeyboardHint();
   results.appendChild(hint);
 
   results.appendChild(table);
@@ -951,9 +989,13 @@ function displayTableWithPublications(publications) {
   // Clamp the authors column to the height of each row's title
   clampAuthorsToTitleHeight(table);
 
-  // Add event listeners for copy and download buttons
+  // Add event listeners for copy, download, and save-to-Zotero buttons
   addCopyBibtexButtonEventListener();
   addDownloadBibtexButtonEventListener();
+  addSaveZoteroButtonEventListener();
+
+  // Sync the Save to Zotero buttons with the current option value
+  refreshZoteroButtonVisibility();
 }
 
 /**
@@ -1119,6 +1161,18 @@ function addDownloadBibtexButtonEventListener() {
   });
 }
 
+/**
+ * Adds click event listeners to all Save to Zotero buttons
+ */
+function addSaveZoteroButtonEventListener() {
+  document.querySelectorAll(".saveZoteroButton").forEach((button) => {
+    button.addEventListener("click", function () {
+      const url = this.getAttribute("data-url");
+      window.saveBibtexToZotero(url);
+    });
+  });
+}
+
 // =====================================
 // Keyboard Navigation Functions
 // =====================================
@@ -1218,6 +1272,22 @@ function downloadSelectedRowBibtex(row) {
 }
 
 /**
+ * Saves BibTeX for the selected row to Zotero
+ * @param {HTMLTableRowElement} row - The selected row element
+ */
+function saveSelectedRowZotero(row) {
+  if (!zoteroEnabled) {
+    return;
+  }
+  const bibtexUrl = row.dataset.bibtexUrl;
+  if (bibtexUrl && isValidURL(bibtexUrl)) {
+    window.saveBibtexToZotero(bibtexUrl);
+  } else {
+    updateStatus("No BibTeX available", 2000);
+  }
+}
+
+/**
  * Opens DBLP page for the selected row
  * @param {HTMLTableRowElement} row - The selected row element
  */
@@ -1252,6 +1322,7 @@ function openSelectedRowDoi(row) {
 const CONTEXT_MENU_ITEMS = [
   { action: "copy", label: "Copy BibTeX", icon: "../images/copy.png" },
   { action: "download", label: "Download BibTeX", icon: "../images/download.png" },
+  { action: "zotero", label: "Save to Zotero", icon: "../images/zotero.png" },
   { action: "dblp", label: "Open on dblp", icon: "../images/open-in-tab.png" },
   { action: "doi", label: "Resolve DOI", icon: "../images/open-in-tab.png" },
 ];
@@ -1270,6 +1341,7 @@ function getRowUrlForAction(row, action) {
   switch (action) {
     case "copy":
     case "download":
+    case "zotero":
       return row.dataset.bibtexUrl;
     case "dblp":
       return row.dataset.dblpUrl;
@@ -1292,6 +1364,9 @@ function executeContextMenuAction(action, row) {
       break;
     case "download":
       downloadSelectedRowBibtex(row);
+      break;
+    case "zotero":
+      saveSelectedRowZotero(row);
       break;
     case "dblp":
       openSelectedRowDblp(row);
@@ -1348,13 +1423,17 @@ function buildContextMenu() {
 }
 
 /**
- * Enables or disables menu items based on the target row's available URLs
+ * Enables or disables menu items based on the target row's available URLs,
+ * and hides the Zotero item when the option is disabled
  * @param {HTMLTableRowElement} row - The target row element
  */
 function updateContextMenuItemStates(row) {
   contextMenuEl.querySelectorAll(".context-menu-item").forEach(function (button) {
     const url = getRowUrlForAction(row, button.dataset.action);
     button.disabled = !(url && isValidURL(url));
+    if (button.dataset.action === "zotero") {
+      button.style.display = zoteroEnabled ? "" : "none";
+    }
   });
 }
 
@@ -1655,6 +1734,171 @@ window.downloadBibtex = function (url) {
       }
     })
     .catch(handleBibtexError);
+};
+
+// =====================================
+// Save to Zotero Functions
+// =====================================
+
+// Blocks concurrent saves: a double-click (or repeated Z presses) would
+// otherwise import the same entry twice, duplicating it in Zotero
+let zoteroSaveInFlight = false;
+
+/**
+ * Builds the keyboard hint shown above the results table, mentioning the Z
+ * shortcut only while saving to Zotero is enabled.
+ * @returns {string} The hint text
+ */
+function buildKeyboardHint() {
+  const zoteroPart = zoteroEnabled ? "Z to save to Zotero, " : "";
+  return (
+    "Tip: Use ↑↓ to navigate, C to copy BibTeX, D to download, " +
+    zoteroPart +
+    "B for DBLP, O for DOI — or right-click a row for actions"
+  );
+}
+
+/**
+ * Reads the Zotero option from storage, refreshes the cached flag used by
+ * the keyboard shortcut and context menu, and shows or hides the Save to
+ * Zotero buttons (and the Z shortcut hint) accordingly.
+ */
+function refreshZoteroButtonVisibility() {
+  browser.storage.local.get(
+    {
+      options: {
+        zoteroEnabled: true,
+      },
+    },
+    function (items) {
+      zoteroEnabled = items.options.zoteroEnabled !== false;
+      document.querySelectorAll(".saveZoteroButton").forEach((button) => {
+        button.style.display = zoteroEnabled ? "" : "none";
+      });
+      const hint = document.getElementById("keyboard-hint");
+      if (hint) {
+        hint.textContent = buildKeyboardHint();
+      }
+    }
+  );
+}
+
+/**
+ * Reads the configured Zotero save destination from storage. An empty
+ * target means "currently selected in Zotero" (no retargeting).
+ * @returns {Promise<{target: string, targetName: string}>} Destination config
+ */
+function getZoteroSaveOptions() {
+  return new Promise((resolve) => {
+    browser.storage.local.get(
+      {
+        options: {
+          zoteroTarget: "",
+          zoteroTargetName: "",
+        },
+      },
+      function (items) {
+        const target = items.options.zoteroTarget;
+        resolve({
+          target: isValidZoteroTargetId(target) ? target : "",
+          targetName: items.options.zoteroTargetName || "",
+        });
+      }
+    );
+  });
+}
+
+/**
+ * Hands the processed BibTeX entry to the background service worker, which
+ * performs the connector requests. The save then survives the popup closing
+ * (Chrome closes action popups on any focus loss); the response only feeds
+ * the status line, so losing it is harmless.
+ * @param {string} bibtex - The processed BibTeX entry
+ * @param {{target: string, targetName: string}} zoteroOptions - Destination
+ * @returns {Promise<{ok: boolean, message: string}>} Save outcome
+ */
+function requestBackgroundZoteroSave(bibtex, zoteroOptions) {
+  return new Promise((resolve) => {
+    browser.runtime.sendMessage(
+      {
+        script: "popup.js",
+        type: "REQUEST_SAVE_TO_ZOTERO",
+        bibtex: bibtex,
+        target: zoteroOptions.target,
+        targetName: zoteroOptions.targetName,
+      },
+      function (response) {
+        if (browser.runtime.lastError || !response || !response.outcome) {
+          const detail = browser.runtime.lastError
+            ? browser.runtime.lastError.message
+            : "no response";
+          console.error("Zotero save message failed: ", detail);
+          resolve({
+            ok: false,
+            message: "Error: could not start the Zotero save",
+          });
+          return;
+        }
+        resolve(response.outcome);
+      }
+    );
+  });
+}
+
+/**
+ * Fetches BibTeX from URL, applies user options, and imports the entry into
+ * the Zotero desktop app via its local connector server.
+ * @param {string} url - URL to fetch BibTeX from
+ */
+/**
+ * Reports a permission request that did not end in "granted". When the
+ * prompt itself failed on a correctly registered manifest (some browsers
+ * cannot anchor the prompt to the popup), the Options page — a regular tab
+ * where prompts are reliable — is opened for the user to grant access from.
+ * An explicit denial is respected without opening anything.
+ * @param {string} permission - "denied" or "failed"
+ */
+function handleZoteroPermissionFailure(permission) {
+  const manifest = browser.runtime.getManifest();
+  updateStatus(zoteroPermissionFailureMessage(permission, manifest), 8000);
+  if (
+    permission === "failed" &&
+    isZoteroPermissionDeclared(manifest) &&
+    browser.runtime.openOptionsPage
+  ) {
+    Promise.resolve(browser.runtime.openOptionsPage()).catch(function (err) {
+      console.error("Could not open the options page: ", err);
+    });
+  }
+}
+
+window.saveBibtexToZotero = function (url) {
+  if (zoteroSaveInFlight) {
+    return;
+  }
+  zoteroSaveInFlight = true;
+  // The permission prompt can stay open while the user reads it; keep a
+  // persistent status so the pending state is visible (replaced as soon as
+  // the request settles)
+  updateStatus("Waiting for permission to connect to Zotero...", 0);
+  requestZoteroPermission(browser)
+    .then(function (permission) {
+      if (permission !== "granted") {
+        handleZoteroPermissionFailure(permission);
+        return;
+      }
+      // Persistent status; replaced by the outcome message below
+      updateStatus("Saving to Zotero...", 0);
+      return Promise.all([fetchAndProcessBibtex(url), getZoteroSaveOptions()])
+        .then(([processed, zoteroOptions]) =>
+          requestBackgroundZoteroSave(processed.data, zoteroOptions)
+        )
+        .then((result) => updateStatus(result.message, result.ok ? 3000 : 6000))
+        .catch(handleBibtexError);
+    })
+    .finally(function () {
+      zoteroSaveInFlight = false;
+    });
 };
 
 // =====================================

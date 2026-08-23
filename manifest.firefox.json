@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "dblp Search",
-    "version": "3.8.3",
+    "version": "3.9.0",
     "description": "Search academic publications on dblp from everywhere.",
     "icons": {
         "48": "images/icon-48.png",
@@ -18,6 +18,9 @@
     "host_permissions": [
         "https://dblp.org/*"
     ],
+    "optional_host_permissions": [
+        "http://127.0.0.1/*"
+    ],
     "background": {
         "scripts": ["js/background.js"],
         "type": "module"
@@ -32,7 +35,8 @@
     },
     "browser_specific_settings": {
         "gecko": {
-            "id": "dblpSearch@fcalefato.dev"
+            "id": "dblpSearch@fcalefato.dev",
+            "strict_min_version": "128.0"
         }
     },
     "content_security_policy": {

@@ -8,7 +8,7 @@ Paste these into the store consoles when submitting/updating the extension:
 
 Single purpose
 --------------
-Search academic publications on dblp.org and copy or download their BibTeX entries. Everything the extension does serves this one purpose.
+Search academic publications on dblp.org and copy or download their BibTeX entries, or save them to the user's Zotero library. Everything the extension does serves this one purpose.
 
 Permissions
 -----------
@@ -45,12 +45,29 @@ downloads
 
 Host permission (https://dblp.org/*)
 ------------------------------------
-The extension makes network requests only to dblp.org: it queries the official
-dblp.org search API (https://dblp.org/search/publ/api) and fetches the public
-BibTeX records linked from the results. This is the only host requiring a host
-permission. (On the user's action it may also open a dblp.org search page or a
-doi.org page in a new browser tab; opening a URL in a tab is ordinary
-navigation and needs no host permission.)
+The extension makes network requests only to dblp.org and, on the user's
+explicit action, to the Zotero desktop app on the user's own machine (see the
+optional host permission below): it queries the official dblp.org search API
+(https://dblp.org/search/publ/api) and fetches the public BibTeX records
+linked from the results. (On the user's action it may also open a dblp.org
+search page or a doi.org page in a new browser tab; opening a URL in a tab is
+ordinary navigation and needs no host permission.)
+
+Optional host permission (http://127.0.0.1/*)
+---------------------------------------------
+Requested at runtime, only when the user first clicks the "Save to Zotero"
+button (or the "Load from Zotero" button in Options). The extension then
+talks to the local connector API of the Zotero desktop app on
+http://127.0.0.1:23119: it POSTs the selected publication's BibTeX entry
+(/connector/import) so the entry is imported into the user's Zotero library,
+optionally moves it to the destination the user configured
+(/connector/updateSession), and reads the names of the user's own libraries
+and collections (/connector/getSelectedCollection) solely to show where the
+entry was saved and to populate the destination picker in Options. Match
+patterns cannot include a port, so the pattern covers the loopback address
+generally, but the extension only ever contacts Zotero's fixed port 23119.
+All requests stay on the user's machine; nothing from Zotero is stored
+beyond the user's chosen destination or sent anywhere.
 
 Remote code
 -----------

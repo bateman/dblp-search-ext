@@ -15,6 +15,7 @@ import { PublicationModel } from "./model/model.js";
 import { PublicationView } from "./view/view.js";
 import { extractDOI } from "./utils/doi.js";
 import { flashBadge } from "./utils/badge.js";
+import { performZoteroSave, isValidZoteroTargetId } from "./utils/zotero.js";
 
 /** @type {PublicationModel} */
 const model = new PublicationModel();
@@ -59,6 +60,37 @@ function handleMessageError(error, message, sendResponse) {
  * - log: Human-readable description for logging
  * @type {Object<string, function(Object): {action: Promise, log: string}>}
  */
+/**
+ * Handles a Save to Zotero request from the popup. The connector requests
+ * run here in the service worker so the save completes even if the popup
+ * closes mid-flight; the response only feeds the popup's status line.
+ * @param {Object} message - The message object from the popup
+ * @param {string} message.bibtex - Processed BibTeX entry to import
+ * @param {string} [message.target] - Pinned destination treeViewID ("" = none)
+ * @param {string} [message.targetName] - Display name of the destination
+ * @param {Function} sendResponse - Callback to send the outcome back
+ */
+function handleZoteroSaveMessage(message, sendResponse) {
+  if (typeof message.bibtex !== "string" || message.bibtex.length === 0) {
+    sendResponse({
+      script: "background.js",
+      success: false,
+      error: "No BibTeX data provided",
+    });
+    return;
+  }
+  const zoteroOptions = {
+    target: isValidZoteroTargetId(message.target) ? message.target : "",
+    targetName: typeof message.targetName === "string" ? message.targetName : "",
+  };
+  performZoteroSave(message.bibtex, zoteroOptions)
+    .then((outcome) => {
+      console.log(`Background.js completed Zotero save: ${outcome.message}`);
+      sendResponse({ script: "background.js", success: true, outcome: outcome });
+    })
+    .catch((error) => handleMessageError(error, message, sendResponse));
+}
+
 const messageHandlers = {
   REQUEST_SEARCH_PUBLICATIONS: (msg) => ({
     action: controller.handleSearch(msg.query, msg.offset || 0),
@@ -91,6 +123,11 @@ const messageHandlers = {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message.type || !message.type.startsWith("REQUEST_")) {
     return false;
+  }
+
+  if (message.type === "REQUEST_SAVE_TO_ZOTERO") {
+    handleZoteroSaveMessage(message, sendResponse);
+    return true; // Will respond asynchronously
   }
 
   const handler = messageHandlers[message.type];

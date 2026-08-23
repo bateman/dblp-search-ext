@@ -32,7 +32,7 @@
 ![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=flat-square)
 
 
-A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying or downloading their BibTeX entries.
+A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying or downloading their BibTeX entries, or saving them straight to [Zotero](https://www.zotero.org).
 
 <p align="center">
     <img src="store/screenshots/Screenshot-1.png">
@@ -55,9 +55,10 @@ A simple cross-browser extension to ease the process of searching publications o
 - **Search Papers**: Enter the paper's title in the input field or highlight any text on the current web page, then click the search button. The extension will search dblp.org for matching publications and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
 - **Download BibTeX Entries**: Next to the copy button, a 'Download BibTeX' button saves the entry as a `.bib` file named after its citation key.
+- **Save to Zotero**: A 'Save to Zotero' button imports the entry directly into the [Zotero](https://www.zotero.org) desktop app through Zotero's local connector API. By default the entry goes to the library or collection currently selected in the Zotero window (the status message names it); in Options you can instead pin a fixed destination — any of your editable libraries (personal or group) or collections, listed live from Zotero. Zotero must be running; on first use, the browser asks for permission to connect to Zotero on your computer (127.0.0.1). The button can be hidden in Options. The imported entry honors your citation-key and field-removal settings, so add-ons like Better BibTeX pick up the same citation key you would have copied.
 - **Sort & Filter Results**: Click the Authors, Year, or Venue column headers to sort, the Title header to restore the default order, and the Type header to filter results by publication type.
 - **Color-Coded Entries**: Results are color-coded by publication type (proceedings, books, journals, etc.), matching the dblp.org scheme.
-- **Keyboard Navigation**: Use ↑/↓ to move between results, and `C` to copy BibTeX, `D` to download BibTeX, `B` to open the dblp page, and `O` to open the DOI for the selected result.
+- **Keyboard Navigation**: Use ↑/↓ to move between results, and `C` to copy BibTeX, `D` to download BibTeX, `Z` to save to Zotero, `B` to open the dblp page, and `O` to open the DOI for the selected result.
 - **Context Menu**: Right-click selected text on any page to "Search highlighted text on dblp" or "Resolve DOI".
 - **Customizable BibTeX Citation Keys**: Replace dblp default citation keys with a custom format. Use the drag-and-drop builder in Options to arrange fields (Author, Year, Venue, Title) and separators (dash, underscore) in any order. Additional formatting options include capitalizing the author's name and uppercasing the venue (e.g., `Calefato2023ESEM`, `calefato_2023_esem`).
 - **Results Count**: The extension shows the number of search results found. The extension automatically filters out useless CoRR Abs entries.
@@ -75,7 +76,7 @@ A simple cross-browser extension to ease the process of searching publications o
 2. Click on the extension icon to open the pop-up.
 3. Enter the title of the paper you want to search for in the input field. Alternatively, highlight some text on the current web page.
 4. Click the 'Search' button to start the search.
-5. The search results will be displayed in the pop-up. Next to each result, click the 'Copy BibTeX' button to copy its BibTeX entry to your clipboard, or the 'Download BibTeX' button to save it as a `.bib` file.
+5. The search results will be displayed in the pop-up. Next to each result, click the 'Copy BibTeX' button to copy its BibTeX entry to your clipboard, the 'Download BibTeX' button to save it as a `.bib` file, or the 'Save to Zotero' button to import it into the running Zotero desktop app.
 
 ## Contributions
 
