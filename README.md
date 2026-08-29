@@ -32,7 +32,7 @@
 ![GitHub License](https://img.shields.io/github/license/bateman/dblp-search-ext?style=flat-square)
 
 
-A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying or downloading their BibTeX entries, or saving them straight to [Zotero](https://www.zotero.org).
+A simple cross-browser extension to ease the process of searching publications on [dblp.org](https://dblp.org) and copying, downloading their BibTeX entries, or saving them straight to [Zotero](https://www.zotero.org).
 
 <p align="center">
     <img src="store/screenshots/Screenshot-1.png">
