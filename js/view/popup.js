@@ -22,6 +22,7 @@ import {
   requestZoteroPermission,
   zoteroPermissionFailureMessage,
 } from "../utils/zotero.js";
+import { assertDblpData } from "../utils/dblp.js";
 
 console.log("popup.js loaded");
 const browser = window.msBrowser || window.browser || window.chrome;
@@ -1603,7 +1604,11 @@ function fetchAndProcessBibtex(url) {
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   return fetch(url, { signal: controller.signal })
-    .then((response) => response.text())
+    .then((response) => {
+      // Never process an error or anti-bot HTML page as if it were BibTeX
+      assertDblpData(response);
+      return response.text();
+    })
     .then(
       (data) =>
         new Promise((resolve, reject) => {
@@ -1639,6 +1644,9 @@ function handleBibtexError(err) {
   if (err.name === "AbortError") {
     console.error("Request timeout: Could not fetch BibTeX in time");
     updateStatus("Error: BibTeX request timeout", 3000);
+  } else if (err.name === "HttpError") {
+    console.error("Could not fetch BibTeX: ", err.message);
+    updateStatus("Error: " + err.message, 6000);
   } else if (err.message && err.message.indexOf("Invalid BibTeX") === 0) {
     console.error("Could not process BibTeX: ", err);
     updateStatus("Error: " + err.message, 3000);

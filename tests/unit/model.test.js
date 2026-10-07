@@ -403,6 +403,47 @@ describe("PublicationModel", () => {
       expect(notifyFn).toHaveBeenCalledOnce();
     });
 
+    it("reports dblp's anti-bot challenge page instead of a JSON parse error", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      const json = vi.fn();
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => "text/html; charset=utf-8" },
+        json,
+      });
+
+      await model.searchPublications("calefato automl");
+
+      expect(json).not.toHaveBeenCalled();
+      expect(model.status).toBe("Error");
+      expect(model.errorMessage).toContain("anti-bot check");
+      expect(model.publications).toEqual([]);
+    });
+
+    it("reports HTTP 429 as rate limiting", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        statusText: "",
+        headers: { get: (name) => (name === "retry-after" ? "60" : null) },
+      });
+
+      await model.searchPublications("automl");
+
+      expect(model.status).toBe("Error");
+      expect(model.errorMessage).toBe(
+        "dblp is rate-limiting requests (HTTP 429). Wait 60 seconds before trying again."
+      );
+    });
+
     it("handles fetch exceptions", async () => {
       const notifyFn = vi.fn();
       model.subscribe(notifyFn);

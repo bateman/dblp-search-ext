@@ -9,6 +9,8 @@
 console.log("model.js loaded");
 const browser = globalThis.browser || chrome;
 
+import { assertDblpData } from "../utils/dblp.js";
+
 /**
  * Model class for managing publication data from DBLP API.
  * Implements the observer pattern to notify controllers of data changes.
@@ -63,18 +65,8 @@ export class PublicationModel {
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        // Preserve the HTTP status code/text so the cause reaches the user.
-        // (statusText is often empty on HTTP/2 in Chrome, so include the code.)
-        const detail = response.statusText
-          ? `${response.status} ${response.statusText}`
-          : `${response.status}`;
-        const httpError = new Error(
-          `The dblp API returned an error (HTTP ${detail}).`
-        );
-        httpError.name = "HttpError";
-        throw httpError;
-      }
+      // Throws an "HttpError" on HTTP errors (e.g. 429) and on dblp's anti-bot page
+      assertDblpData(response);
       this.status = "OK";
       this.errorMessage = "";
       const data = await response.json();
