@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   DBLP_CHALLENGE_MESSAGE,
   isBotChallenge,
   describeHttpError,
   assertDblpData,
+  withAppParam,
+  dblpFetch,
+  resetRequestThrottle,
 } from "../../js/utils/dblp.js";
 
 /**
@@ -92,6 +95,74 @@ describe("dblp response helpers", () => {
     it("throws an HttpError on non-OK responses", () => {
       const r = fakeResponse({ ok: false, status: 429 });
       expect(() => assertDblpData(r)).toThrow(/HTTP 429/);
+    });
+  });
+
+  describe("withAppParam", () => {
+    afterEach(() => {
+      delete globalThis.chrome;
+    });
+
+    it("appends app=<name>_<version> using the manifest version", () => {
+      globalThis.chrome = { runtime: { getManifest: () => ({ version: "3.9.1" }) } };
+      expect(withAppParam("https://dblp.org/search/publ/api?q=x&format=json")).toBe(
+        "https://dblp.org/search/publ/api?q=x&format=json&app=dblpSearch_3.9.1"
+      );
+    });
+
+    it("starts the query string when the URL has none", () => {
+      globalThis.chrome = { runtime: { getManifest: () => ({ version: "3.9.1" }) } };
+      expect(withAppParam("https://dblp.org/rec/conf/esem/CalefatoQLK23.bib")).toBe(
+        "https://dblp.org/rec/conf/esem/CalefatoQLK23.bib?app=dblpSearch_3.9.1"
+      );
+    });
+
+    it("falls back to an unknown version outside an extension", () => {
+      expect(withAppParam("https://dblp.org/x.bib?param=1")).toBe(
+        "https://dblp.org/x.bib?param=1&app=dblpSearch_unknown"
+      );
+    });
+  });
+
+  describe("dblpFetch", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      resetRequestThrottle();
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("adds the app parameter and passes options through", async () => {
+      const options = { signal: "s" };
+      await dblpFetch("https://dblp.org/x.bib", options);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://dblp.org/x.bib?app=dblpSearch_unknown",
+        options
+      );
+    });
+
+    it("spaces consecutive requests at least one second apart", async () => {
+      const first = dblpFetch("https://dblp.org/a.bib");
+      const second = dblpFetch("https://dblp.org/b.bib");
+      await first;
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(999);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1);
+      await second;
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not delay a request after a quiet period", async () => {
+      await dblpFetch("https://dblp.org/a.bib");
+      await vi.advanceTimersByTimeAsync(5000);
+      await dblpFetch("https://dblp.org/b.bib");
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
   });
 });

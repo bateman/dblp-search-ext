@@ -22,7 +22,7 @@ import {
   requestZoteroPermission,
   zoteroPermissionFailureMessage,
 } from "../utils/zotero.js";
-import { assertDblpData } from "../utils/dblp.js";
+import { assertDblpData, dblpFetch } from "../utils/dblp.js";
 
 console.log("popup.js loaded");
 const browser = window.msBrowser || window.browser || window.chrome;
@@ -1603,7 +1603,7 @@ function fetchAndProcessBibtex(url) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  return fetch(url, { signal: controller.signal })
+  return dblpFetch(url, { signal: controller.signal })
     .then((response) => {
       // Never process an error or anti-bot HTML page as if it were BibTeX
       assertDblpData(response);

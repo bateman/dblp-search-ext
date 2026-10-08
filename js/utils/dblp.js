@@ -1,8 +1,84 @@
 /**
  * @file dblp.js
- * @description Helpers for interpreting dblp.org HTTP responses (API search and
- * BibTeX downloads), so failures reach the user with an actionable message.
+ * @description Helpers for requests to dblp.org (API search and BibTeX
+ * downloads): identifying the extension, respecting the rate limit, and
+ * interpreting responses so failures reach the user with an actionable message.
  */
+
+/**
+ * Application name sent to dblp in the `app` query parameter. dblp requires
+ * every API request to carry `app=<app-name>_<version>` to let it through its
+ * anti-bot firewall; keep the name stable so dblp can trace problems to us.
+ * @type {string}
+ */
+export const DBLP_APP_NAME = "dblpSearch";
+
+/**
+ * Minimum delay between two requests to dblp. Its rate limiter punishes
+ * clients sending more than one request per second.
+ * @type {number}
+ */
+const MIN_REQUEST_INTERVAL_MS = 1000;
+
+/** @type {number} Earliest time (ms since epoch) the next request may start */
+let nextRequestSlot = 0;
+
+/**
+ * Returns the extension version from the manifest, for the `app` parameter.
+ * @returns {string} The version, or "unknown" outside an extension context
+ */
+function getExtensionVersion() {
+  const api = globalThis.browser || globalThis.chrome;
+  if (api && api.runtime && typeof api.runtime.getManifest === "function") {
+    return api.runtime.getManifest().version || "unknown";
+  }
+  return "unknown";
+}
+
+/**
+ * Appends the `app=<name>_<version>` parameter that dblp requires.
+ * @param {string} url - A dblp API or BibTeX URL
+ * @returns {string} The URL with the `app` parameter appended
+ */
+export function withAppParam(url) {
+  const separator = url.indexOf("?") === -1 ? "?" : "&";
+  const app = encodeURIComponent(`${DBLP_APP_NAME}_${getExtensionVersion()}`);
+  return `${url}${separator}app=${app}`;
+}
+
+/**
+ * Reserves the next request slot, spacing requests from this context at least
+ * MIN_REQUEST_INTERVAL_MS apart; requests fired in a burst are queued.
+ * @returns {Promise<void>} Resolves when the request may start
+ */
+function waitForRequestSlot() {
+  const now = Date.now();
+  const wait = Math.max(0, nextRequestSlot - now);
+  nextRequestSlot = Math.max(now, nextRequestSlot) + MIN_REQUEST_INTERVAL_MS;
+  if (wait === 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => setTimeout(resolve, wait));
+}
+
+/**
+ * Clears the request spacing state. Intended for unit tests.
+ */
+export function resetRequestThrottle() {
+  nextRequestSlot = 0;
+}
+
+/**
+ * Fetches a dblp URL with the required `app` parameter, at most one request
+ * per second from the calling context.
+ * @param {string} url - A dblp API or BibTeX URL
+ * @param {Object} [options] - fetch() options
+ * @returns {Promise<Response>} The fetch response
+ */
+export async function dblpFetch(url, options) {
+  await waitForRequestSlot();
+  return fetch(withAppParam(url), options);
+}
 
 /**
  * Message shown when dblp answers with its anti-bot challenge page instead of data.

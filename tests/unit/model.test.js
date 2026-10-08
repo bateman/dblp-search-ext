@@ -11,6 +11,7 @@ globalThis.chrome = {
 };
 
 const { PublicationModel } = await import("../../js/model/model.js");
+const { resetRequestThrottle } = await import("../../js/utils/dblp.js");
 
 describe("PublicationModel", () => {
   let model;
@@ -18,6 +19,7 @@ describe("PublicationModel", () => {
   beforeEach(() => {
     model = new PublicationModel();
     vi.restoreAllMocks();
+    resetRequestThrottle();
   });
 
   describe("constructor", () => {
@@ -547,6 +549,24 @@ describe("PublicationModel", () => {
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).toContain("&f=50");
+    });
+
+    it("identifies the extension with the app parameter required by dblp", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await model.searchPublications("test");
+
+      const fetchUrl = globalThis.fetch.mock.calls[0][0];
+      expect(fetchUrl).toMatch(/&app=dblpSearch_[^&]+$/);
     });
 
     it("does not append &f= when offset is 0", async () => {

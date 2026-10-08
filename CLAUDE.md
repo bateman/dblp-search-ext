@@ -53,6 +53,9 @@ The build process swaps manifests automatically. Both must be kept in sync for v
 - `format=json` - Response format
 - `h` - Max results (hits) to return
 - `f` - Offset for pagination
+- `app` - Required by dblp's firewall (Anubis): `app=dblpSearch_<version>`. Without it, requests get an HTML anti-bot page (HTTP 200) instead of data. Also needed on `.bib` downloads.
+
+All requests to dblp go through `dblpFetch()` in `js/utils/dblp.js`, which appends `app` (version read from the manifest) and spaces requests at least 1 s apart — dblp's rate limiter punishes more than one request per second (HTTP 429).
 
 ## Zotero Integration
 

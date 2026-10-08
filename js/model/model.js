@@ -9,7 +9,7 @@
 console.log("model.js loaded");
 const browser = globalThis.browser || chrome;
 
-import { assertDblpData } from "../utils/dblp.js";
+import { assertDblpData, dblpFetch } from "../utils/dblp.js";
 
 /**
  * Model class for managing publication data from DBLP API.
@@ -62,7 +62,7 @@ export class PublicationModel {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const response = await fetch(url, { signal: controller.signal });
+      const response = await dblpFetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       // Throws an "HttpError" on HTTP errors (e.g. 429) and on dblp's anti-bot page
