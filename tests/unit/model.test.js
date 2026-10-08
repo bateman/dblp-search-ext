@@ -11,6 +11,7 @@ globalThis.chrome = {
 };
 
 const { PublicationModel } = await import("../../js/model/model.js");
+const { resetRequestThrottle } = await import("../../js/utils/dblp.js");
 
 describe("PublicationModel", () => {
   let model;
@@ -18,6 +19,7 @@ describe("PublicationModel", () => {
   beforeEach(() => {
     model = new PublicationModel();
     vi.restoreAllMocks();
+    resetRequestThrottle();
   });
 
   describe("constructor", () => {
@@ -403,6 +405,47 @@ describe("PublicationModel", () => {
       expect(notifyFn).toHaveBeenCalledOnce();
     });
 
+    it("reports dblp's anti-bot challenge page instead of a JSON parse error", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      const json = vi.fn();
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => "text/html; charset=utf-8" },
+        json,
+      });
+
+      await model.searchPublications("calefato automl");
+
+      expect(json).not.toHaveBeenCalled();
+      expect(model.status).toBe("Error");
+      expect(model.errorMessage).toContain("anti-bot check");
+      expect(model.publications).toEqual([]);
+    });
+
+    it("reports HTTP 429 as rate limiting", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        statusText: "",
+        headers: { get: (name) => (name === "retry-after" ? "60" : null) },
+      });
+
+      await model.searchPublications("automl");
+
+      expect(model.status).toBe("Error");
+      expect(model.errorMessage).toBe(
+        "dblp is rate-limiting requests (HTTP 429). Wait 60 seconds before trying again."
+      );
+    });
+
     it("handles fetch exceptions", async () => {
       const notifyFn = vi.fn();
       model.subscribe(notifyFn);
@@ -506,6 +549,24 @@ describe("PublicationModel", () => {
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).toContain("&f=50");
+    });
+
+    it("identifies the extension with the app parameter required by dblp", async () => {
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": "0", "@sent": "0" } },
+        }),
+      });
+
+      await model.searchPublications("test");
+
+      const fetchUrl = globalThis.fetch.mock.calls[0][0];
+      expect(fetchUrl).toMatch(/&app=dblpSearch_[^&]+$/);
     });
 
     it("does not append &f= when offset is 0", async () => {

@@ -27,6 +27,7 @@ popup.js ← view.js ← controller.js ← model.js (observer pattern)
 | `js/view/popup.js` | Main UI, BibTeX copying, citation key formatting |
 | `js/view/options.js` | Settings UI, drag-drop citation key builder |
 | `js/view/commons.js` | Shared utilities (status updates) |
+| `js/utils/dblp.js` | Every request to dblp (`dblpFetch()`): origin check, `app` parameter, 1 s spacing, timeout, response checks |
 
 **Message Types** (handled in background.js):
 - `REQUEST_SEARCH_PUBLICATIONS` - Execute search query
@@ -53,6 +54,9 @@ The build process swaps manifests automatically. Both must be kept in sync for v
 - `format=json` - Response format
 - `h` - Max results (hits) to return
 - `f` - Offset for pagination
+- `app` - Required by dblp's firewall (Anubis): `app=dblpSearch_<version>`. Without it, requests get an HTML anti-bot page (HTTP 200) instead of data. Also needed on `.bib` downloads.
+
+All requests to dblp must go through `dblpFetch()` in `js/utils/dblp.js` — never call `fetch()` on dblp directly. It refuses any URL whose origin is not in `DBLP_ALLOWED_ORIGINS` (`https://dblp.org`; the `if (ALLOWLIST.has(...))` form is what Codacy's SSRF rule recognizes as validation), appends `app` (version read from the manifest), spaces requests at least 1 s apart (dblp's rate limiter punishes more than one request per second with HTTP 429), and applies a 10 s timeout that starts after the queue wait and covers reading the body.
 
 ## Zotero Integration
 

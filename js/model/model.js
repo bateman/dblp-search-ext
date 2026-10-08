@@ -9,6 +9,8 @@
 console.log("model.js loaded");
 const browser = globalThis.browser || chrome;
 
+import { assertDblpData, dblpFetch } from "../utils/dblp.js";
+
 /**
  * Model class for managing publication data from DBLP API.
  * Implements the observer pattern to notify controllers of data changes.
@@ -56,28 +58,13 @@ export class PublicationModel {
       url += "&f=" + offset;
     }
     try {
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        // Preserve the HTTP status code/text so the cause reaches the user.
-        // (statusText is often empty on HTTP/2 in Chrome, so include the code.)
-        const detail = response.statusText
-          ? `${response.status} ${response.statusText}`
-          : `${response.status}`;
-        const httpError = new Error(
-          `The dblp API returned an error (HTTP ${detail}).`
-        );
-        httpError.name = "HttpError";
-        throw httpError;
-      }
+      const data = await dblpFetch(url, (response) => {
+        // Throws an "HttpError" on HTTP errors (e.g. 429) and on dblp's anti-bot page
+        assertDblpData(response);
+        return response.json();
+      });
       this.status = "OK";
       this.errorMessage = "";
-      const data = await response.json();
       if (!data || !data.result || !data.result.hits) {
         // Valid HTTP response but not the shape we expect: treat as a parse error
         // (and keep it distinct from a network failure, which also throws TypeError)
