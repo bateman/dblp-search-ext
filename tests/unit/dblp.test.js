@@ -5,7 +5,6 @@ import {
   describeHttpError,
   assertDblpData,
   withAppParam,
-  resolveDblpUrl,
   dblpFetch,
   resetRequestThrottle,
 } from "../../js/utils/dblp.js";
@@ -125,30 +124,6 @@ describe("dblp response helpers", () => {
     });
   });
 
-  describe("resolveDblpUrl", () => {
-    it("keeps dblp URLs and appends the app parameter", () => {
-      expect(resolveDblpUrl("https://dblp.org/search/publ/api?q=a%20b&format=json")).toBe(
-        "https://dblp.org/search/publ/api?q=a%20b&format=json&app=dblpSearch_unknown"
-      );
-      expect(resolveDblpUrl("https://dblp.org/rec/conf/esem/X23.bib?param=1")).toBe(
-        "https://dblp.org/rec/conf/esem/X23.bib?param=1&app=dblpSearch_unknown"
-      );
-    });
-
-    it.each([
-      "https://evil.example/rec/x.bib",
-      "https://dblp.org.evil.example/rec/x.bib",
-      "https://evil.example@dblp.org.evil.example/x.bib",
-      "http://dblp.org/rec/x.bib",
-      "https://dblp.org:8443/rec/x.bib",
-      "javascript:alert(1)",
-      "not a url",
-      "",
-    ])("rejects %j", (url) => {
-      expect(() => resolveDblpUrl(url)).toThrow("outside https://dblp.org");
-    });
-  });
-
   describe("dblpFetch", () => {
     const readText = (response) => response.text();
 
@@ -173,10 +148,17 @@ describe("dblp response helpers", () => {
       );
     });
 
-    it("never fetches a URL outside dblp.org", async () => {
-      await expect(dblpFetch("https://evil.example/x.bib", readText)).rejects.toThrow(
-        "outside https://dblp.org"
-      );
+    it.each([
+      "https://evil.example/rec/x.bib",
+      "https://dblp.org.evil.example/rec/x.bib",
+      "https://dblp.org@evil.example/rec/x.bib",
+      "http://dblp.org/rec/x.bib",
+      "https://dblp.org:8443/rec/x.bib",
+      "javascript:alert(1)",
+      "not a url",
+      "",
+    ])("never fetches a URL outside https://dblp.org: %j", async (url) => {
+      await expect(dblpFetch(url, readText)).rejects.toThrow("outside https://dblp.org");
       expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 

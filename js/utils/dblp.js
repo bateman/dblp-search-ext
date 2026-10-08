@@ -14,10 +14,10 @@
 export const DBLP_APP_NAME = "dblpSearch";
 
 /**
- * The only origin dblpFetch() will contact.
- * @type {string}
+ * Allowlist of origins dblpFetch() will contact.
+ * @type {Set<string>}
  */
-const DBLP_ORIGIN = "https://dblp.org";
+const DBLP_ALLOWED_ORIGINS = new Set(["https://dblp.org"]);
 
 /**
  * Milliseconds before a dblp request (including reading its body) is aborted.
@@ -81,48 +81,44 @@ export function resetRequestThrottle() {
 }
 
 /**
- * Validates that a URL points to dblp.org over HTTPS and rebuilds it on the
- * fixed dblp origin with the `app` parameter, so no other host is ever fetched
- * (URLs may come from dblp API responses or persisted storage).
- * @param {string} url - A dblp API or BibTeX URL
- * @returns {string} The URL to fetch
- * @throws {Error} If the URL is malformed or not on https://dblp.org
+ * Returns the origin of a URL (e.g. "https://dblp.org").
+ * @param {string} url - The URL to inspect
+ * @returns {string} The origin, or "" if the URL is malformed
  */
-export function resolveDblpUrl(url) {
-  let parsed = null;
+function getUrlOrigin(url) {
   try {
-    parsed = new URL(url);
+    return new URL(url).origin;
   } catch {
-    parsed = null;
+    return "";
   }
-  if (!parsed || parsed.origin !== DBLP_ORIGIN) {
-    throw new Error("Refusing to fetch a URL outside https://dblp.org.");
-  }
-  return withAppParam(DBLP_ORIGIN + parsed.pathname + parsed.search);
 }
 
 /**
  * Fetches a dblp URL with the required `app` parameter, at most one request
  * per second from the calling context, and a timeout that starts once the
- * request leaves the queue and also covers reading the body.
+ * request leaves the queue and also covers reading the body. URLs outside
+ * https://dblp.org are refused: they may come from dblp API responses or
+ * persisted storage.
  * @param {string} url - A dblp API or BibTeX URL
  * @param {function(Response): *} readResponse - Checks the response and reads
  *   its body (e.g. `response.json()`); its result is returned
  * @returns {Promise<*>} The value produced by readResponse
- * @throws {Error} "AbortError" on timeout; errors from URL validation,
- *   fetch(), or readResponse
+ * @throws {Error} If the URL is not on https://dblp.org; "AbortError" on
+ *   timeout; errors from fetch() or readResponse
  */
 export async function dblpFetch(url, readResponse) {
-  const target = resolveDblpUrl(url);
-  await waitForRequestSlot();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DBLP_FETCH_TIMEOUT_MS);
-  try {
-    const response = await fetch(target, { signal: controller.signal });
-    return await readResponse(response);
-  } finally {
-    clearTimeout(timeoutId);
+  if (DBLP_ALLOWED_ORIGINS.has(getUrlOrigin(url))) {
+    await waitForRequestSlot();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DBLP_FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(withAppParam(url), { signal: controller.signal });
+      return await readResponse(response);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
+  throw new Error("Refusing to fetch a URL outside https://dblp.org.");
 }
 
 /**
