@@ -1600,15 +1600,11 @@ function processBibtexData(rawData, options) {
  * @returns {Promise<{data: string, citationKey: string|null}>} Processed result
  */
 function fetchAndProcessBibtex(url) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-  return dblpFetch(url, { signal: controller.signal })
-    .then((response) => {
-      // Never process an error or anti-bot HTML page as if it were BibTeX
-      assertDblpData(response);
-      return response.text();
-    })
+  return dblpFetch(url, (response) => {
+    // Never process an error or anti-bot HTML page as if it were BibTeX
+    assertDblpData(response);
+    return response.text();
+  })
     .then(
       (data) =>
         new Promise((resolve, reject) => {
@@ -1632,8 +1628,7 @@ function fetchAndProcessBibtex(url) {
             }
           );
         })
-    )
-    .finally(() => clearTimeout(timeoutId));
+    );
 }
 
 /**

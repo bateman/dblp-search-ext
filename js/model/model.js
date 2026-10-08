@@ -58,18 +58,13 @@ export class PublicationModel {
       url += "&f=" + offset;
     }
     try {
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      const response = await dblpFetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      // Throws an "HttpError" on HTTP errors (e.g. 429) and on dblp's anti-bot page
-      assertDblpData(response);
+      const data = await dblpFetch(url, (response) => {
+        // Throws an "HttpError" on HTTP errors (e.g. 429) and on dblp's anti-bot page
+        assertDblpData(response);
+        return response.json();
+      });
       this.status = "OK";
       this.errorMessage = "";
-      const data = await response.json();
       if (!data || !data.result || !data.result.hits) {
         // Valid HTTP response but not the shape we expect: treat as a parse error
         // (and keep it distinct from a network failure, which also throws TypeError)
