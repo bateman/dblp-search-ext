@@ -354,7 +354,7 @@ function displaySearchResult(message) {
     excludedCount,
     currentOffset
   );
-  updatePublicationsCount(responseStatus, totalHits, errorMessage);
+  updatePublicationsCount(responseStatus, totalHits, errorMessage, sentHits, excludedCount);
   console.log("Popup.js updating publications table.");
   buildAndDisplayTable(publications);
   updatePaginationControls(totalHits, sentHits, currentOffset, excludedCount);
@@ -416,15 +416,38 @@ function requestClearResults(clearTitle = true) {
 }
 
 /**
+ * Describes the CoRR abs (arXiv) entries hidden from the results, so the
+ * count line explains why fewer rows are shown than were found. The model
+ * only counts them in the current response, hence "on this page" when the
+ * results span several pages.
+ * @param {number} totalHits - Total number of matching publications
+ * @param {number} sentHits - Number of publications in the current response
+ * @param {number} excludedCount - CoRR abs entries hidden from the current response
+ * @returns {string} e.g. " (3 CoRR abs entries hidden)", or "" when none
+ */
+function describeHiddenEntries(totalHits, sentHits, excludedCount) {
+  if (excludedCount <= 0) {
+    return "";
+  }
+  const entries = excludedCount === 1 ? "entry" : "entries";
+  const where = totalHits > sentHits ? " on this page" : "";
+  return ` (${excludedCount} CoRR abs ${entries} hidden${where})`;
+}
+
+/**
  * Updates the publication count display in the UI
  * @param {string} responseStatus - HTTP response status or "RESET"
  * @param {number} totalHits - Total number of matching publications
  * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
+ * @param {number} [sentHits=0] - Number of publications in the current response
+ * @param {number} [excludedCount=0] - CoRR abs entries hidden from the current response
  */
 function updatePublicationsCount(
   responseStatus,
   totalHits,
-  errorMessage = ""
+  errorMessage = "",
+  sentHits = 0,
+  excludedCount = 0
 ) {
   const count = document.getElementById("count");
   if (count) {
@@ -436,7 +459,8 @@ function updatePublicationsCount(
       message = errorMessage || `Query failed (${responseStatus}).`;
       count.classList.add("error");
     } else {
-      message = `Query ${responseStatus}: found ${totalHits}`;
+      message = `Query ${responseStatus}: found ${totalHits}` +
+        describeHiddenEntries(totalHits, sentHits, excludedCount);
       count.classList.remove("error");
     }
     count.textContent = message;
@@ -1017,7 +1041,13 @@ function restoreResultsFromStorage() {
         return;
       }
 
-      updatePublicationsCount(searchData.status, searchData.totalHits);
+      updatePublicationsCount(
+        searchData.status,
+        searchData.totalHits,
+        "",
+        searchData.sentHits,
+        searchData.excludedCount
+      );
       buildAndDisplayTable(searchData.publications);
       updatePaginationControls(
         searchData.totalHits,
