@@ -120,6 +120,10 @@ describe("PublicationModel", () => {
       const authorsInfo = { author: { text: "Regular Author" } };
       expect(model.extractAuthors(authorsInfo)).toEqual(["Regular Author"]);
     });
+
+    it("returns an empty list for entries without authors", () => {
+      expect(model.extractAuthors(undefined)).toEqual([]);
+    });
   });
 
   describe("constructVenue", () => {
@@ -268,6 +272,26 @@ describe("PublicationModel", () => {
       expect(result.publications).toHaveLength(1);
       expect(result.excludedCount).toBe(1);
       expect(result.publications[0].title).toBe("Regular Paper");
+    });
+
+    it("keeps entries without an authors field", () => {
+      const pubsInfo = [
+        {
+          info: {
+            key: "journals/ijhac/X26",
+            type: "Journal Articles",
+            title: "Front matter.",
+            url: "https://dblp.org/rec/journals/ijhac/X26",
+            year: "2026",
+            venue: "Int. J. Humanit. Arts Comput.",
+            access: "closed",
+          },
+        },
+      ];
+
+      const result = model.parsePublications(pubsInfo);
+      expect(result.publications).toHaveLength(1);
+      expect(result.publications[0].authors).toEqual([]);
     });
 
     it("returns empty results for empty input array", () => {

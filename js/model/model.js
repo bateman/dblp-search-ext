@@ -200,6 +200,10 @@ export class PublicationModel {
   extractAuthors(authorsInfo) {
     // Fix: dblp api sometimes returns '000n' next to authors' names
     const authors = [];
+    // Some entries (e.g. front matter, editorials) have no authors field
+    if (!authorsInfo || !authorsInfo.author) {
+      return authors;
+    }
     const regex = / 000\d+$/; // Matches ' 000' followed by one or more digits at the end of the string
     if (authorsInfo.author.length === undefined) {
       authors.push(authorsInfo.author.text.replace(regex, ""));
