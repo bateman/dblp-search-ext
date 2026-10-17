@@ -21,17 +21,21 @@ const browser = window.msBrowser || window.browser || window.chrome;
 // Track currently selected row for keyboard navigation
 let selectedRowIndex = -1;
 
+// Publication types in filter-menu order, with their filter label and color
+const PUB_TYPES = [
+  { type: "article", label: "Article", color: "#c32b72" },
+  { type: "inproceedings", label: "Conf", color: "#196ca3" },
+  { type: "book", label: "Book", color: "#f8c91f" },
+  { type: "incollection", label: "Chapter", color: "#ef942d" },
+  { type: "editor", label: "Editor", color: "#33c3ba" },
+  { type: "misc", label: "Misc", color: "#606b70" },
+  { type: "refwork", label: "Ref", color: "#96ad2d" }
+];
+
 // Track current sort and filter settings
 let currentSort = { field: "none", direction: "asc" };
-let currentFilters = {
-  article: true,
-  inproceedings: true,
-  book: true,
-  incollection: true,
-  editor: true,
-  misc: true,
-  refwork: true
-};
+// Publication types unchecked in the type filter (empty = show all)
+const hiddenTypes = new Set();
 
 // Store original publications for filtering/sorting
 let originalPublications = [];
@@ -392,15 +396,7 @@ function requestSearchDblp(q, offset = 0) {
  */
 function resetFiltersAndSort() {
   currentSort = { field: "none", direction: "asc" };
-  currentFilters = {
-    article: true,
-    inproceedings: true,
-    book: true,
-    incollection: true,
-    editor: true,
-    misc: true,
-    refwork: true
-  };
+  hiddenTypes.clear();
   originalPublications = [];
   keepFilterDropdownOpen = false;
 }
@@ -467,8 +463,7 @@ function clearResultsTable() {
 function createTypeCell(type) {
   const cell = document.createElement("td");
   const img = document.createElement("img");
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
-  const safeType = validTypes.includes(type) ? type : "misc";
+  const safeType = normalizeType(type);
   img.className = safeType;
   img.title = safeType;
   img.src = "../images/pub-type.png";
@@ -634,29 +629,12 @@ function createPublicationRow(result, index) {
 }
 
 /**
- * Safely checks if a publication type is enabled in filters
+ * Maps a publication type to a known type, treating unknown ones as "misc"
  * @param {string} type - The publication type
- * @returns {boolean} True if the type is enabled
+ * @returns {string} A type listed in PUB_TYPES
  */
-function isTypeFilterEnabled(type) {
-  switch (type) {
-    case "article":
-      return currentFilters.article !== false;
-    case "inproceedings":
-      return currentFilters.inproceedings !== false;
-    case "book":
-      return currentFilters.book !== false;
-    case "incollection":
-      return currentFilters.incollection !== false;
-    case "editor":
-      return currentFilters.editor !== false;
-    case "misc":
-      return currentFilters.misc !== false;
-    case "refwork":
-      return currentFilters.refwork !== false;
-    default:
-      return true;
-  }
+function normalizeType(type) {
+  return PUB_TYPES.some((t) => t.type === type) ? type : "misc";
 }
 
 /**
@@ -708,10 +686,8 @@ function applyFiltersAndSort(publications) {
   }
 
   // Apply filters
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
   let filtered = publications.filter(function(pub) {
-    const type = validTypes.includes(pub.type) ? pub.type : "misc";
-    return isTypeFilterEnabled(type);
+    return !hiddenTypes.has(normalizeType(pub.type));
   });
 
   // Apply sorting
@@ -791,17 +767,6 @@ function createSortableHeader(text, field) {
 }
 
 /**
- * Checks if any filters are active (not all selected)
- * @returns {boolean} True if filtering is active
- */
-function hasActiveFilters() {
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
-  return validTypes.some(function(type) {
-    return !isTypeFilterEnabled(type);
-  });
-}
-
-/**
  * Creates the type column header with filter dropdown
  * @returns {HTMLTableCellElement} The header cell with filter
  */
@@ -814,7 +779,7 @@ function createTypeFilterHeader() {
   wrapper.className = "filter-header-wrapper";
 
   const filterBtn = document.createElement("button");
-  filterBtn.className = "filter-btn" + (hasActiveFilters() ? " active" : "");
+  filterBtn.className = "filter-btn" + (hiddenTypes.size > 0 ? " active" : "");
   filterBtn.title = "Filter by type";
   filterBtn.textContent = "\u25BC"; // ▼
 
@@ -822,28 +787,22 @@ function createTypeFilterHeader() {
   dropdown.className = "filter-dropdown" + (keepFilterDropdownOpen ? " show" : "");
   keepFilterDropdownOpen = false;
 
-  const filterTypes = [
-    { type: "article", label: "Article", color: "#c32b72" },
-    { type: "inproceedings", label: "Conf", color: "#196ca3" },
-    { type: "book", label: "Book", color: "#f8c91f" },
-    { type: "incollection", label: "Chapter", color: "#ef942d" },
-    { type: "editor", label: "Editor", color: "#33c3ba" },
-    { type: "misc", label: "Misc", color: "#606b70" },
-    { type: "refwork", label: "Ref", color: "#96ad2d" }
-  ];
-
-  filterTypes.forEach(function(ft) {
+  PUB_TYPES.forEach(function(ft) {
     const item = document.createElement("label");
     item.className = "filter-dropdown-item";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.type = ft.type;
-    checkbox.checked = currentFilters[ft.type] !== false;
+    checkbox.checked = !hiddenTypes.has(ft.type);
 
     checkbox.addEventListener("change", function(e) {
       e.stopPropagation();
-      currentFilters[this.dataset.type] = this.checked;
+      if (this.checked) {
+        hiddenTypes.delete(ft.type);
+      } else {
+        hiddenTypes.add(ft.type);
+      }
       keepFilterDropdownOpen = true;
       rebuildTableWithFilters();
     });
