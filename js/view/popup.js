@@ -1132,7 +1132,7 @@ function addCopyBibtexButtonEventListener() {
   document.querySelectorAll(".copyBibtexButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.copyBibtexToClipboard(url);
+      window.copyBibtexToClipboard(url, this);
     });
   });
 }
@@ -1144,7 +1144,7 @@ function addDownloadBibtexButtonEventListener() {
   document.querySelectorAll(".downloadBibtexButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.downloadBibtex(url);
+      window.downloadBibtex(url, this);
     });
   });
 }
@@ -1156,7 +1156,7 @@ function addSaveZoteroButtonEventListener() {
   document.querySelectorAll(".saveZoteroButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.saveBibtexToZotero(url);
+      window.saveBibtexToZotero(url, this);
     });
   });
 }
@@ -1238,7 +1238,7 @@ function selectRow(index) {
 function copySelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.copyBibtexToClipboard(bibtexUrl);
+    window.copyBibtexToClipboard(bibtexUrl, row.querySelector(".copyBibtexButton"));
   }
 }
 
@@ -1249,7 +1249,7 @@ function copySelectedRowBibtex(row) {
 function downloadSelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.downloadBibtex(bibtexUrl);
+    window.downloadBibtex(bibtexUrl, row.querySelector(".downloadBibtexButton"));
   }
 }
 
@@ -1263,7 +1263,7 @@ function saveSelectedRowZotero(row) {
   }
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.saveBibtexToZotero(bibtexUrl);
+    window.saveBibtexToZotero(bibtexUrl, row.querySelector(".saveZoteroButton"));
   } else {
     updateStatus("No BibTeX available", 2000);
   }
@@ -1490,6 +1490,47 @@ document.addEventListener("contextmenu", function (event) {
 
 
 // =====================================
+// Action Button Feedback
+// =====================================
+
+/**
+ * Marks a copy/download/Zotero button as working: its icon pulses until
+ * finishButtonFeedback() is called. The button may be null (none visible)
+ * or detached by a table rebuild meanwhile; both are harmless.
+ * @param {HTMLButtonElement|null} button - The action button
+ */
+function startButtonFeedback(button) {
+  if (button) {
+    button.classList.remove("action-done");
+    button.classList.add("action-busy");
+  }
+}
+
+/**
+ * Stops the working pulse and, when the action succeeded, plays a short
+ * green flash. Failures only stop the pulse: the status line explains them.
+ * @param {HTMLButtonElement|null} button - The action button
+ * @param {boolean} succeeded - Whether the action succeeded
+ */
+function finishButtonFeedback(button, succeeded) {
+  if (!button) {
+    return;
+  }
+  button.classList.remove("action-busy");
+  if (!succeeded) {
+    return;
+  }
+  button.classList.add("action-done");
+  button.addEventListener("animationend", function onDone(event) {
+    // Ignore animations of child elements, which also bubble up here
+    if (event.target === button) {
+      button.classList.remove("action-done");
+      button.removeEventListener("animationend", onDone);
+    }
+  });
+}
+
+// =====================================
 // Copy BibTeX Functions
 // =====================================
 
@@ -1580,15 +1621,25 @@ function handleBibtexError(err) {
 /**
  * Fetches BibTeX from URL, applies user options, and copies to clipboard
  * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Copy button to animate
  */
-window.copyBibtexToClipboard = function (url) {
+window.copyBibtexToClipboard = function (url, button) {
+  startButtonFeedback(button);
   fetchAndProcessBibtex(url)
-    .then(({ data }) => {
-      navigator.clipboard.writeText(data).catch(function (err) {
-        console.error("Could not copy BibTeX to clipboard: ", err);
-      });
-    })
-    .catch(handleBibtexError);
+    .then(({ data }) =>
+      navigator.clipboard.writeText(data).then(
+        () => finishButtonFeedback(button, true),
+        (err) => {
+          console.error("Could not copy BibTeX to clipboard: ", err);
+          updateStatus("Error: Could not copy BibTeX to the clipboard", 3000);
+          finishButtonFeedback(button, false);
+        }
+      )
+    )
+    .catch((err) => {
+      finishButtonFeedback(button, false);
+      handleBibtexError(err);
+    });
 };
 
 /**
@@ -1605,19 +1656,24 @@ function revokeBlobUrlLater(blobUrl) {
  * owned by the browser, so it survives the popup closing.
  * @param {string} blobUrl - Object URL of the blob to save
  * @param {string} filename - Suggested filename
+ * @returns {Promise<boolean>} Whether the browser accepted the download
  */
 function downloadViaApi(blobUrl, filename) {
-  Promise.resolve(
+  return Promise.resolve(
     browser.downloads.download({
       url: blobUrl,
       filename: filename,
       saveAs: false,
     })
   )
-    .catch((err) => {
-      console.error("Could not download BibTeX: ", err);
-      updateStatus("Error: Could not download BibTeX", 3000);
-    })
+    .then(
+      () => true,
+      (err) => {
+        console.error("Could not download BibTeX: ", err);
+        updateStatus("Error: Could not download BibTeX", 3000);
+        return false;
+      }
+    )
     .finally(() => revokeBlobUrlLater(blobUrl));
 }
 
@@ -1641,8 +1697,10 @@ function downloadViaAnchor(blobUrl, filename) {
  * Fetches BibTeX from URL, applies user options, and downloads it as a .bib
  * file named after the citation key.
  * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Download button to animate
  */
-window.downloadBibtex = function (url) {
+window.downloadBibtex = function (url, button) {
+  startButtonFeedback(button);
   fetchAndProcessBibtex(url)
     .then(({ data, citationKey }) => {
       const filename = buildBibtexFilename(citationKey);
@@ -1652,12 +1710,16 @@ window.downloadBibtex = function (url) {
       // Prefer the downloads API where available (Chrome, Edge, Firefox); fall
       // back to an anchor click on Safari, which does not implement it.
       if (browser.downloads && typeof browser.downloads.download === "function") {
-        downloadViaApi(blobUrl, filename);
-      } else {
-        downloadViaAnchor(blobUrl, filename);
+        return downloadViaApi(blobUrl, filename);
       }
+      downloadViaAnchor(blobUrl, filename);
+      return true;
     })
-    .catch(handleBibtexError);
+    .then((saved) => finishButtonFeedback(button, saved))
+    .catch((err) => {
+      finishButtonFeedback(button, false);
+      handleBibtexError(err);
+    });
 };
 
 // =====================================
@@ -1770,11 +1832,6 @@ function requestBackgroundZoteroSave(bibtex, zoteroOptions) {
 }
 
 /**
- * Fetches BibTeX from URL, applies user options, and imports the entry into
- * the Zotero desktop app via its local connector server.
- * @param {string} url - URL to fetch BibTeX from
- */
-/**
  * Reports a permission request that did not end in "granted". When the
  * prompt itself failed on a correctly registered manifest (some browsers
  * cannot anchor the prompt to the popup), the Options page — a regular tab
@@ -1796,11 +1853,20 @@ function handleZoteroPermissionFailure(permission) {
   }
 }
 
-window.saveBibtexToZotero = function (url) {
+/**
+ * Fetches BibTeX from URL, applies user options, and has the background
+ * script import it into Zotero. The permission request comes first, while
+ * still inside the click or key handler, as Firefox requires.
+ * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Save to Zotero button to animate
+ */
+window.saveBibtexToZotero = function (url, button) {
   if (zoteroSaveInFlight) {
     return;
   }
   zoteroSaveInFlight = true;
+  startButtonFeedback(button);
+  let saved = false;
   // The permission prompt can stay open while the user reads it; keep a
   // persistent status so the pending state is visible (replaced as soon as
   // the request settles)
@@ -1817,11 +1883,15 @@ window.saveBibtexToZotero = function (url) {
         .then(([processed, zoteroOptions]) =>
           requestBackgroundZoteroSave(processed.data, zoteroOptions)
         )
-        .then((result) => updateStatus(result.message, result.ok ? 3000 : 6000))
+        .then((result) => {
+          saved = result.ok;
+          updateStatus(result.message, result.ok ? 3000 : 6000);
+        })
         .catch(handleBibtexError);
     })
     .finally(function () {
       zoteroSaveInFlight = false;
+      finishButtonFeedback(button, saved);
     });
 };
 
