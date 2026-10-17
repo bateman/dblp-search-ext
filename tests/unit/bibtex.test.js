@@ -10,6 +10,8 @@ import {
   cleanBibtexMetadata,
   removeUrlFromBibtex,
   buildBibtexFilename,
+  resolveCitationKeyFields,
+  processBibtexData,
 } from "../../js/utils/bibtex.js";
 
 describe("extractAuthorFromKey", () => {
@@ -391,5 +393,119 @@ describe("buildBibtexFilename", () => {
   it("does not collapse repeated unsafe characters", () => {
     // Each unsafe char maps to one underscore (no collapsing).
     expect(buildBibtexFilename("a///b")).toBe("a___b.bib");
+  });
+});
+
+// Entry as served by https://dblp.org/rec/conf/msr/WangMG15.bib?param=1
+const DBLP_ENTRY = `@inproceedings{DBLP:conf/msr/WangMG15,
+  author       = {Wei Wang and
+                  Haroon Malik and
+                  Michael W. Godfrey},
+  editor       = {Massimiliano Di Penta and
+                  Martin Pinzger and
+                  Romain Robbes},
+  title        = {Recommending Posts concerning {API} Issues in Developer Q{\\&}A Sites},
+  booktitle    = {12th {IEEE/ACM} Working Conference on Mining Software Repositories,
+                  {MSR} 2015, Florence, Italy, May 16-17, 2015},
+  pages        = {224--234},
+  publisher    = {{IEEE} Computer Society},
+  year         = {2015},
+  url          = {https://doi.org/10.1109/MSR.2015.28},
+  doi          = {10.1109/MSR.2015.28},
+  timestamp    = {Thu, 23 Mar 2023 23:57:40 +0100},
+  biburl       = {https://dblp.org/rec/conf/msr/WangMG15.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+`;
+
+// Same defaults as popup.js reads from storage
+const DEFAULT_OPTIONS = {
+  keyRenaming: true,
+  citationKeyFields: ["author", "year", "venue"],
+  authorCapitalize: false,
+  venueUppercase: false,
+  removeTimestampBiburlBibsource: true,
+  removeUrl: false,
+};
+
+describe("resolveCitationKeyFields", () => {
+  it("returns the stored fields", () => {
+    expect(resolveCitationKeyFields({ citationKeyFields: ["title", "dash", "year"] }))
+      .toEqual(["title", "dash", "year"]);
+  });
+
+  it("migrates the old dash-separated pattern", () => {
+    expect(resolveCitationKeyFields({ citationKeyPattern: "venue-year" }))
+      .toEqual(["venue", "year"]);
+  });
+
+  it("falls back to author, year, venue when nothing is stored", () => {
+    expect(resolveCitationKeyFields({})).toEqual(["author", "year", "venue"]);
+    expect(resolveCitationKeyFields({ citationKeyFields: [] })).toEqual(["author", "year", "venue"]);
+  });
+});
+
+describe("processBibtexData", () => {
+  it("renames the key and removes dblp metadata with the default options", () => {
+    const result = processBibtexData(DBLP_ENTRY, DEFAULT_OPTIONS);
+
+    expect(result.citationKey).toBe("wang2015msr");
+    expect(result.data).toBe(`@inproceedings{wang2015msr,
+  author       = {Wei Wang and
+                  Haroon Malik and
+                  Michael W. Godfrey},
+  editor       = {Massimiliano Di Penta and
+                  Martin Pinzger and
+                  Romain Robbes},
+  title        = {Recommending Posts concerning {API} Issues in Developer Q{\\&}A Sites},
+  booktitle    = {12th {IEEE/ACM} Working Conference on Mining Software Repositories,
+                  {MSR} 2015, Florence, Italy, May 16-17, 2015},
+  pages        = {224--234},
+  publisher    = {{IEEE} Computer Society},
+  year         = {2015},
+  url          = {https://doi.org/10.1109/MSR.2015.28},
+  doi          = {10.1109/MSR.2015.28}
+}`);
+  });
+
+  it("applies the field order and casing options", () => {
+    const result = processBibtexData(DBLP_ENTRY, {
+      ...DEFAULT_OPTIONS,
+      citationKeyFields: ["venue", "underscore", "author", "year", "dash", "title"],
+      authorCapitalize: true,
+      venueUppercase: true,
+    });
+
+    expect(result.citationKey).toBe("MSR_Wang2015-recommending");
+    expect(result.data.startsWith("@inproceedings{MSR_Wang2015-recommending,\n")).toBe(true);
+  });
+
+  it("leaves the entry untouched when every option is off", () => {
+    const result = processBibtexData(DBLP_ENTRY, {
+      keyRenaming: false,
+      removeTimestampBiburlBibsource: false,
+      removeUrl: false,
+    });
+
+    expect(result.data).toBe(DBLP_ENTRY);
+    expect(result.citationKey).toBe("DBLP:conf/msr/WangMG15");
+  });
+
+  it("removes the url field when asked", () => {
+    const result = processBibtexData(DBLP_ENTRY, { ...DEFAULT_OPTIONS, removeUrl: true });
+
+    expect(result.data).not.toContain("url ");
+    expect(result.data).toContain("doi          = {10.1109/MSR.2015.28}");
+  });
+
+  it("rejects an entry without a dblp key when renaming", () => {
+    expect(() => processBibtexData("@misc{other,\n  year = {2015},\n}", DEFAULT_OPTIONS))
+      .toThrow("Invalid BibTeX format");
+  });
+
+  it("rejects an entry without a year when renaming", () => {
+    const noYear = DBLP_ENTRY.replace("  year         = {2015},\n", "");
+    expect(() => processBibtexData(noYear, DEFAULT_OPTIONS))
+      .toThrow("Invalid BibTeX format (missing year)");
   });
 });

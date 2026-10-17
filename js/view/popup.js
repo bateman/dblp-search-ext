@@ -6,16 +6,7 @@
 
 import { updateStatus, clearStatus } from "./commons.js";
 import { isValidURL, parseSearchWithDefaults } from "../utils/validation.js";
-import {
-  extractAuthorFromKey,
-  extractVenueFromKey,
-  extractYearFromBibtex,
-  extractFirstTitleWord,
-  buildCitationKey,
-  cleanBibtexMetadata,
-  removeUrlFromBibtex,
-  buildBibtexFilename,
-} from "../utils/bibtex.js";
+import { processBibtexData, buildBibtexFilename } from "../utils/bibtex.js";
 import {
   isValidZoteroTargetId,
   isZoteroPermissionDeclared,
@@ -1535,86 +1526,6 @@ document.addEventListener("contextmenu", function (event) {
 // =====================================
 // Copy BibTeX Functions
 // =====================================
-
-/**
- * Resolves the citation key fields from user options, handling migration from
- * the old pattern format and falling back to a default.
- * @param {Object} options - User options from storage
- * @returns {string[]} The ordered citation key fields
- */
-function resolveCitationKeyFields(options) {
-  let citationKeyFields = options.citationKeyFields;
-  // Handle migration from old format
-  if (!citationKeyFields && options.citationKeyPattern) {
-    citationKeyFields = options.citationKeyPattern.split("-");
-  }
-  if (!citationKeyFields || citationKeyFields.length === 0) {
-    citationKeyFields = ["author", "year", "venue"];
-  }
-  return citationKeyFields;
-}
-
-/**
- * Renames the DBLP citation key in a BibTeX entry using the user's preferences.
- * @param {string} data - BibTeX entry string
- * @param {RegExpMatchArray|null} keyMatch - Match of the DBLP key in the entry
- * @param {Object} options - User options from storage
- * @returns {{data: string, citationKey: string}} Entry and new key
- * @throws {Error} When the BibTeX format is invalid (missing key or year)
- */
-function renameCitationKey(data, keyMatch, options) {
-  if (!keyMatch || keyMatch.length < 1) {
-    throw new Error("Invalid BibTeX format");
-  }
-  const key = keyMatch[0];
-  const year = extractYearFromBibtex(data);
-  if (!year) {
-    throw new Error("Invalid BibTeX format (missing year)");
-  }
-  const newCitationKey = buildCitationKey(
-    resolveCitationKeyFields(options),
-    extractAuthorFromKey(key),
-    year,
-    extractVenueFromKey(key),
-    extractFirstTitleWord(data),
-    options.authorCapitalize,
-    options.venueUppercase
-  );
-  return {
-    data: data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ","),
-    citationKey: newCitationKey,
-  };
-}
-
-/**
- * Applies the user's BibTeX options (key renaming, metadata cleanup) to raw
- * BibTeX text and returns both the processed text and its citation key.
- * @param {string} rawData - Raw BibTeX fetched from DBLP
- * @param {Object} options - User options from storage
- * @returns {{data: string, citationKey: string|null}} Processed result
- * @throws {Error} When the BibTeX format is invalid and renaming is requested
- */
-function processBibtexData(rawData, options) {
-  let data = rawData;
-  const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
-  let citationKey = keyMatch ? keyMatch[1] : null;
-
-  if (options.keyRenaming) {
-    const renamed = renameCitationKey(data, keyMatch, options);
-    data = renamed.data;
-    citationKey = renamed.citationKey;
-  }
-
-  if (options.removeTimestampBiburlBibsource) {
-    data = cleanBibtexMetadata(data);
-  }
-
-  if (options.removeUrl) {
-    data = removeUrlFromBibtex(data);
-  }
-
-  return { data, citationKey };
-}
 
 /**
  * Fetches BibTeX from URL and applies the user's processing options.
