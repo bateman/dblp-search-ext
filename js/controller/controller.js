@@ -1,14 +1,13 @@
 /**
  * @file controller.js
  * @description Controller component for the MVC architecture. Routes between
- * model and views, handling user actions and data updates.
+ * model and view: runs searches on the model and has the view build the response.
  */
 
 console.log("controller.js loaded");
 
 /**
  * Controller class for managing communication between PublicationModel and PublicationView.
- * Subscribes to model changes and updates the view accordingly.
  * @class
  */
 export class PublicationController {
@@ -23,39 +22,20 @@ export class PublicationController {
     this.model = model;
     /** @type {PublicationView} */
     this.view = view;
-
-    // Subscribe to model changes and update view
-    this.model.subscribe(() => {
-      console.log(
-        "Controller received notification from model to update the view: ",
-        this.model.status,
-        this.model.totalHits,
-        this.model.sentHits,
-        this.model.excludedCount,
-        this.model.currentOffset
-      );
-      this.view.setCurrentOffset(this.model.currentOffset);
-      this.view.update(
-        this.model.status,
-        this.model.publications,
-        this.model.totalHits,
-        this.model.sentHits,
-        this.model.excludedCount,
-        this.model.errorMessage
-      );
-    });
   }
 
   /**
-   * Handles a search request by delegating to the model
+   * Handles a search request: runs it on the model, then has the view build
+   * the response for the popup that asked
    * @async
    * @param {string} query - The search query string
    * @param {number} [offset=0] - Pagination offset
-   * @returns {Promise<void>}
+   * @returns {Promise<Object>} The response message for popup.js
    */
   async handleSearch(query, offset = 0) {
     console.log(`Controller received query: ${query} (offset: ${offset})`);
-    await this.model.searchPublications(query, offset);
+    const result = await this.model.searchPublications(query, offset);
+    return this.view.render(result);
   }
 
   /**
@@ -64,11 +44,11 @@ export class PublicationController {
    * @param {string} query - The search query string
    * @param {number} currentOffset - Current pagination offset
    * @param {number} maxResults - Number of results per page
-   * @returns {Promise<void>}
+   * @returns {Promise<Object>} The response message for popup.js
    */
   async handleNextPage(query, currentOffset, maxResults) {
     const nextOffset = currentOffset + maxResults;
-    await this.handleSearch(query, nextOffset);
+    return this.handleSearch(query, nextOffset);
   }
 
   /**
@@ -77,10 +57,10 @@ export class PublicationController {
    * @param {string} query - The search query string
    * @param {number} currentOffset - Current pagination offset
    * @param {number} maxResults - Number of results per page
-   * @returns {Promise<void>}
+   * @returns {Promise<Object>} The response message for popup.js
    */
   async handlePreviousPage(query, currentOffset, maxResults) {
     const previousOffset = Math.max(0, currentOffset - maxResults);
-    await this.handleSearch(query, previousOffset);
+    return this.handleSearch(query, previousOffset);
   }
 }

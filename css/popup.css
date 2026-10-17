@@ -57,6 +57,49 @@ button.saveZoteroButton:active {
     /* Reduce the opacity when clicked */
 }
 
+/* Feedback on the copy/download/Zotero buttons (also for the C/D/Z keys):
+   the icon pulses while the action runs, then the button pops and flashes
+   green once it succeeded */
+button.action-busy img {
+    animation: action-busy 0.9s ease-in-out infinite;
+}
+
+button.action-done {
+    border-radius: 4px;
+    animation: action-done 0.7s ease-out;
+}
+
+@keyframes action-busy {
+    50% {
+        opacity: 0.3;
+    }
+}
+
+@keyframes action-done {
+    30% {
+        transform: scale(1.3);
+        background-color: #b9ebc6;
+    }
+}
+
+/* Without motion: keep the color flash (its end also clears the class) */
+@keyframes action-done-still {
+    30% {
+        background-color: #b9ebc6;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    button.action-busy img {
+        animation: none;
+        opacity: 0.4;
+    }
+
+    button.action-done {
+        animation-name: action-done-still;
+    }
+}
+
 #status {
     color: #0a4da5;
     font-weight: bold;

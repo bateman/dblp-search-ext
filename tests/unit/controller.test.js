@@ -5,23 +5,16 @@ describe("PublicationController", () => {
   let controller;
   let mockModel;
   let mockView;
+  const searchResult = { status: "OK", publications: [], currentOffset: 0 };
+  const responseMessage = { type: "RESPONSE_SEARCH_PUBLICATIONS" };
 
   beforeEach(() => {
     mockModel = {
-      subscribe: vi.fn(),
-      searchPublications: vi.fn().mockResolvedValue(undefined),
-      status: "OK",
-      publications: [],
-      totalHits: 0,
-      sentHits: 0,
-      excludedCount: 0,
-      errorMessage: "",
-      currentOffset: 0,
+      searchPublications: vi.fn().mockResolvedValue(searchResult),
     };
 
     mockView = {
-      setCurrentOffset: vi.fn(),
-      update: vi.fn(),
+      render: vi.fn().mockReturnValue(responseMessage),
     };
 
     controller = new PublicationController(mockModel, mockView);
@@ -31,29 +24,6 @@ describe("PublicationController", () => {
     it("stores model and view references", () => {
       expect(controller.model).toBe(mockModel);
       expect(controller.view).toBe(mockView);
-    });
-
-    it("subscribes to model changes", () => {
-      expect(mockModel.subscribe).toHaveBeenCalledOnce();
-      expect(mockModel.subscribe).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it("updates view when model notifies", () => {
-      // Get the callback that was passed to subscribe
-      const callback = mockModel.subscribe.mock.calls[0][0];
-
-      mockModel.status = "OK";
-      mockModel.publications = [{ title: "Test" }];
-      mockModel.totalHits = 1;
-      mockModel.sentHits = 1;
-      mockModel.excludedCount = 0;
-      mockModel.errorMessage = "";
-      mockModel.currentOffset = 10;
-
-      callback();
-
-      expect(mockView.setCurrentOffset).toHaveBeenCalledWith(10);
-      expect(mockView.update).toHaveBeenCalledWith("OK", [{ title: "Test" }], 1, 1, 0, "");
     });
   });
 
@@ -66,6 +36,11 @@ describe("PublicationController", () => {
     it("passes offset to model", async () => {
       await controller.handleSearch("test query", 30);
       expect(mockModel.searchPublications).toHaveBeenCalledWith("test query", 30);
+    });
+
+    it("returns the view's response built from the model's result", async () => {
+      await expect(controller.handleSearch("query")).resolves.toBe(responseMessage);
+      expect(mockView.render).toHaveBeenCalledWith(searchResult);
     });
 
     it("uses default offset of 0", async () => {
@@ -83,6 +58,10 @@ describe("PublicationController", () => {
     it("adds maxResults to current offset", async () => {
       await controller.handleNextPage("query", 30, 30);
       expect(mockModel.searchPublications).toHaveBeenCalledWith("query", 60);
+    });
+
+    it("returns the response for the next page", async () => {
+      await expect(controller.handleNextPage("query", 0, 30)).resolves.toBe(responseMessage);
     });
 
     it("works with different page sizes", async () => {
@@ -105,6 +84,10 @@ describe("PublicationController", () => {
     it("returns to offset 0 from first page", async () => {
       await controller.handlePreviousPage("query", 0, 30);
       expect(mockModel.searchPublications).toHaveBeenCalledWith("query", 0);
+    });
+
+    it("returns the response for the previous page", async () => {
+      await expect(controller.handlePreviousPage("query", 30, 30)).resolves.toBe(responseMessage);
     });
 
     it("handles exact page boundary", async () => {

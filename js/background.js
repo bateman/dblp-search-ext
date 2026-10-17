@@ -16,6 +16,7 @@ import { PublicationView } from "./view/view.js";
 import { extractDOI } from "./utils/doi.js";
 import { flashBadge } from "./utils/badge.js";
 import { performZoteroSave, isValidZoteroTargetId } from "./utils/zotero.js";
+import { assertDblpData, dblpFetch } from "./utils/dblp.js";
 
 /** @type {PublicationModel} */
 const model = new PublicationModel();
@@ -50,16 +51,31 @@ function handleMessageError(error, message, sendResponse) {
     script: "background.js",
     success: false,
     error: error.message || "Unknown error occurred",
+    // Lets the sender tell timeouts ("AbortError") and HTTP errors apart
+    errorName: error.name,
   });
 }
 
 /**
- * Maps message types to their handler functions and log descriptions.
- * Each handler returns an object with:
- * - action: Promise from the controller method
- * - log: Human-readable description for logging
- * @type {Object<string, function(Object): {action: Promise, log: string}>}
+ * Handles a BibTeX download request from the popup. dblp requests run only
+ * here, so they all share this service worker's one-request-per-second
+ * queue (each page would otherwise keep its own queue).
+ * @param {Object} message - The message object from the popup
+ * @param {string} message.url - dblp BibTeX URL (dblpFetch refuses other origins)
+ * @param {Function} sendResponse - Callback to send the BibTeX back
  */
+function handleFetchBibtexMessage(message, sendResponse) {
+  dblpFetch(message.url, (response) => {
+    // Never return an error or anti-bot HTML page as if it were BibTeX
+    assertDblpData(response);
+    return response.text();
+  })
+    .then((bibtex) => {
+      sendResponse({ script: "background.js", success: true, bibtex: bibtex });
+    })
+    .catch((error) => handleMessageError(error, message, sendResponse));
+}
+
 /**
  * Handles a Save to Zotero request from the popup. The connector requests
  * run here in the service worker so the save completes even if the popup
@@ -91,6 +107,13 @@ function handleZoteroSaveMessage(message, sendResponse) {
     .catch((error) => handleMessageError(error, message, sendResponse));
 }
 
+/**
+ * Maps message types to their handler functions and log descriptions.
+ * Each handler returns an object with:
+ * - action: Promise from the controller method
+ * - log: Human-readable description for logging
+ * @type {Object<string, function(Object): {action: Promise, log: string}>}
+ */
 const messageHandlers = {
   REQUEST_SEARCH_PUBLICATIONS: (msg) => ({
     action: controller.handleSearch(msg.query, msg.offset || 0),
@@ -130,14 +153,21 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Will respond asynchronously
   }
 
+  if (message.type === "REQUEST_FETCH_BIBTEX") {
+    handleFetchBibtexMessage(message, sendResponse);
+    return true; // Will respond asynchronously
+  }
+
   const handler = messageHandlers[message.type];
   if (!handler) {
     return false;
   }
 
   const { action, log } = handler(message);
+  // The result goes back only to the page that asked, as the reply to its
+  // own request, so it can drop replies to searches it has since replaced
   action
-    .then(() => {
+    .then((result) => {
       console.log(
         `Background.js completed ${log} sent by '${message.script}'.`
       );
@@ -145,6 +175,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         script: "background.js",
         success: true,
         response: `Completed ${log}.`,
+        result: result,
       });
     })
     .catch((error) => handleMessageError(error, message, sendResponse));

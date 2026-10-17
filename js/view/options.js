@@ -6,6 +6,7 @@
 
 import { updateStatus } from "./commons.js";
 import { validateMaxResults, validatePopupWidth } from "../utils/validation.js";
+import { resolveCitationKeyFields } from "../utils/bibtex.js";
 import {
   isValidZoteroTargetId,
   buildZoteroTargetPaths,
@@ -767,17 +768,7 @@ function restoreOptions() {
       // Show/hide drag & drop based on checkbox state
       toggleDragDropVisibility();
 
-      // Handle migration from old format
-      let fields = items.options.citationKeyFields;
-      if (!fields && items.options.citationKeyPattern) {
-        // Convert old pattern to new fields array
-        fields = items.options.citationKeyPattern.split("-");
-      }
-      if (!fields || fields.length === 0) {
-        fields = ["author", "year", "venue"];
-      }
-
-      setSelectedFields(fields);
+      setSelectedFields(resolveCitationKeyFields(items.options));
     }
   );
 }

@@ -1,66 +1,46 @@
-/*global chrome*/
-
 /**
  * @file view.js
  * @description View component for the MVC architecture (background script side).
- * Sends publication data to popup.js for rendering via message passing.
+ * Builds the response message that carries a search result to popup.js.
  */
 
 console.log("view.js loaded");
-const browser = globalThis.browser || chrome;
 
 /**
- * View class for sending publication data to the popup for rendering.
- * Acts as a bridge between the background script and the popup UI.
+ * View class that turns a search result into the response for the popup.
+ * The response is sent back only to the page that made the request (never
+ * broadcast), so a page can drop responses to searches it has since replaced.
  * @class
  */
 export class PublicationView {
   /**
-   * Creates a new PublicationView instance
-   * @constructor
+   * Builds the response message for popup.js from a search result
+   * @param {SearchResult} result - The result returned by the model
+   * @returns {Object} RESPONSE_SEARCH_PUBLICATIONS message for popup.js
    */
-  constructor() {
-    /** @type {number} Current pagination offset */
-    this.currentOffset = 0;
-  }
-
-  /**
-   * Sets the current pagination offset
-   * @param {number} offset - The pagination offset value
-   */
-  setCurrentOffset(offset) {
-    this.currentOffset = offset;
-  }
-
-  /**
-   * Sends updated publication data to popup.js via browser message
-   * @param {string} responseStatus - HTTP response status from DBLP API
-   * @param {Object[]} publications - Array of publication objects
-   * @param {number} totalHits - Total number of matching publications
-   * @param {number} sentHits - Number of publications in current response
-   * @param {number} excludedCount - Number of excluded publications
-   * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
-   */
-  update(responseStatus, publications, totalHits, sentHits, excludedCount, errorMessage = "") {
+  render(result) {
     // Ensure all values have valid defaults to prevent NaN/undefined on Chrome
-    const safeResponseStatus = responseStatus || "OK";
-    const safeTotalHits = typeof totalHits === "number" ? totalHits : 0;
-    const safeSentHits = typeof sentHits === "number" ? sentHits : 0;
-    const safeExcludedCount = typeof excludedCount === "number" ? excludedCount : 0;
+    const safeResponseStatus = result.status || "OK";
+    const safeTotalHits = typeof result.totalHits === "number" ? result.totalHits : 0;
+    const safeSentHits = typeof result.sentHits === "number" ? result.sentHits : 0;
+    const safeExcludedCount =
+      typeof result.excludedCount === "number" ? result.excludedCount : 0;
+    const safeCurrentOffset =
+      typeof result.currentOffset === "number" ? result.currentOffset : 0;
 
     console.log(
-      `Sending response to popup.js: ${safeResponseStatus}, ${safeTotalHits}, ${safeSentHits}, ${safeExcludedCount}, offset: ${this.currentOffset}`
+      `Sending response to popup.js: ${safeResponseStatus}, ${safeTotalHits}, ${safeSentHits}, ${safeExcludedCount}, offset: ${safeCurrentOffset}`
     );
-    browser.runtime.sendMessage({
+    return {
       script: "view.js",
       type: "RESPONSE_SEARCH_PUBLICATIONS",
       responseStatus: safeResponseStatus,
       totalHits: safeTotalHits,
       sentHits: safeSentHits,
       excludedCount: safeExcludedCount,
-      errorMessage: errorMessage || "",
-      publications: publications || [],
-      currentOffset: this.currentOffset || 0,
-    });
+      errorMessage: result.errorMessage || "",
+      publications: result.publications || [],
+      currentOffset: safeCurrentOffset,
+    };
   }
 }

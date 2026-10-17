@@ -13,9 +13,10 @@ dblp Search is a cross-browser extension for searching publications on dblp.org 
 **Message Flow**:
 ```
 popup.js → background.js → controller.js → model.js → DBLP API
-                                              ↓
-popup.js ← view.js ← controller.js ← model.js (observer pattern)
+popup.js ← background.js (sendResponse) ← controller.js ← view.js ← model.js
 ```
+
+The model returns each search's result (it keeps no per-search state), `view.js` turns it into a `RESPONSE_SEARCH_PUBLICATIONS` message, and the background sends that message as the reply to the request that asked for it — never as a broadcast, so it reaches only that page. The popup numbers its search/page requests and drops replies to any but the latest, so a slow older search cannot overwrite a newer one.
 
 **Key Components**:
 
@@ -23,7 +24,8 @@ popup.js ← view.js ← controller.js ← model.js (observer pattern)
 |------|---------|
 | `js/background.js` | Service worker, handles messages from popup/options |
 | `js/model/model.js` | DBLP API calls, data parsing, storage integration |
-| `js/controller/controller.js` | Routes between model and views |
+| `js/controller/controller.js` | Routes between model and view: runs searches, has the view build the response |
+| `js/view/view.js` | Builds the response message carrying a search result back to the popup |
 | `js/view/popup.js` | Main UI, BibTeX copying, citation key formatting |
 | `js/view/options.js` | Settings UI, drag-drop citation key builder |
 | `js/view/commons.js` | Shared utilities (status updates) |
@@ -32,6 +34,7 @@ popup.js ← view.js ← controller.js ← model.js (observer pattern)
 **Message Types** (handled in background.js):
 - `REQUEST_SEARCH_PUBLICATIONS` - Execute search query
 - `REQUEST_NEXT_PAGE` / `REQUEST_PREVIOUS_PAGE` - Pagination
+- `REQUEST_FETCH_BIBTEX` - Download a BibTeX entry from dblp for the popup to process (so every dblp request shares the service worker's rate-limit queue)
 - `REQUEST_SAVE_TO_ZOTERO` - Import a processed BibTeX entry into Zotero (runs in the service worker so the save survives the popup closing)
 
 **Storage Keys**:
@@ -56,7 +59,7 @@ The build process swaps manifests automatically. Both must be kept in sync for v
 - `f` - Offset for pagination
 - `app` - Required by dblp's firewall (Anubis): `app=dblpSearch_<version>`. Without it, requests get an HTML anti-bot page (HTTP 200) instead of data. Also needed on `.bib` downloads.
 
-All requests to dblp must go through `dblpFetch()` in `js/utils/dblp.js` — never call `fetch()` on dblp directly. It refuses any URL whose origin is not in `DBLP_ALLOWED_ORIGINS` (`https://dblp.org`; the `if (ALLOWLIST.has(...))` form is what Codacy's SSRF rule recognizes as validation), appends `app` (version read from the manifest), spaces requests at least 1 s apart (dblp's rate limiter punishes more than one request per second with HTTP 429), and applies a 10 s timeout that starts after the queue wait and covers reading the body.
+All requests to dblp must go through `dblpFetch()` in `js/utils/dblp.js` — never call `fetch()` on dblp directly — and must run in the background service worker (pages ask it via messages), because the 1 s spacing is kept per context: requests sent from the popup itself would use a second, independent queue. It refuses any URL whose origin is not in `DBLP_ALLOWED_ORIGINS` (`https://dblp.org`; the `if (ALLOWLIST.has(...))` form is what Codacy's SSRF rule recognizes as validation), appends `app` (version read from the manifest), spaces requests at least 1 s apart (dblp's rate limiter punishes more than one request per second with HTTP 429), and applies a 10 s timeout that starts after the queue wait and covers reading the body.
 
 ## Zotero Integration
 

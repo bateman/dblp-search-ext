@@ -6,23 +6,13 @@
 
 import { updateStatus, clearStatus } from "./commons.js";
 import { isValidURL, parseSearchWithDefaults } from "../utils/validation.js";
-import {
-  extractAuthorFromKey,
-  extractVenueFromKey,
-  extractYearFromBibtex,
-  extractFirstTitleWord,
-  buildCitationKey,
-  cleanBibtexMetadata,
-  removeUrlFromBibtex,
-  buildBibtexFilename,
-} from "../utils/bibtex.js";
+import { processBibtexData, buildBibtexFilename } from "../utils/bibtex.js";
 import {
   isValidZoteroTargetId,
   isZoteroPermissionDeclared,
   requestZoteroPermission,
   zoteroPermissionFailureMessage,
 } from "../utils/zotero.js";
-import { assertDblpData, dblpFetch } from "../utils/dblp.js";
 
 console.log("popup.js loaded");
 const browser = window.msBrowser || window.browser || window.chrome;
@@ -30,17 +20,21 @@ const browser = window.msBrowser || window.browser || window.chrome;
 // Track currently selected row for keyboard navigation
 let selectedRowIndex = -1;
 
+// Publication types in filter-menu order, with their filter label and color
+const PUB_TYPES = [
+  { type: "article", label: "Article", color: "#c32b72" },
+  { type: "inproceedings", label: "Conf", color: "#196ca3" },
+  { type: "book", label: "Book", color: "#f8c91f" },
+  { type: "incollection", label: "Chapter", color: "#ef942d" },
+  { type: "editor", label: "Editor", color: "#33c3ba" },
+  { type: "misc", label: "Misc", color: "#606b70" },
+  { type: "refwork", label: "Ref", color: "#96ad2d" }
+];
+
 // Track current sort and filter settings
 let currentSort = { field: "none", direction: "asc" };
-let currentFilters = {
-  article: true,
-  inproceedings: true,
-  book: true,
-  incollection: true,
-  editor: true,
-  misc: true,
-  refwork: true
-};
+// Publication types unchecked in the type filter (empty = show all)
+const hiddenTypes = new Set();
 
 // Store original publications for filtering/sorting
 let originalPublications = [];
@@ -59,27 +53,17 @@ const SEARCH_STATUS_FALLBACK_MS = 15000;
 // Track if filter dropdown should stay open after rebuild
 let keepFilterDropdownOpen = false;
 
+// Number of the latest search or page request. Replies to older requests are
+// dropped, so a slow earlier search cannot overwrite a newer one.
+let latestSearchId = 0;
+
 // =====================================
 // Event Listeners
 // =====================================
 
 document.addEventListener("DOMContentLoaded", function () {
   // Display extension version in the footer
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-  fetch("../manifest.json", { signal: controller.signal })
-    .then((response) => {
-      clearTimeout(timeoutId);
-      return response.json();
-    })
-    .then((data) => {
-      document.getElementById("version").textContent = data.version;
-    })
-    .catch((error) => {
-      clearTimeout(timeoutId);
-      console.error("Could not load manifest version:", error);
-    });
+  document.getElementById("version").textContent = browser.runtime.getManifest().version;
 
   // Restore popup width from storage
   restorePopupWidth();
@@ -160,52 +144,9 @@ document.addEventListener("DOMContentLoaded", function () {
         currentOffset: 0,
       },
     });
+    // Drop the reply of a search still in flight, so it can't refill the table
+    latestSearchId++;
     requestClearResults(true);
-  });
-
-  browser.runtime.onMessage.addListener((message) => {
-    console.log(
-      `Popup.js received message from '${message.script}': ${message.type}`
-    );
-    if (message.type === "RESPONSE_SEARCH_PUBLICATIONS") {
-      // Result (or error) is in: stop the search spinner.
-      clearStatus();
-      // Ensure all values have valid defaults to prevent NaN/undefined display
-      const responseStatus = message.responseStatus || "OK";
-      const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
-      const sentHits = typeof message.sentHits === "number" ? message.sentHits : 0;
-      const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
-      const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
-      const publications = message.publications || [];
-      const errorMessage = message.errorMessage || "";
-
-      console.log(
-        "Popup.js updating publications count: ",
-        responseStatus,
-        totalHits,
-        sentHits,
-        excludedCount,
-        currentOffset
-      );
-      updatePublicationsCount(responseStatus, totalHits, errorMessage);
-      console.log("Popup.js updating publications table.");
-      buildAndDisplayTable(publications);
-      updatePaginationControls(
-        totalHits,
-        sentHits,
-        currentOffset,
-        excludedCount
-      );
-      saveResultsToStorage(
-        queryInputField.value,
-        responseStatus,
-        totalHits,
-        sentHits,
-        excludedCount,
-        publications,
-        currentOffset
-      );
-    }
   });
 
   // Keyboard navigation and shortcuts
@@ -343,8 +284,9 @@ function hasModifierKey(event) {
  * @param {Object} dictObject - Message object to send
  * @param {string} dictObject.script - Identifier of the sending script
  * @param {string} dictObject.type - Message type
+ * @param {function(Object): void} [onResult] - Called with the reply's result
  */
-function sendMessage(dictObject) {
+function sendMessage(dictObject, onResult) {
   browser.runtime.sendMessage(dictObject, function (response) {
     if (browser.runtime.lastError) {
       console.error("Popup.js message error:", browser.runtime.lastError.message);
@@ -363,8 +305,68 @@ function sendMessage(dictObject) {
       console.log(
         `Popup.js received a response from '${response.script}': ${response.response}`
       );
+      if (onResult && response.result) {
+        onResult(response.result);
+      }
     }
   });
+}
+
+/**
+ * Sends a search or page request and displays its result, unless a newer
+ * request was sent in the meantime
+ * @param {Object} message - REQUEST_SEARCH_PUBLICATIONS, REQUEST_NEXT_PAGE or
+ *   REQUEST_PREVIOUS_PAGE message
+ */
+function sendSearchRequest(message) {
+  latestSearchId++;
+  const searchId = latestSearchId;
+  sendMessage(message, function (response) {
+    if (searchId === latestSearchId) {
+      displaySearchResult(response);
+    } else {
+      console.log("Popup.js dropped the result of a replaced search.");
+    }
+  });
+}
+
+/**
+ * Displays the result of a search or page request and saves it to storage
+ * @param {Object} message - RESPONSE_SEARCH_PUBLICATIONS message built by view.js
+ */
+function displaySearchResult(message) {
+  // Result (or error) is in: stop the search spinner.
+  clearStatus();
+  // Ensure all values have valid defaults to prevent NaN/undefined display
+  const responseStatus = message.responseStatus || "OK";
+  const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
+  const sentHits = typeof message.sentHits === "number" ? message.sentHits : 0;
+  const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
+  const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
+  const publications = Array.isArray(message.publications) ? message.publications : [];
+  const errorMessage = message.errorMessage || "";
+
+  console.log(
+    "Popup.js updating publications count: ",
+    responseStatus,
+    totalHits,
+    sentHits,
+    excludedCount,
+    currentOffset
+  );
+  updatePublicationsCount(responseStatus, totalHits, errorMessage, sentHits, excludedCount);
+  console.log("Popup.js updating publications table.");
+  buildAndDisplayTable(publications);
+  updatePaginationControls(totalHits, sentHits, currentOffset, excludedCount);
+  saveResultsToStorage(
+    document.getElementById("paperTitle").value,
+    responseStatus,
+    totalHits,
+    sentHits,
+    excludedCount,
+    publications,
+    currentOffset
+  );
 }
 
 /**
@@ -374,13 +376,13 @@ function sendMessage(dictObject) {
  */
 function requestSearchDblp(q, offset = 0) {
   // Update status to let user know search has started. The spinner persists
-  // until the response arrives (cleared in the RESPONSE_SEARCH_PUBLICATIONS
-  // handler); the fallback timeout only guards against a lost response.
+  // until the response arrives (cleared in displaySearchResult); the fallback
+  // timeout only guards against a lost response.
   updateStatus("Searching...", SEARCH_STATUS_FALLBACK_MS);
   // Clear existing results, but not the paperTitle
   requestClearResults(false);
   // Send message to background.js
-  sendMessage({
+  sendSearchRequest({
     script: "popup.js",
     type: "REQUEST_SEARCH_PUBLICATIONS",
     query: q,
@@ -393,15 +395,7 @@ function requestSearchDblp(q, offset = 0) {
  */
 function resetFiltersAndSort() {
   currentSort = { field: "none", direction: "asc" };
-  currentFilters = {
-    article: true,
-    inproceedings: true,
-    book: true,
-    incollection: true,
-    editor: true,
-    misc: true,
-    refwork: true
-  };
+  hiddenTypes.clear();
   originalPublications = [];
   keepFilterDropdownOpen = false;
 }
@@ -422,15 +416,38 @@ function requestClearResults(clearTitle = true) {
 }
 
 /**
+ * Describes the CoRR abs (arXiv) entries hidden from the results, so the
+ * count line explains why fewer rows are shown than were found. The model
+ * only counts them in the current response, hence "on this page" when the
+ * results span several pages.
+ * @param {number} totalHits - Total number of matching publications
+ * @param {number} sentHits - Number of publications in the current response
+ * @param {number} excludedCount - CoRR abs entries hidden from the current response
+ * @returns {string} e.g. " (3 CoRR abs entries hidden)", or "" when none
+ */
+function describeHiddenEntries(totalHits, sentHits, excludedCount) {
+  if (excludedCount <= 0) {
+    return "";
+  }
+  const entries = excludedCount === 1 ? "entry" : "entries";
+  const where = totalHits > sentHits ? " on this page" : "";
+  return ` (${excludedCount} CoRR abs ${entries} hidden${where})`;
+}
+
+/**
  * Updates the publication count display in the UI
  * @param {string} responseStatus - HTTP response status or "RESET"
  * @param {number} totalHits - Total number of matching publications
  * @param {string} [errorMessage=""] - Human-readable error detail when the search failed
+ * @param {number} [sentHits=0] - Number of publications in the current response
+ * @param {number} [excludedCount=0] - CoRR abs entries hidden from the current response
  */
 function updatePublicationsCount(
   responseStatus,
   totalHits,
-  errorMessage = ""
+  errorMessage = "",
+  sentHits = 0,
+  excludedCount = 0
 ) {
   const count = document.getElementById("count");
   if (count) {
@@ -442,7 +459,8 @@ function updatePublicationsCount(
       message = errorMessage || `Query failed (${responseStatus}).`;
       count.classList.add("error");
     } else {
-      message = `Query ${responseStatus}: found ${totalHits}`;
+      message = `Query ${responseStatus}: found ${totalHits}` +
+        describeHiddenEntries(totalHits, sentHits, excludedCount);
       count.classList.remove("error");
     }
     count.textContent = message;
@@ -468,8 +486,7 @@ function clearResultsTable() {
 function createTypeCell(type) {
   const cell = document.createElement("td");
   const img = document.createElement("img");
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
-  const safeType = validTypes.includes(type) ? type : "misc";
+  const safeType = normalizeType(type);
   img.className = safeType;
   img.title = safeType;
   img.src = "../images/pub-type.png";
@@ -635,29 +652,12 @@ function createPublicationRow(result, index) {
 }
 
 /**
- * Safely checks if a publication type is enabled in filters
+ * Maps a publication type to a known type, treating unknown ones as "misc"
  * @param {string} type - The publication type
- * @returns {boolean} True if the type is enabled
+ * @returns {string} A type listed in PUB_TYPES
  */
-function isTypeFilterEnabled(type) {
-  switch (type) {
-    case "article":
-      return currentFilters.article !== false;
-    case "inproceedings":
-      return currentFilters.inproceedings !== false;
-    case "book":
-      return currentFilters.book !== false;
-    case "incollection":
-      return currentFilters.incollection !== false;
-    case "editor":
-      return currentFilters.editor !== false;
-    case "misc":
-      return currentFilters.misc !== false;
-    case "refwork":
-      return currentFilters.refwork !== false;
-    default:
-      return true;
-  }
+function normalizeType(type) {
+  return PUB_TYPES.some((t) => t.type === type) ? type : "misc";
 }
 
 /**
@@ -709,10 +709,8 @@ function applyFiltersAndSort(publications) {
   }
 
   // Apply filters
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
   let filtered = publications.filter(function(pub) {
-    const type = validTypes.includes(pub.type) ? pub.type : "misc";
-    return isTypeFilterEnabled(type);
+    return !hiddenTypes.has(normalizeType(pub.type));
   });
 
   // Apply sorting
@@ -792,17 +790,6 @@ function createSortableHeader(text, field) {
 }
 
 /**
- * Checks if any filters are active (not all selected)
- * @returns {boolean} True if filtering is active
- */
-function hasActiveFilters() {
-  const validTypes = ["article", "inproceedings", "book", "incollection", "editor", "misc", "refwork"];
-  return validTypes.some(function(type) {
-    return !isTypeFilterEnabled(type);
-  });
-}
-
-/**
  * Creates the type column header with filter dropdown
  * @returns {HTMLTableCellElement} The header cell with filter
  */
@@ -815,7 +802,7 @@ function createTypeFilterHeader() {
   wrapper.className = "filter-header-wrapper";
 
   const filterBtn = document.createElement("button");
-  filterBtn.className = "filter-btn" + (hasActiveFilters() ? " active" : "");
+  filterBtn.className = "filter-btn" + (hiddenTypes.size > 0 ? " active" : "");
   filterBtn.title = "Filter by type";
   filterBtn.textContent = "\u25BC"; // ▼
 
@@ -823,28 +810,22 @@ function createTypeFilterHeader() {
   dropdown.className = "filter-dropdown" + (keepFilterDropdownOpen ? " show" : "");
   keepFilterDropdownOpen = false;
 
-  const filterTypes = [
-    { type: "article", label: "Article", color: "#c32b72" },
-    { type: "inproceedings", label: "Conf", color: "#196ca3" },
-    { type: "book", label: "Book", color: "#f8c91f" },
-    { type: "incollection", label: "Chapter", color: "#ef942d" },
-    { type: "editor", label: "Editor", color: "#33c3ba" },
-    { type: "misc", label: "Misc", color: "#606b70" },
-    { type: "refwork", label: "Ref", color: "#96ad2d" }
-  ];
-
-  filterTypes.forEach(function(ft) {
+  PUB_TYPES.forEach(function(ft) {
     const item = document.createElement("label");
     item.className = "filter-dropdown-item";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.type = ft.type;
-    checkbox.checked = currentFilters[ft.type] !== false;
+    checkbox.checked = !hiddenTypes.has(ft.type);
 
     checkbox.addEventListener("change", function(e) {
       e.stopPropagation();
-      currentFilters[this.dataset.type] = this.checked;
+      if (this.checked) {
+        hiddenTypes.delete(ft.type);
+      } else {
+        hiddenTypes.add(ft.type);
+      }
       keepFilterDropdownOpen = true;
       rebuildTableWithFilters();
     });
@@ -1060,7 +1041,13 @@ function restoreResultsFromStorage() {
         return;
       }
 
-      updatePublicationsCount(searchData.status, searchData.totalHits);
+      updatePublicationsCount(
+        searchData.status,
+        searchData.totalHits,
+        "",
+        searchData.sentHits,
+        searchData.excludedCount
+      );
       buildAndDisplayTable(searchData.publications);
       updatePaginationControls(
         searchData.totalHits,
@@ -1145,7 +1132,7 @@ function addCopyBibtexButtonEventListener() {
   document.querySelectorAll(".copyBibtexButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.copyBibtexToClipboard(url);
+      window.copyBibtexToClipboard(url, this);
     });
   });
 }
@@ -1157,7 +1144,7 @@ function addDownloadBibtexButtonEventListener() {
   document.querySelectorAll(".downloadBibtexButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.downloadBibtex(url);
+      window.downloadBibtex(url, this);
     });
   });
 }
@@ -1169,7 +1156,7 @@ function addSaveZoteroButtonEventListener() {
   document.querySelectorAll(".saveZoteroButton").forEach((button) => {
     button.addEventListener("click", function () {
       const url = this.getAttribute("data-url");
-      window.saveBibtexToZotero(url);
+      window.saveBibtexToZotero(url, this);
     });
   });
 }
@@ -1245,30 +1232,24 @@ function selectRow(index) {
 }
 
 /**
- * Copies BibTeX for the selected row
+ * Copies BibTeX for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function copySelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.copyBibtexToClipboard(bibtexUrl);
-    updateStatus("Copying BibTeX...", 2000);
-  } else {
-    updateStatus("No BibTeX available", 2000);
+    window.copyBibtexToClipboard(bibtexUrl, row.querySelector(".copyBibtexButton"));
   }
 }
 
 /**
- * Downloads BibTeX for the selected row
+ * Downloads BibTeX for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function downloadSelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.downloadBibtex(bibtexUrl);
-    updateStatus("Downloading BibTeX...", 2000);
-  } else {
-    updateStatus("No BibTeX available", 2000);
+    window.downloadBibtex(bibtexUrl, row.querySelector(".downloadBibtexButton"));
   }
 }
 
@@ -1282,7 +1263,7 @@ function saveSelectedRowZotero(row) {
   }
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
-    window.saveBibtexToZotero(bibtexUrl);
+    window.saveBibtexToZotero(bibtexUrl, row.querySelector(".saveZoteroButton"));
   } else {
     updateStatus("No BibTeX available", 2000);
   }
@@ -1302,15 +1283,13 @@ function openSelectedRowDblp(row) {
 }
 
 /**
- * Opens DOI page for the selected row
+ * Opens DOI page for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function openSelectedRowDoi(row) {
   const doiUrl = row.dataset.doiUrl;
   if (doiUrl && isValidURL(doiUrl)) {
     browser.tabs.create({ url: doiUrl });
-  } else {
-    updateStatus("No DOI link available", 2000);
   }
 }
 
@@ -1511,87 +1490,79 @@ document.addEventListener("contextmenu", function (event) {
 
 
 // =====================================
+// Action Button Feedback
+// =====================================
+
+/**
+ * Marks a copy/download/Zotero button as working: its icon pulses until
+ * finishButtonFeedback() is called. The button may be null (none visible)
+ * or detached by a table rebuild meanwhile; both are harmless.
+ * @param {HTMLButtonElement|null} button - The action button
+ */
+function startButtonFeedback(button) {
+  if (button) {
+    button.classList.remove("action-done");
+    button.classList.add("action-busy");
+  }
+}
+
+/**
+ * Stops the working pulse and, when the action succeeded, plays a short
+ * green flash. Failures only stop the pulse: the status line explains them.
+ * @param {HTMLButtonElement|null} button - The action button
+ * @param {boolean} succeeded - Whether the action succeeded
+ */
+function finishButtonFeedback(button, succeeded) {
+  if (!button) {
+    return;
+  }
+  button.classList.remove("action-busy");
+  if (!succeeded) {
+    return;
+  }
+  button.classList.add("action-done");
+  button.addEventListener("animationend", function onDone(event) {
+    // Ignore animations of child elements, which also bubble up here
+    if (event.target === button) {
+      button.classList.remove("action-done");
+      button.removeEventListener("animationend", onDone);
+    }
+  });
+}
+
+// =====================================
 // Copy BibTeX Functions
 // =====================================
 
 /**
- * Resolves the citation key fields from user options, handling migration from
- * the old pattern format and falling back to a default.
- * @param {Object} options - User options from storage
- * @returns {string[]} The ordered citation key fields
+ * Asks the background script to download a BibTeX entry from dblp. Every
+ * dblp request runs there, so they all share one rate-limit queue.
+ * @param {string} url - dblp BibTeX URL
+ * @returns {Promise<string>} The raw BibTeX; rejects with the background's
+ *   error, keeping its name ("AbortError", "HttpError") for handleBibtexError
  */
-function resolveCitationKeyFields(options) {
-  let citationKeyFields = options.citationKeyFields;
-  // Handle migration from old format
-  if (!citationKeyFields && options.citationKeyPattern) {
-    citationKeyFields = options.citationKeyPattern.split("-");
-  }
-  if (!citationKeyFields || citationKeyFields.length === 0) {
-    citationKeyFields = ["author", "year", "venue"];
-  }
-  return citationKeyFields;
-}
-
-/**
- * Renames the DBLP citation key in a BibTeX entry using the user's preferences.
- * @param {string} data - BibTeX entry string
- * @param {RegExpMatchArray|null} keyMatch - Match of the DBLP key in the entry
- * @param {Object} options - User options from storage
- * @returns {{data: string, citationKey: string}} Entry and new key
- * @throws {Error} When the BibTeX format is invalid (missing key or year)
- */
-function renameCitationKey(data, keyMatch, options) {
-  if (!keyMatch || keyMatch.length < 1) {
-    throw new Error("Invalid BibTeX format");
-  }
-  const key = keyMatch[0];
-  const year = extractYearFromBibtex(data);
-  if (!year) {
-    throw new Error("Invalid BibTeX format (missing year)");
-  }
-  const newCitationKey = buildCitationKey(
-    resolveCitationKeyFields(options),
-    extractAuthorFromKey(key),
-    year,
-    extractVenueFromKey(key),
-    extractFirstTitleWord(data),
-    options.authorCapitalize,
-    options.venueUppercase
-  );
-  return {
-    data: data.replace(/DBLP:\S+\/\S+\/\S+/, newCitationKey + ","),
-    citationKey: newCitationKey,
-  };
-}
-
-/**
- * Applies the user's BibTeX options (key renaming, metadata cleanup) to raw
- * BibTeX text and returns both the processed text and its citation key.
- * @param {string} rawData - Raw BibTeX fetched from DBLP
- * @param {Object} options - User options from storage
- * @returns {{data: string, citationKey: string|null}} Processed result
- * @throws {Error} When the BibTeX format is invalid and renaming is requested
- */
-function processBibtexData(rawData, options) {
-  let data = rawData;
-  const keyMatch = data.match(/^@\S+\{(DBLP:\S+\/\S+\/\S+),/);
-  let citationKey = keyMatch ? keyMatch[1] : null;
-
-  if (options.keyRenaming) {
-    const renamed = renameCitationKey(data, keyMatch, options);
-    data = renamed.data;
-    citationKey = renamed.citationKey;
-  }
-
-  if (options.removeTimestampBiburlBibsource) {
-    data = cleanBibtexMetadata(data);
-  }
-
-  if (options.removeUrl) {
-    data = removeUrlFromBibtex(data);
-  }
-
-  return { data, citationKey };
+function fetchBibtex(url) {
+  return new Promise((resolve, reject) => {
+    browser.runtime.sendMessage(
+      { script: "popup.js", type: "REQUEST_FETCH_BIBTEX", url: url },
+      function (response) {
+        if (browser.runtime.lastError || !response) {
+          const detail = browser.runtime.lastError
+            ? browser.runtime.lastError.message
+            : "no response";
+          reject(new Error("Could not reach the background script: " + detail));
+          return;
+        }
+        if (!response.success) {
+          const error = new Error(response.error);
+          error.name = response.errorName || "Error";
+          reject(error);
+          return;
+        }
+        resolve(response.bibtex);
+      }
+    );
+  });
 }
 
 /**
@@ -1600,11 +1571,7 @@ function processBibtexData(rawData, options) {
  * @returns {Promise<{data: string, citationKey: string|null}>} Processed result
  */
 function fetchAndProcessBibtex(url) {
-  return dblpFetch(url, (response) => {
-    // Never process an error or anti-bot HTML page as if it were BibTeX
-    assertDblpData(response);
-    return response.text();
-  })
+  return fetchBibtex(url)
     .then(
       (data) =>
         new Promise((resolve, reject) => {
@@ -1654,15 +1621,25 @@ function handleBibtexError(err) {
 /**
  * Fetches BibTeX from URL, applies user options, and copies to clipboard
  * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Copy button to animate
  */
-window.copyBibtexToClipboard = function (url) {
+window.copyBibtexToClipboard = function (url, button) {
+  startButtonFeedback(button);
   fetchAndProcessBibtex(url)
-    .then(({ data }) => {
-      navigator.clipboard.writeText(data).catch(function (err) {
-        console.error("Could not copy BibTeX to clipboard: ", err);
-      });
-    })
-    .catch(handleBibtexError);
+    .then(({ data }) =>
+      navigator.clipboard.writeText(data).then(
+        () => finishButtonFeedback(button, true),
+        (err) => {
+          console.error("Could not copy BibTeX to clipboard: ", err);
+          updateStatus("Error: Could not copy BibTeX to the clipboard", 3000);
+          finishButtonFeedback(button, false);
+        }
+      )
+    )
+    .catch((err) => {
+      finishButtonFeedback(button, false);
+      handleBibtexError(err);
+    });
 };
 
 /**
@@ -1679,23 +1656,24 @@ function revokeBlobUrlLater(blobUrl) {
  * owned by the browser, so it survives the popup closing.
  * @param {string} blobUrl - Object URL of the blob to save
  * @param {string} filename - Suggested filename
+ * @returns {Promise<boolean>} Whether the browser accepted the download
  */
 function downloadViaApi(blobUrl, filename) {
-  Promise.resolve(
+  return Promise.resolve(
     browser.downloads.download({
       url: blobUrl,
       filename: filename,
       saveAs: false,
     })
   )
-    .then(() => {
-      // Only report success once the browser has accepted the download
-      updateStatus("Downloaded " + filename, 2000);
-    })
-    .catch((err) => {
-      console.error("Could not download BibTeX: ", err);
-      updateStatus("Error: Could not download BibTeX", 3000);
-    })
+    .then(
+      () => true,
+      (err) => {
+        console.error("Could not download BibTeX: ", err);
+        updateStatus("Error: Could not download BibTeX", 3000);
+        return false;
+      }
+    )
     .finally(() => revokeBlobUrlLater(blobUrl));
 }
 
@@ -1712,7 +1690,6 @@ function downloadViaAnchor(blobUrl, filename) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  updateStatus("Downloaded " + filename, 2000);
   revokeBlobUrlLater(blobUrl);
 }
 
@@ -1720,8 +1697,10 @@ function downloadViaAnchor(blobUrl, filename) {
  * Fetches BibTeX from URL, applies user options, and downloads it as a .bib
  * file named after the citation key.
  * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Download button to animate
  */
-window.downloadBibtex = function (url) {
+window.downloadBibtex = function (url, button) {
+  startButtonFeedback(button);
   fetchAndProcessBibtex(url)
     .then(({ data, citationKey }) => {
       const filename = buildBibtexFilename(citationKey);
@@ -1731,12 +1710,16 @@ window.downloadBibtex = function (url) {
       // Prefer the downloads API where available (Chrome, Edge, Firefox); fall
       // back to an anchor click on Safari, which does not implement it.
       if (browser.downloads && typeof browser.downloads.download === "function") {
-        downloadViaApi(blobUrl, filename);
-      } else {
-        downloadViaAnchor(blobUrl, filename);
+        return downloadViaApi(blobUrl, filename);
       }
+      downloadViaAnchor(blobUrl, filename);
+      return true;
     })
-    .catch(handleBibtexError);
+    .then((saved) => finishButtonFeedback(button, saved))
+    .catch((err) => {
+      finishButtonFeedback(button, false);
+      handleBibtexError(err);
+    });
 };
 
 // =====================================
@@ -1849,11 +1832,6 @@ function requestBackgroundZoteroSave(bibtex, zoteroOptions) {
 }
 
 /**
- * Fetches BibTeX from URL, applies user options, and imports the entry into
- * the Zotero desktop app via its local connector server.
- * @param {string} url - URL to fetch BibTeX from
- */
-/**
  * Reports a permission request that did not end in "granted". When the
  * prompt itself failed on a correctly registered manifest (some browsers
  * cannot anchor the prompt to the popup), the Options page — a regular tab
@@ -1875,11 +1853,20 @@ function handleZoteroPermissionFailure(permission) {
   }
 }
 
-window.saveBibtexToZotero = function (url) {
+/**
+ * Fetches BibTeX from URL, applies user options, and has the background
+ * script import it into Zotero. The permission request comes first, while
+ * still inside the click or key handler, as Firefox requires.
+ * @param {string} url - URL to fetch BibTeX from
+ * @param {HTMLButtonElement|null} [button] - Save to Zotero button to animate
+ */
+window.saveBibtexToZotero = function (url, button) {
   if (zoteroSaveInFlight) {
     return;
   }
   zoteroSaveInFlight = true;
+  startButtonFeedback(button);
+  let saved = false;
   // The permission prompt can stay open while the user reads it; keep a
   // persistent status so the pending state is visible (replaced as soon as
   // the request settles)
@@ -1896,11 +1883,15 @@ window.saveBibtexToZotero = function (url) {
         .then(([processed, zoteroOptions]) =>
           requestBackgroundZoteroSave(processed.data, zoteroOptions)
         )
-        .then((result) => updateStatus(result.message, result.ok ? 3000 : 6000))
+        .then((result) => {
+          saved = result.ok;
+          updateStatus(result.message, result.ok ? 3000 : 6000);
+        })
         .catch(handleBibtexError);
     })
     .finally(function () {
       zoteroSaveInFlight = false;
+      finishButtonFeedback(button, saved);
     });
 };
 
@@ -2041,7 +2032,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
     button.addEventListener("click", function () {
       window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
-      sendMessage({
+      sendSearchRequest({
         script: "popup.js",
         type: "REQUEST_PREVIOUS_PAGE",
         query: query,
@@ -2056,7 +2047,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
     button.addEventListener("click", function () {
       window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
-      sendMessage({
+      sendSearchRequest({
         script: "popup.js",
         type: "REQUEST_NEXT_PAGE",
         query: query,

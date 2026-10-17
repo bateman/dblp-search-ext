@@ -12,44 +12,32 @@ const browser = globalThis.browser || chrome;
 import { assertDblpData, dblpFetch } from "../utils/dblp.js";
 
 /**
- * Model class for managing publication data from DBLP API.
- * Implements the observer pattern to notify controllers of data changes.
+ * Result of one search, sent back to the popup that asked for it.
+ * @typedef {Object} SearchResult
+ * @property {string} status - "OK", "Error" or "Request Timeout"
+ * @property {string} errorMessage - Human-readable error detail ("" on success)
+ * @property {Object[]} publications - Parsed publication objects
+ * @property {number} totalHits - Total number of hits from DBLP API
+ * @property {number} sentHits - Number of hits returned in this response
+ * @property {number} excludedCount - Excluded publications (e.g., CoRR abs entries)
+ * @property {number} currentOffset - Pagination offset of this response
+ */
+
+/**
+ * Model class for fetching and parsing publication data from DBLP API.
  * @class
  */
 export class PublicationModel {
   /**
-   * Creates a new PublicationModel instance
-   * @constructor
-   */
-  constructor() {
-    /** @type {Object[]} Array of parsed publication objects */
-    this.publications = [];
-    /** @type {Function|null} Callback function to notify observers of changes */
-    this.notify = null;
-    /** @type {string} HTTP response status */
-    this.status = "";
-    /** @type {string} Human-readable error detail when a search fails ("" on success) */
-    this.errorMessage = "";
-    /** @type {number} Total number of hits from DBLP API */
-    this.totalHits = 0;
-    /** @type {number} Number of hits returned in current response */
-    this.sentHits = 0;
-    /** @type {number} Number of excluded publications (e.g., CoRR abs entries) */
-    this.excludedCount = 0;
-    /** @type {number} Current pagination offset */
-    this.currentOffset = 0;
-  }
-
-  /**
-   * Searches for publications on DBLP API matching the given query
+   * Searches for publications on DBLP API matching the given query. Each call
+   * builds its own result, so overlapping searches cannot overwrite each other.
    * @async
    * @param {string} query - The search query string
    * @param {number} [offset=0] - Pagination offset for results
-   * @returns {Promise<void>}
+   * @returns {Promise<SearchResult>} The outcome of this search
    */
   async searchPublications(query, offset = 0) {
     console.log(`Searching publications matching: ${query} (offset: ${offset})`);
-    this.currentOffset = offset;
     let url = `https://dblp.org/search/publ/api?q=${encodeURIComponent(
       query
     )}&format=json`;
@@ -63,8 +51,6 @@ export class PublicationModel {
         assertDblpData(response);
         return response.json();
       });
-      this.status = "OK";
-      this.errorMessage = "";
       if (!data || !data.result || !data.result.hits) {
         // Valid HTTP response but not the shape we expect: treat as a parse error
         // (and keep it distinct from a network failure, which also throws TypeError)
@@ -72,31 +58,43 @@ export class PublicationModel {
         parseError.name = "ParseError";
         throw parseError;
       }
-      this.totalHits = parseInt(data.result.hits["@total"], 10) || 0;
-      this.sentHits = parseInt(data.result.hits["@sent"], 10) || 0;
-      if (this.sentHits > 0 && data.result.hits.hit) {
-        const result = this.parsePublications(data.result.hits.hit);
-        this.publications = result.publications;
-        this.excludedCount = result.excludedCount;
-      } else {
-        this.publications = [];
-        this.excludedCount = 0;
-      }
+      return this.buildResult(data.result.hits, offset);
     } catch (error) {
       const { status, message } = this.classifyError(error);
-      this.status = status;
-      this.errorMessage = message;
-      // Reset result counts so a failed search doesn't show stale/zero hits as data
-      this.publications = [];
-      this.totalHits = 0;
-      this.sentHits = 0;
-      this.excludedCount = 0;
       console.error("Search failed: ", message, error);
+      // Zero counts so a failed search doesn't show stale/zero hits as data
+      return {
+        status: status,
+        errorMessage: message,
+        publications: [],
+        totalHits: 0,
+        sentHits: 0,
+        excludedCount: 0,
+        currentOffset: offset,
+      };
     }
-    if (this.notify) {
-      // Notify the view through controller that the model has changed
-      this.notify();
-    }
+  }
+
+  /**
+   * Builds the result of a successful search from the API's `hits` object
+   * @param {Object} hits - The `result.hits` object of the API response
+   * @param {number} offset - Pagination offset of the request
+   * @returns {SearchResult} The search result
+   */
+  buildResult(hits, offset) {
+    const sentHits = parseInt(hits["@sent"], 10) || 0;
+    const parsed = sentHits > 0 && hits.hit
+      ? this.parsePublications(hits.hit)
+      : { publications: [], excludedCount: 0 };
+    return {
+      status: "OK",
+      errorMessage: "",
+      publications: parsed.publications,
+      totalHits: parseInt(hits["@total"], 10) || 0,
+      sentHits: sentHits,
+      excludedCount: parsed.excludedCount,
+      currentOffset: offset,
+    };
   }
 
   /**
@@ -200,6 +198,10 @@ export class PublicationModel {
   extractAuthors(authorsInfo) {
     // Fix: dblp api sometimes returns '000n' next to authors' names
     const authors = [];
+    // Some entries (e.g. front matter, editorials) have no authors field
+    if (!authorsInfo || !authorsInfo.author) {
+      return authors;
+    }
     const regex = / 000\d+$/; // Matches ' 000' followed by one or more digits at the end of the string
     if (authorsInfo.author.length === undefined) {
       authors.push(authorsInfo.author.text.replace(regex, ""));
@@ -288,13 +290,5 @@ export class PublicationModel {
         break;
     }
     return _type;
-  }
-
-  /**
-   * Subscribes a callback function to be notified when model data changes
-   * @param {Function} callback - Callback function to invoke on data changes
-   */
-  subscribe(callback) {
-    this.notify = callback;
   }
 }

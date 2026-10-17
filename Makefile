@@ -53,7 +53,6 @@ HTML := html
 # Files
 SRC := $(CSS) $(JS) $(IMAGES) $(HTML) $(MANIFEST)
 SRC_FILES := $(shell find $(SRC) -type f)
-JS_FILES := $(wildcard $(JS)/*.js)
 
 # Stamp files
 CHROME_BUILD_TIMESTAMP := .chrome.stamp
@@ -161,7 +160,7 @@ test/watch: node_modules  ## Run unit tests in watch mode
 build: build/all  ## Build all extensions (alias: build/all)
 
 .PHONY: build/firefox
-build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI and sources
+build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
@@ -180,7 +179,6 @@ $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
 	mv $(MANIFEST) $(MANIFEST_TMP); \
 	mv $(MANIFEST_FIREFOX) $(MANIFEST); \
 	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store; \
-	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION)-sources.zip $(JS_FILES); \
 	cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION); \
 	cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
