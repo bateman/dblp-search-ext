@@ -187,15 +187,6 @@ export function retargetTimeoutOutcome(targetLabel) {
 }
 
 /**
- * Annotates the getSelectedCollection `targets` list with the full path of
- * each entry ("Library › Collection › Subcollection"). Targets arrive in
- * depth-first order with a nesting `level` (0 for libraries), so the path is
- * reconstructed with a name stack. Malformed entries are skipped.
- * @param {Object[]} targets - Targets from the getSelectedCollection response
- * @returns {{id: string, name: string, level: number, path: string}[]}
- *          Valid targets with their display paths
- */
-/**
  * Sanitizes a target's nesting level. Only small non-negative integers are
  * usable: a fractional, huge, or Infinity level would make the path-stack
  * length assignment throw RangeError.
@@ -206,6 +197,15 @@ function sanitizeTargetLevel(level) {
   return Number.isInteger(level) && level >= 0 && level <= 32 ? level : 0;
 }
 
+/**
+ * Annotates the getSelectedCollection `targets` list with the full path of
+ * each entry ("Library › Collection › Subcollection"). Targets arrive in
+ * depth-first order with a nesting `level` (0 for libraries), so the path is
+ * reconstructed with a name stack. Malformed entries are skipped.
+ * @param {Object[]} targets - Targets from the getSelectedCollection response
+ * @returns {{id: string, name: string, level: number, path: string}[]}
+ *          Valid targets with their display paths
+ */
 export function buildZoteroTargetPaths(targets) {
   const stack = [];
   const result = [];
