@@ -16,6 +16,7 @@ import { PublicationView } from "./view/view.js";
 import { extractDOI } from "./utils/doi.js";
 import { flashBadge } from "./utils/badge.js";
 import { performZoteroSave, isValidZoteroTargetId } from "./utils/zotero.js";
+import { assertDblpData, dblpFetch } from "./utils/dblp.js";
 
 /** @type {PublicationModel} */
 const model = new PublicationModel();
@@ -50,7 +51,29 @@ function handleMessageError(error, message, sendResponse) {
     script: "background.js",
     success: false,
     error: error.message || "Unknown error occurred",
+    // Lets the sender tell timeouts ("AbortError") and HTTP errors apart
+    errorName: error.name,
   });
+}
+
+/**
+ * Handles a BibTeX download request from the popup. dblp requests run only
+ * here, so they all share this service worker's one-request-per-second
+ * queue (each page would otherwise keep its own queue).
+ * @param {Object} message - The message object from the popup
+ * @param {string} message.url - dblp BibTeX URL (dblpFetch refuses other origins)
+ * @param {Function} sendResponse - Callback to send the BibTeX back
+ */
+function handleFetchBibtexMessage(message, sendResponse) {
+  dblpFetch(message.url, (response) => {
+    // Never return an error or anti-bot HTML page as if it were BibTeX
+    assertDblpData(response);
+    return response.text();
+  })
+    .then((bibtex) => {
+      sendResponse({ script: "background.js", success: true, bibtex: bibtex });
+    })
+    .catch((error) => handleMessageError(error, message, sendResponse));
 }
 
 /**
@@ -127,6 +150,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "REQUEST_SAVE_TO_ZOTERO") {
     handleZoteroSaveMessage(message, sendResponse);
+    return true; // Will respond asynchronously
+  }
+
+  if (message.type === "REQUEST_FETCH_BIBTEX") {
+    handleFetchBibtexMessage(message, sendResponse);
     return true; // Will respond asynchronously
   }
 

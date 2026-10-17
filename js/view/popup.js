@@ -13,7 +13,6 @@ import {
   requestZoteroPermission,
   zoteroPermissionFailureMessage,
 } from "../utils/zotero.js";
-import { assertDblpData, dblpFetch } from "../utils/dblp.js";
 
 console.log("popup.js loaded");
 const browser = window.msBrowser || window.browser || window.chrome;
@@ -1473,16 +1472,43 @@ document.addEventListener("contextmenu", function (event) {
 // =====================================
 
 /**
+ * Asks the background script to download a BibTeX entry from dblp. Every
+ * dblp request runs there, so they all share one rate-limit queue.
+ * @param {string} url - dblp BibTeX URL
+ * @returns {Promise<string>} The raw BibTeX; rejects with the background's
+ *   error, keeping its name ("AbortError", "HttpError") for handleBibtexError
+ */
+function fetchBibtex(url) {
+  return new Promise((resolve, reject) => {
+    browser.runtime.sendMessage(
+      { script: "popup.js", type: "REQUEST_FETCH_BIBTEX", url: url },
+      function (response) {
+        if (browser.runtime.lastError || !response) {
+          const detail = browser.runtime.lastError
+            ? browser.runtime.lastError.message
+            : "no response";
+          reject(new Error("Could not reach the background script: " + detail));
+          return;
+        }
+        if (!response.success) {
+          const error = new Error(response.error);
+          error.name = response.errorName || "Error";
+          reject(error);
+          return;
+        }
+        resolve(response.bibtex);
+      }
+    );
+  });
+}
+
+/**
  * Fetches BibTeX from URL and applies the user's processing options.
  * @param {string} url - URL to fetch BibTeX from
  * @returns {Promise<{data: string, citationKey: string|null}>} Processed result
  */
 function fetchAndProcessBibtex(url) {
-  return dblpFetch(url, (response) => {
-    // Never process an error or anti-bot HTML page as if it were BibTeX
-    assertDblpData(response);
-    return response.text();
-  })
+  return fetchBibtex(url)
     .then(
       (data) =>
         new Promise((resolve, reject) => {
