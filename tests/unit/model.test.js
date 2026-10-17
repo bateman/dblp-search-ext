@@ -22,26 +22,6 @@ describe("PublicationModel", () => {
     resetRequestThrottle();
   });
 
-  describe("constructor", () => {
-    it("initializes with empty state", () => {
-      expect(model.publications).toEqual([]);
-      expect(model.notify).toBe(null);
-      expect(model.status).toBe("");
-      expect(model.totalHits).toBe(0);
-      expect(model.sentHits).toBe(0);
-      expect(model.excludedCount).toBe(0);
-      expect(model.currentOffset).toBe(0);
-    });
-  });
-
-  describe("subscribe", () => {
-    it("sets the notify callback", () => {
-      const callback = vi.fn();
-      model.subscribe(callback);
-      expect(model.notify).toBe(callback);
-    });
-  });
-
   describe("transformType", () => {
     it("maps Journal Articles to article", () => {
       expect(model.transformType("Journal Articles")).toBe("article");
@@ -365,8 +345,6 @@ describe("PublicationModel", () => {
 
   describe("searchPublications", () => {
     it("fetches and parses publications on success", async () => {
-      const notifyFn = vi.fn();
-      model.subscribe(notifyFn);
 
       mockStorageGet.mockImplementation((defaults, callback) => {
         callback({ options: { maxResults: 10 } });
@@ -401,18 +379,15 @@ describe("PublicationModel", () => {
         json: () => Promise.resolve(apiResponse),
       });
 
-      await model.searchPublications("test query");
+      const result = await model.searchPublications("test query");
 
-      expect(model.status).toBe("OK");
-      expect(model.totalHits).toBe(1);
-      expect(model.sentHits).toBe(1);
-      expect(model.publications).toHaveLength(1);
-      expect(notifyFn).toHaveBeenCalledOnce();
+      expect(result.status).toBe("OK");
+      expect(result.totalHits).toBe(1);
+      expect(result.sentHits).toBe(1);
+      expect(result.publications).toHaveLength(1);
     });
 
     it("handles HTTP errors", async () => {
-      const notifyFn = vi.fn();
-      model.subscribe(notifyFn);
 
       mockStorageGet.mockImplementation((defaults, callback) => {
         callback({ options: { maxResults: 10 } });
@@ -423,10 +398,9 @@ describe("PublicationModel", () => {
         statusText: "Not Found",
       });
 
-      await model.searchPublications("bad query");
+      const result = await model.searchPublications("bad query");
 
-      expect(model.status).toBe("Error");
-      expect(notifyFn).toHaveBeenCalledOnce();
+      expect(result.status).toBe("Error");
     });
 
     it("reports dblp's anti-bot challenge page instead of a JSON parse error", async () => {
@@ -442,12 +416,12 @@ describe("PublicationModel", () => {
         json,
       });
 
-      await model.searchPublications("calefato automl");
+      const result = await model.searchPublications("calefato automl");
 
       expect(json).not.toHaveBeenCalled();
-      expect(model.status).toBe("Error");
-      expect(model.errorMessage).toContain("anti-bot check");
-      expect(model.publications).toEqual([]);
+      expect(result.status).toBe("Error");
+      expect(result.errorMessage).toContain("anti-bot check");
+      expect(result.publications).toEqual([]);
     });
 
     it("reports HTTP 429 as rate limiting", async () => {
@@ -462,17 +436,15 @@ describe("PublicationModel", () => {
         headers: { get: (name) => (name === "retry-after" ? "60" : null) },
       });
 
-      await model.searchPublications("automl");
+      const result = await model.searchPublications("automl");
 
-      expect(model.status).toBe("Error");
-      expect(model.errorMessage).toBe(
+      expect(result.status).toBe("Error");
+      expect(result.errorMessage).toBe(
         "dblp is rate-limiting requests (HTTP 429). Wait 60 seconds before trying again."
       );
     });
 
     it("handles fetch exceptions", async () => {
-      const notifyFn = vi.fn();
-      model.subscribe(notifyFn);
 
       mockStorageGet.mockImplementation((defaults, callback) => {
         callback({ options: { maxResults: 10 } });
@@ -480,15 +452,12 @@ describe("PublicationModel", () => {
 
       globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
-      await model.searchPublications("query");
+      const result = await model.searchPublications("query");
 
-      expect(model.status).toBe("Error");
-      expect(notifyFn).toHaveBeenCalledOnce();
+      expect(result.status).toBe("Error");
     });
 
     it("handles timeout (AbortError)", async () => {
-      const notifyFn = vi.fn();
-      model.subscribe(notifyFn);
 
       mockStorageGet.mockImplementation((defaults, callback) => {
         callback({ options: { maxResults: 10 } });
@@ -498,10 +467,9 @@ describe("PublicationModel", () => {
       abortError.name = "AbortError";
       globalThis.fetch = vi.fn().mockRejectedValue(abortError);
 
-      await model.searchPublications("query");
+      const result = await model.searchPublications("query");
 
-      expect(model.status).toBe("Request Timeout");
-      expect(notifyFn).toHaveBeenCalledOnce();
+      expect(result.status).toBe("Request Timeout");
     });
 
     it("sets currentOffset from parameter", async () => {
@@ -516,8 +484,8 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("query", 30);
-      expect(model.currentOffset).toBe(30);
+      const result = await model.searchPublications("query", 30);
+      expect(result.currentOffset).toBe(30);
     });
 
     it("handles zero results", async () => {
@@ -532,16 +500,49 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("no results query");
+      const result = await model.searchPublications("no results query");
 
-      expect(model.status).toBe("OK");
-      expect(model.totalHits).toBe(0);
-      expect(model.sentHits).toBe(0);
-      expect(model.publications).toEqual([]);
+      expect(result.status).toBe("OK");
+      expect(result.totalHits).toBe(0);
+      expect(result.sentHits).toBe(0);
+      expect(result.publications).toEqual([]);
     });
 
-    it("does not crash when no subscriber is set", async () => {
-      // model.notify is null by default — should not throw
+    it("keeps overlapping searches apart when the older one finishes last", async () => {
+      vi.useFakeTimers();
+      mockStorageGet.mockImplementation((defaults, callback) => {
+        callback({ options: { maxResults: 10 } });
+      });
+      const hitsResponse = (total) => ({
+        ok: true,
+        json: () => Promise.resolve({
+          result: { hits: { "@total": String(total), "@sent": "0" } },
+        }),
+      });
+      let finishOlder;
+      globalThis.fetch = vi.fn((url) =>
+        url.includes("&f=30")
+          ? Promise.resolve(hitsResponse(5))
+          : new Promise((resolve) => { finishOlder = resolve; })
+      );
+
+      try {
+        const older = model.searchPublications("older", 0);
+        const newer = model.searchPublications("newer", 30);
+        // The newer request waits 1 s for its rate-limit slot, then completes
+        await vi.advanceTimersByTimeAsync(1000);
+        const newerResult = await newer;
+        finishOlder(hitsResponse(1));
+        const olderResult = await older;
+
+        expect(newerResult).toMatchObject({ totalHits: 5, currentOffset: 30 });
+        expect(olderResult).toMatchObject({ totalHits: 1, currentOffset: 0 });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("returns OK for a valid empty response", async () => {
       mockStorageGet.mockImplementation((defaults, callback) => {
         callback({ options: { maxResults: 10 } });
       });
@@ -553,8 +554,8 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await expect(model.searchPublications("query")).resolves.not.toThrow();
-      expect(model.status).toBe("OK");
+      const result = await model.searchPublications("query");
+      expect(result.status).toBe("OK");
     });
 
     it("appends offset as &f= parameter in fetch URL", async () => {
@@ -569,7 +570,7 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("test", 50);
+      const result = await model.searchPublications("test", 50);
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).toContain("&f=50");
@@ -587,7 +588,7 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("test");
+      const result = await model.searchPublications("test");
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).toMatch(/&app=dblpSearch_[^&]+$/);
@@ -605,7 +606,7 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("test", 0);
+      const result = await model.searchPublications("test", 0);
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).not.toContain("&f=");
@@ -623,7 +624,7 @@ describe("PublicationModel", () => {
         }),
       });
 
-      await model.searchPublications("test query & special");
+      const result = await model.searchPublications("test query & special");
 
       const fetchUrl = globalThis.fetch.mock.calls[0][0];
       expect(fetchUrl).toContain("q=test%20query%20%26%20special");

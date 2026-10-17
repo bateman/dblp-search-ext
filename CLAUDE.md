@@ -13,9 +13,10 @@ dblp Search is a cross-browser extension for searching publications on dblp.org 
 **Message Flow**:
 ```
 popup.js → background.js → controller.js → model.js → DBLP API
-                                              ↓
-popup.js ← view.js ← controller.js ← model.js (observer pattern)
+popup.js ← background.js (sendResponse) ← controller.js ← view.js ← model.js
 ```
+
+The model returns each search's result (it keeps no per-search state), `view.js` turns it into a `RESPONSE_SEARCH_PUBLICATIONS` message, and the background sends that message as the reply to the request that asked for it — never as a broadcast, so it reaches only that page. The popup numbers its search/page requests and drops replies to any but the latest, so a slow older search cannot overwrite a newer one.
 
 **Key Components**:
 
@@ -23,7 +24,8 @@ popup.js ← view.js ← controller.js ← model.js (observer pattern)
 |------|---------|
 | `js/background.js` | Service worker, handles messages from popup/options |
 | `js/model/model.js` | DBLP API calls, data parsing, storage integration |
-| `js/controller/controller.js` | Routes between model and views |
+| `js/controller/controller.js` | Routes between model and view: runs searches, has the view build the response |
+| `js/view/view.js` | Builds the response message carrying a search result back to the popup |
 | `js/view/popup.js` | Main UI, BibTeX copying, citation key formatting |
 | `js/view/options.js` | Settings UI, drag-drop citation key builder |
 | `js/view/commons.js` | Shared utilities (status updates) |

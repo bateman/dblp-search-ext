@@ -59,6 +59,10 @@ const SEARCH_STATUS_FALLBACK_MS = 15000;
 // Track if filter dropdown should stay open after rebuild
 let keepFilterDropdownOpen = false;
 
+// Number of the latest search or page request. Replies to older requests are
+// dropped, so a slow earlier search cannot overwrite a newer one.
+let latestSearchId = 0;
+
 // =====================================
 // Event Listeners
 // =====================================
@@ -160,52 +164,9 @@ document.addEventListener("DOMContentLoaded", function () {
         currentOffset: 0,
       },
     });
+    // Drop the reply of a search still in flight, so it can't refill the table
+    latestSearchId++;
     requestClearResults(true);
-  });
-
-  browser.runtime.onMessage.addListener((message) => {
-    console.log(
-      `Popup.js received message from '${message.script}': ${message.type}`
-    );
-    if (message.type === "RESPONSE_SEARCH_PUBLICATIONS") {
-      // Result (or error) is in: stop the search spinner.
-      clearStatus();
-      // Ensure all values have valid defaults to prevent NaN/undefined display
-      const responseStatus = message.responseStatus || "OK";
-      const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
-      const sentHits = typeof message.sentHits === "number" ? message.sentHits : 0;
-      const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
-      const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
-      const publications = message.publications || [];
-      const errorMessage = message.errorMessage || "";
-
-      console.log(
-        "Popup.js updating publications count: ",
-        responseStatus,
-        totalHits,
-        sentHits,
-        excludedCount,
-        currentOffset
-      );
-      updatePublicationsCount(responseStatus, totalHits, errorMessage);
-      console.log("Popup.js updating publications table.");
-      buildAndDisplayTable(publications);
-      updatePaginationControls(
-        totalHits,
-        sentHits,
-        currentOffset,
-        excludedCount
-      );
-      saveResultsToStorage(
-        queryInputField.value,
-        responseStatus,
-        totalHits,
-        sentHits,
-        excludedCount,
-        publications,
-        currentOffset
-      );
-    }
   });
 
   // Keyboard navigation and shortcuts
@@ -343,8 +304,9 @@ function hasModifierKey(event) {
  * @param {Object} dictObject - Message object to send
  * @param {string} dictObject.script - Identifier of the sending script
  * @param {string} dictObject.type - Message type
+ * @param {function(Object): void} [onResult] - Called with the reply's result
  */
-function sendMessage(dictObject) {
+function sendMessage(dictObject, onResult) {
   browser.runtime.sendMessage(dictObject, function (response) {
     if (browser.runtime.lastError) {
       console.error("Popup.js message error:", browser.runtime.lastError.message);
@@ -363,8 +325,68 @@ function sendMessage(dictObject) {
       console.log(
         `Popup.js received a response from '${response.script}': ${response.response}`
       );
+      if (onResult && response.result) {
+        onResult(response.result);
+      }
     }
   });
+}
+
+/**
+ * Sends a search or page request and displays its result, unless a newer
+ * request was sent in the meantime
+ * @param {Object} message - REQUEST_SEARCH_PUBLICATIONS, REQUEST_NEXT_PAGE or
+ *   REQUEST_PREVIOUS_PAGE message
+ */
+function sendSearchRequest(message) {
+  latestSearchId++;
+  const searchId = latestSearchId;
+  sendMessage(message, function (response) {
+    if (searchId === latestSearchId) {
+      displaySearchResult(response);
+    } else {
+      console.log("Popup.js dropped the result of a replaced search.");
+    }
+  });
+}
+
+/**
+ * Displays the result of a search or page request and saves it to storage
+ * @param {Object} message - RESPONSE_SEARCH_PUBLICATIONS message built by view.js
+ */
+function displaySearchResult(message) {
+  // Result (or error) is in: stop the search spinner.
+  clearStatus();
+  // Ensure all values have valid defaults to prevent NaN/undefined display
+  const responseStatus = message.responseStatus || "OK";
+  const totalHits = typeof message.totalHits === "number" ? message.totalHits : 0;
+  const sentHits = typeof message.sentHits === "number" ? message.sentHits : 0;
+  const excludedCount = typeof message.excludedCount === "number" ? message.excludedCount : 0;
+  const currentOffset = typeof message.currentOffset === "number" ? message.currentOffset : 0;
+  const publications = Array.isArray(message.publications) ? message.publications : [];
+  const errorMessage = message.errorMessage || "";
+
+  console.log(
+    "Popup.js updating publications count: ",
+    responseStatus,
+    totalHits,
+    sentHits,
+    excludedCount,
+    currentOffset
+  );
+  updatePublicationsCount(responseStatus, totalHits, errorMessage);
+  console.log("Popup.js updating publications table.");
+  buildAndDisplayTable(publications);
+  updatePaginationControls(totalHits, sentHits, currentOffset, excludedCount);
+  saveResultsToStorage(
+    document.getElementById("paperTitle").value,
+    responseStatus,
+    totalHits,
+    sentHits,
+    excludedCount,
+    publications,
+    currentOffset
+  );
 }
 
 /**
@@ -374,13 +396,13 @@ function sendMessage(dictObject) {
  */
 function requestSearchDblp(q, offset = 0) {
   // Update status to let user know search has started. The spinner persists
-  // until the response arrives (cleared in the RESPONSE_SEARCH_PUBLICATIONS
-  // handler); the fallback timeout only guards against a lost response.
+  // until the response arrives (cleared in displaySearchResult); the fallback
+  // timeout only guards against a lost response.
   updateStatus("Searching...", SEARCH_STATUS_FALLBACK_MS);
   // Clear existing results, but not the paperTitle
   requestClearResults(false);
   // Send message to background.js
-  sendMessage({
+  sendSearchRequest({
     script: "popup.js",
     type: "REQUEST_SEARCH_PUBLICATIONS",
     query: q,
@@ -2041,7 +2063,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
     button.addEventListener("click", function () {
       window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
-      sendMessage({
+      sendSearchRequest({
         script: "popup.js",
         type: "REQUEST_PREVIOUS_PAGE",
         query: query,
@@ -2056,7 +2078,7 @@ function addPaginationEventListeners(currentOffset, maxResults) {
     button.addEventListener("click", function () {
       window.scrollTo(0, 0);
       updateStatus("Loading...", SEARCH_STATUS_FALLBACK_MS);
-      sendMessage({
+      sendSearchRequest({
         script: "popup.js",
         type: "REQUEST_NEXT_PAGE",
         query: query,

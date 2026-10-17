@@ -136,8 +136,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   const { action, log } = handler(message);
+  // The result goes back only to the page that asked, as the reply to its
+  // own request, so it can drop replies to searches it has since replaced
   action
-    .then(() => {
+    .then((result) => {
       console.log(
         `Background.js completed ${log} sent by '${message.script}'.`
       );
@@ -145,6 +147,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         script: "background.js",
         success: true,
         response: `Completed ${log}.`,
+        result: result,
       });
     })
     .catch((error) => handleMessageError(error, message, sendResponse));
