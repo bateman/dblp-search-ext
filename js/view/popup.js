@@ -1232,30 +1232,24 @@ function selectRow(index) {
 }
 
 /**
- * Copies BibTeX for the selected row
+ * Copies BibTeX for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function copySelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
     window.copyBibtexToClipboard(bibtexUrl);
-    updateStatus("Copying BibTeX...", 2000);
-  } else {
-    updateStatus("No BibTeX available", 2000);
   }
 }
 
 /**
- * Downloads BibTeX for the selected row
+ * Downloads BibTeX for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function downloadSelectedRowBibtex(row) {
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
     window.downloadBibtex(bibtexUrl);
-    updateStatus("Downloading BibTeX...", 2000);
-  } else {
-    updateStatus("No BibTeX available", 2000);
   }
 }
 
@@ -1289,15 +1283,13 @@ function openSelectedRowDblp(row) {
 }
 
 /**
- * Opens DOI page for the selected row
+ * Opens DOI page for the selected row (silently does nothing when it has none)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function openSelectedRowDoi(row) {
   const doiUrl = row.dataset.doiUrl;
   if (doiUrl && isValidURL(doiUrl)) {
     browser.tabs.create({ url: doiUrl });
-  } else {
-    updateStatus("No DOI link available", 2000);
   }
 }
 
@@ -1622,10 +1614,6 @@ function downloadViaApi(blobUrl, filename) {
       saveAs: false,
     })
   )
-    .then(() => {
-      // Only report success once the browser has accepted the download
-      updateStatus("Downloaded " + filename, 2000);
-    })
     .catch((err) => {
       console.error("Could not download BibTeX: ", err);
       updateStatus("Error: Could not download BibTeX", 3000);
@@ -1646,7 +1634,6 @@ function downloadViaAnchor(blobUrl, filename) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  updateStatus("Downloaded " + filename, 2000);
   revokeBlobUrlLater(blobUrl);
 }
 
