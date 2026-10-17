@@ -54,13 +54,6 @@ function handleMessageError(error, message, sendResponse) {
 }
 
 /**
- * Maps message types to their handler functions and log descriptions.
- * Each handler returns an object with:
- * - action: Promise from the controller method
- * - log: Human-readable description for logging
- * @type {Object<string, function(Object): {action: Promise, log: string}>}
- */
-/**
  * Handles a Save to Zotero request from the popup. The connector requests
  * run here in the service worker so the save completes even if the popup
  * closes mid-flight; the response only feeds the popup's status line.
@@ -91,6 +84,13 @@ function handleZoteroSaveMessage(message, sendResponse) {
     .catch((error) => handleMessageError(error, message, sendResponse));
 }
 
+/**
+ * Maps message types to their handler functions and log descriptions.
+ * Each handler returns an object with:
+ * - action: Promise from the controller method
+ * - log: Human-readable description for logging
+ * @type {Object<string, function(Object): {action: Promise, log: string}>}
+ */
 const messageHandlers = {
   REQUEST_SEARCH_PUBLICATIONS: (msg) => ({
     action: controller.handleSearch(msg.query, msg.offset || 0),
