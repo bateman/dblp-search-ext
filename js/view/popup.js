@@ -60,21 +60,7 @@ let latestSearchId = 0;
 
 document.addEventListener("DOMContentLoaded", function () {
   // Display extension version in the footer
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-  fetch("../manifest.json", { signal: controller.signal })
-    .then((response) => {
-      clearTimeout(timeoutId);
-      return response.json();
-    })
-    .then((data) => {
-      document.getElementById("version").textContent = data.version;
-    })
-    .catch((error) => {
-      clearTimeout(timeoutId);
-      console.error("Could not load manifest version:", error);
-    });
+  document.getElementById("version").textContent = browser.runtime.getManifest().version;
 
   // Restore popup width from storage
   restorePopupWidth();
