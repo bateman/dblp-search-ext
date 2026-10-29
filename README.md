@@ -93,6 +93,7 @@ make build/edge        # Build Edge extension (same as Chrome)
 make build/all         # Build all extensions
 make build/clean       # Clean build directory and stamps
 make test              # Run the unit-test suite
+make test/live         # Run the live tests against the dblp API
 ```
 
 > [!NOTE]
@@ -171,7 +172,15 @@ make test              # Run the unit tests once
 make test/watch        # Run the unit tests in watch mode
 ```
 
-Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm install`).
+Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm ci`).
+
+The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter), and checks that the extension can parse the results and process the BibTeX entry:
+
+```bash
+make test/live         # Run the live tests against the dblp API (needs network)
+```
+
+The `dblp Live Check` workflow runs it every Monday and can be started by hand from the Actions tab. It is not part of `make test` or of the release workflows, so a dblp outage never blocks CI.
 
 Manual testing in the browser is still recommended for UI changes:
 

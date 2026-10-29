@@ -140,9 +140,10 @@ dep/safari: | dep/macos
 
 #-- Test
 
-node_modules: package.json
+# npm ci installs exactly what package-lock.json lists, without rewriting it
+node_modules: package.json package-lock.json
 	@echo -e "$(CYAN)Installing dependencies...$(RESET)"
-	@npm install
+	@npm ci
 
 .PHONY: test
 test: node_modules  ## Run unit tests
@@ -153,6 +154,12 @@ test: node_modules  ## Run unit tests
 .PHONY: test/watch
 test/watch: node_modules  ## Run unit tests in watch mode
 	@npx vitest
+
+.PHONY: test/live
+test/live: node_modules  ## Run live tests against the dblp API (needs network)
+	@echo -e "$(CYAN)\nRunning live tests against dblp.org...$(RESET)"
+	@npm run --silent test:live
+	@echo -e "$(GREEN)Done.$(RESET)"
 
 #-- Build targets
 

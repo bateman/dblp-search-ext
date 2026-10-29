@@ -16,7 +16,7 @@ import { PublicationView } from "./view/view.js";
 import { extractDOI } from "./utils/doi.js";
 import { flashBadge } from "./utils/badge.js";
 import { performZoteroSave, isValidZoteroTargetId } from "./utils/zotero.js";
-import { assertDblpData, dblpFetch } from "./utils/dblp.js";
+import { fetchDblpBibtex } from "./utils/dblp.js";
 
 /** @type {PublicationModel} */
 const model = new PublicationModel();
@@ -65,11 +65,7 @@ function handleMessageError(error, message, sendResponse) {
  * @param {Function} sendResponse - Callback to send the BibTeX back
  */
 function handleFetchBibtexMessage(message, sendResponse) {
-  dblpFetch(message.url, (response) => {
-    // Never return an error or anti-bot HTML page as if it were BibTeX
-    assertDblpData(response);
-    return response.text();
-  })
+  fetchDblpBibtex(message.url)
     .then((bibtex) => {
       sendResponse({ script: "background.js", success: true, bibtex: bibtex });
     })
