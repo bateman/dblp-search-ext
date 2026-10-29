@@ -28,7 +28,8 @@ const PUB_TYPES = [
   { type: "incollection", label: "Chapter", color: "#ef942d" },
   { type: "editor", label: "Editor", color: "#33c3ba" },
   { type: "misc", label: "Misc", color: "#606b70" },
-  { type: "refwork", label: "Ref", color: "#96ad2d" }
+  { type: "refwork", label: "Ref", color: "#96ad2d" },
+  { type: "data", label: "Data", color: "#885522" }
 ];
 
 // Track current sort and filter settings

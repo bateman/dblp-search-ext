@@ -322,6 +322,10 @@ td>img.refwork {
     background: #96ad2d;
 }
 
+td>img.data {
+    background: #885522;
+}
+
 div.footer-gh {
     font-size: 8px;
     position: relative;
