@@ -1,0 +1,37 @@
+name: dblp Live Check
+
+# Checks every week that the extension still works with the real dblp API
+# (firewall, JSON format, BibTeX downloads). GitHub emails a failed scheduled
+# run to whoever last changed the cron line. In a public repository GitHub
+# disables this schedule after 60 days without activity: re-enable it from
+# the Actions tab.
+on:
+  schedule:
+    - cron: '23 4 * * 1'  # Mondays, 04:23 UTC
+  workflow_dispatch:
+
+# The tests only need to read the code
+permissions:
+  contents: read
+
+jobs:
+    live:
+        # Forks would send their own weekly requests to dblp
+        if: github.repository == 'bateman/dblp-search-ext'
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: 22
+                cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run live tests against dblp
+              run: npm run test:live

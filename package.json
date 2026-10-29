@@ -5,7 +5,8 @@
   "description": "Cross-browser extension for searching publications on dblp.org",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:live": "vitest run --config vitest.live.config.js"
   },
   "devDependencies": {
     "vitest": "^5.0.5"

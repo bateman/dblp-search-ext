@@ -154,6 +154,12 @@ test: node_modules  ## Run unit tests
 test/watch: node_modules  ## Run unit tests in watch mode
 	@npx vitest
 
+.PHONY: test/live
+test/live: node_modules  ## Run live tests against the dblp API (needs network)
+	@echo -e "$(CYAN)\nRunning live tests against dblp.org...$(RESET)"
+	@npm run --silent test:live
+	@echo -e "$(GREEN)Done.$(RESET)"
+
 #-- Build targets
 
 .PHONY: build
