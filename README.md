@@ -172,9 +172,9 @@ make test              # Run the unit tests once
 make test/watch        # Run the unit tests in watch mode
 ```
 
-Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm install`).
+Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm ci`).
 
-The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter):
+The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter), and checks that the extension can parse the results and process the BibTeX entry:
 
 ```bash
 make test/live         # Run the live tests against the dblp API (needs network)

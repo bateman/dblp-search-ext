@@ -196,3 +196,17 @@ export function assertDblpData(response) {
     throw error;
   }
 }
+
+/**
+ * Downloads a BibTeX entry from dblp, refusing error and anti-bot pages.
+ * @param {string} url - dblp BibTeX URL (other origins are refused)
+ * @returns {Promise<string>} The raw BibTeX text
+ * @throws {Error} "HttpError" when dblp sends no BibTeX; errors from dblpFetch()
+ */
+export function fetchDblpBibtex(url) {
+  return dblpFetch(url, (response) => {
+    // Never return an error or anti-bot HTML page as if it were BibTeX
+    assertDblpData(response);
+    return response.text();
+  });
+}

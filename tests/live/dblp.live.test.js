@@ -30,10 +30,14 @@ globalThis.chrome = {
 };
 
 const { PublicationModel } = await import("../../js/model/model.js");
-const { assertDblpData, dblpFetch } = await import("../../js/utils/dblp.js");
+const { fetchDblpBibtex } = await import("../../js/utils/dblp.js");
+const { processBibtexData } = await import("../../js/utils/bibtex.js");
 
 /** A query with stable results: the Senti4SD papers (EMSE 2018, ICSE 2018) */
 const QUERY = "Sentiment polarity detection for software development";
+
+/** BibTeX download of the EMSE 2018 paper found by QUERY */
+const BIBTEX_URL = "https://dblp.org/rec/journals/ese/CalefatoLMN18.bib?param=1";
 
 /** Entry types the model maps dblp's publication types to */
 const KNOWN_TYPES = [
@@ -46,13 +50,11 @@ const KNOWN_TYPES = [
   "refwork",
 ];
 
-/** One retry absorbs a transient network error; a second failure is real */
-const LIVE_TEST_OPTIONS = { retry: 1, timeout: 30000 };
+// No retries: retrying a 429 or an anti-bot page at once would not help and
+// would only send dblp more requests; one weekly failure is worth a look
+const LIVE_TEST_OPTIONS = { timeout: 30000 };
 
 describe("dblp live API", () => {
-  /** @type {Object[]} Publications found by the search test */
-  let publications = [];
-
   it("returns parseable search results", LIVE_TEST_OPTIONS, async () => {
     const result = await new PublicationModel().searchPublications(QUERY);
 
@@ -73,20 +75,26 @@ describe("dblp live API", () => {
     }
     expect(result.publications.some((pub) => pub.authors.length > 0)).toBe(true);
     expect(result.publications.some((pub) => pub.doi !== "N/A")).toBe(true);
-
-    publications = result.publications;
+    expect(result.publications.map((pub) => pub.bibtexLink)).toContain(BIBTEX_URL);
   });
 
-  it("serves BibTeX for a search result", LIVE_TEST_OPTIONS, async () => {
-    expect(publications.length, "the search test found no publications").toBeGreaterThan(0);
+  it("serves BibTeX the extension can process", LIVE_TEST_OPTIONS, async () => {
+    const bibtex = await fetchDblpBibtex(BIBTEX_URL);
 
-    const bibtex = await dblpFetch(publications[0].bibtexLink, (response) => {
-      assertDblpData(response);
-      return response.text();
+    // The default options: key renamed to <author><year><venue>, dblp metadata removed
+    const processed = processBibtexData(bibtex, {
+      keyRenaming: true,
+      citationKeyFields: ["author", "year", "venue"],
+      authorCapitalize: false,
+      venueUppercase: false,
+      removeTimestampBiburlBibsource: true,
+      removeUrl: false,
     });
 
-    expect(bibtex.trim()).toMatch(/^@\w+\{DBLP:/);
-    expect(bibtex).toMatch(/title\s*=/);
-    expect(bibtex).toMatch(/author\s*=|editor\s*=/);
+    expect(processed.citationKey).toBe("calefato2018ese");
+    expect(processed.data).toMatch(/^@article\{calefato2018ese,/);
+    expect(processed.data).toMatch(/title\s*=\s*\{Sentiment Polarity Detection/);
+    expect(processed.data).toMatch(/author\s*=\s*\{Fabio Calefato/);
+    expect(processed.data).not.toMatch(/timestamp\s*=|biburl\s*=|bibsource\s*=/);
   });
 });

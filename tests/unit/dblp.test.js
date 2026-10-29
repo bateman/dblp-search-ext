@@ -6,6 +6,7 @@ import {
   assertDblpData,
   withAppParam,
   dblpFetch,
+  fetchDblpBibtex,
   resetRequestThrottle,
 } from "../../js/utils/dblp.js";
 
@@ -233,6 +234,30 @@ describe("dblp response helpers", () => {
       };
       await expect(dblpFetch("https://dblp.org/a.bib", failingRead)).rejects.toThrow("bad body");
       expect(vi.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe("fetchDblpBibtex", () => {
+    beforeEach(() => {
+      resetRequestThrottle();
+    });
+
+    it("returns the BibTeX text of a data response", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ...fakeResponse({ headers: { "Content-Type": "text/x-bibtex" } }),
+        text: () => Promise.resolve("@article{DBLP:journals/x/Y21,"),
+      });
+      await expect(fetchDblpBibtex("https://dblp.org/rec/journals/x/Y21.bib"))
+        .resolves.toBe("@article{DBLP:journals/x/Y21,");
+    });
+
+    it("rejects the anti-bot page instead of returning it as BibTeX", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ...fakeResponse({ headers: { "Content-Type": "text/html" } }),
+        text: () => Promise.resolve("<html></html>"),
+      });
+      await expect(fetchDblpBibtex("https://dblp.org/rec/journals/x/Y21.bib"))
+        .rejects.toMatchObject({ name: "HttpError", message: DBLP_CHALLENGE_MESSAGE });
     });
   });
 });

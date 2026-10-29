@@ -140,9 +140,10 @@ dep/safari: | dep/macos
 
 #-- Test
 
-node_modules: package.json
+# npm ci installs exactly what package-lock.json lists, without rewriting it
+node_modules: package.json package-lock.json
 	@echo -e "$(CYAN)Installing dependencies...$(RESET)"
-	@npm install
+	@npm ci
 
 .PHONY: test
 test: node_modules  ## Run unit tests

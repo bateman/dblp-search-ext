@@ -19,10 +19,14 @@ jobs:
         # Forks would send their own weekly requests to dblp
         if: github.repository == 'bateman/dblp-search-ext'
         runs-on: ubuntu-latest
+        # The job takes about a minute; don't hold a runner if it hangs
+        timeout-minutes: 10
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                persist-credentials: false
 
             - name: Set up Node.js
               uses: actions/setup-node@v4
