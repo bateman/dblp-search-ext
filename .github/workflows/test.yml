@@ -1,9 +1,13 @@
 name: Unit Tests
 
 # Called by every release workflow, so nothing is published unless the
-# unit tests pass on the tagged commit.
+# unit tests pass on the tagged commit. Also runs on pull requests and on
+# pushes to main (which include merged pull requests).
 on:
   workflow_call:
+  push:
+    branches: [main]
+  pull_request:
 
 # The tests only need to read the code
 permissions:
