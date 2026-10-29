@@ -51,6 +51,10 @@ describe("PublicationModel", () => {
       expect(model.transformType("Reference Works")).toBe("refwork");
     });
 
+    it("maps Data and Artifacts to data", () => {
+      expect(model.transformType("Data and Artifacts")).toBe("data");
+    });
+
     it("returns undefined for unknown types", () => {
       expect(model.transformType("Unknown")).toBe(undefined);
     });

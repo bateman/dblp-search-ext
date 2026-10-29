@@ -295,7 +295,7 @@ td>img.access {
 }
 
 td>img.book {
-    background: #f8c91f;
+    background: #ffd500;
 }
 
 td>img.incollection {
@@ -319,7 +319,11 @@ td>img.misc {
 }
 
 td>img.refwork {
-    background: #96ad2d;
+    background: #96ad2c;
+}
+
+td>img.data {
+    background: #885522;
 }
 
 div.footer-gh {

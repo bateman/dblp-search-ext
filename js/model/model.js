@@ -24,6 +24,22 @@ import { assertDblpData, dblpFetch } from "../utils/dblp.js";
  */
 
 /**
+ * dblp publication types (the API's `info.type`) mapped to the entry types
+ * the popup uses for color coding and filtering.
+ * @type {Map<string, string>}
+ */
+const DBLP_TYPES = new Map([
+  ["Journal Articles", "article"],
+  ["Conference and Workshop Papers", "inproceedings"],
+  ["Editorship", "editor"],
+  ["Parts in Books or Collections", "incollection"],
+  ["Books and Theses", "book"],
+  ["Informal and Other Publications", "misc"],
+  ["Reference Works", "refwork"],
+  ["Data and Artifacts", "data"],
+]);
+
+/**
  * Model class for fetching and parsing publication data from DBLP API.
  * @class
  */
@@ -260,35 +276,11 @@ export class PublicationModel {
   }
 
   /**
-   * Transforms DBLP publication type to BibTeX entry type
+   * Transforms a dblp publication type to the entry type used by the popup
    * @param {string} type - DBLP publication type (e.g., "Journal Articles")
-   * @returns {string|undefined} BibTeX entry type (e.g., "article") or undefined if unknown type
+   * @returns {string|undefined} Entry type (e.g., "article") or undefined if unknown type
    */
   transformType(type) {
-    var _type;
-    switch (type) {
-      case "Journal Articles":
-        _type = "article";
-        break;
-      case "Conference and Workshop Papers":
-        _type = "inproceedings";
-        break;
-      case "Editorship":
-        _type = "editor";
-        break;
-      case "Parts in Books or Collections":
-        _type = "incollection";
-        break;
-      case "Books and Theses":
-        _type = "book";
-        break;
-      case "Informal and Other Publications":
-        _type = "misc";
-        break;
-      case "Reference Works":
-        _type = "refwork";
-        break;
-    }
-    return _type;
+    return DBLP_TYPES.get(type);
   }
 }

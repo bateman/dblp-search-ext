@@ -48,6 +48,7 @@ const KNOWN_TYPES = [
   "book",
   "misc",
   "refwork",
+  "data",
 ];
 
 // No retries: retrying a 429 or an anti-bot page at once would not help and

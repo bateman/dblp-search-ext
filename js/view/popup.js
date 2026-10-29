@@ -24,11 +24,12 @@ let selectedRowIndex = -1;
 const PUB_TYPES = [
   { type: "article", label: "Article", color: "#c32b72" },
   { type: "inproceedings", label: "Conf", color: "#196ca3" },
-  { type: "book", label: "Book", color: "#f8c91f" },
+  { type: "book", label: "Book", color: "#ffd500" },
   { type: "incollection", label: "Chapter", color: "#ef942d" },
   { type: "editor", label: "Editor", color: "#33c3ba" },
   { type: "misc", label: "Misc", color: "#606b70" },
-  { type: "refwork", label: "Ref", color: "#96ad2d" }
+  { type: "refwork", label: "Ref", color: "#96ad2c" },
+  { type: "data", label: "Data", color: "#885522" }
 ];
 
 // Track current sort and filter settings
