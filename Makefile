@@ -252,7 +252,7 @@ endef
 bump/patch: | release/check  ## Bump patch version (e.g., 1.0.0 -> 1.0.1)
 	@NEEDS_RELEASE=$$(cat $(RELEASE_STAMP)); \
 	if [ "$$NEEDS_RELEASE" = "true" ]; then \
-		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF++; print $$0}') ; \
+		NEW_VERSION=$$(echo $(APP_VERSION) | $(AWK) -F. -v OFS=. '{$$NF = $$NF + 1; print $$0}') ; \
 		$(call update_version,$$NEW_VERSION) ; \
 	fi
 
