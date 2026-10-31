@@ -144,7 +144,7 @@ The run targets work on macOS and Linux. Each browser runs with a throwaway prof
 | `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Google Chrome ignores the `--load-extension` flag since version 137, so `run/chrome` and `run/edge` load the extension through the DevTools protocol instead (`tools/run-chromium.mjs`, the method Google recommends), much as `web-ext` does for Firefox. Any Chrome works: Google Chrome, Chrome for Testing, or Chromium.
+> * `run/chrome` and `run/edge` also run through `web-ext` (`--target=chromium`), which loads the extension with the DevTools protocol: Google Chrome ignores the `--load-extension` flag since version 137. Any Chrome works: Google Chrome, Chrome for Testing, or Chromium.
 > * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
 

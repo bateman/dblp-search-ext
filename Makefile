@@ -178,10 +178,6 @@ dep/xcode: | dep/macos
 		exit 1; \
 	fi
 
-.PHONY: dep/node
-dep/node:
-	@command -v node > /dev/null || { echo -e "$(RED)node not found: install Node.js.$(RESET)"; exit 1; }
-
 .PHONY: dep/npx
 dep/npx:
 	@command -v npx > /dev/null || { echo -e "$(RED)npx not found: install Node.js.$(RESET)"; exit 1; }
@@ -420,51 +416,36 @@ release: tag/push  ## Triggers the release action - pushes the tag to origin (al
 
 #-- Run
 
-# Chromium flags shared by run/chrome and run/edge
-CHROMIUM_RUN_FLAGS := \
-	--force-dev-mode-highlighting \
-	--no-first-run \
-	--no-default-browser-check \
-	--disable-sync \
-	--disable-default-apps \
-	--disable-client-side-phishing-detection \
-	--disable-background-networking \
-	--disable-background-timer-throttling \
-	--disable-backgrounding-occluded-windows \
-	--disable-breakpad \
-	--disable-dev-shm-usage \
-	--disable-renderer-backgrounding \
-	--metrics-recording-only
-CHROME_EXTRA_FLAGS := --auto-open-devtools-for-tabs
-EDGE_EXTRA_FLAGS :=
-
 define make_chromium_dev_dir
 	@rm -rf "$(CHROMIUM_DEV_DIR)"
 	@mkdir -p "$(CHROMIUM_DEV_DIR)"
 	@for f in $(SRC); do ln -s "$(WORK_DIR)/$$f" "$(CHROMIUM_DEV_DIR)/$$f"; done
 endef
 
-# Runs the Chromium-based browser at $(1) with the profile named $(2) and the
-# flags in the variable named $(3). Branded Google Chrome ignores
-# --load-extension since version 137, so tools/run-chromium.mjs loads the
-# extension through the DevTools protocol instead (as web-ext does for
-# Firefox); the browser stays in the foreground until it is closed or Ctrl-C.
+# Runs the Chromium-based browser at $(1) through web-ext, as run/firefox does
+# for Firefox, with a temporary profile under $(PROFILES_DIR)/$(2) and the
+# extra browser flags $(3). Branded Google Chrome ignores --load-extension
+# since version 137; web-ext loads the extension through the DevTools protocol
+# instead, and keeps the browser in the foreground until it is closed or Ctrl-C.
 define run_chromium
 	$(make_chromium_dev_dir)
 	@mkdir -p "$(PROFILES_DIR)/$(2)"
-	@node "$(WORK_DIR)/tools/run-chromium.mjs" "$(1)" "$(CHROMIUM_DEV_DIR)" \
-		--user-data-dir="$(PROFILES_DIR)/$(2)" $($(3)) $(CHROMIUM_RUN_FLAGS) $(BROWSER_ARGS) $(DEFAULT_URL)
+	@TMPDIR="$(PROFILES_DIR)/$(2)" npx --yes web-ext@$(WEB_EXT_VERSION) run --target=chromium \
+		--chromium-binary="$(1)" \
+		--source-dir="$(CHROMIUM_DEV_DIR)" \
+		--start-url=$(DEFAULT_URL) \
+		$(foreach a,$(3) $(BROWSER_ARGS),--arg=$(a))
 endef
 
 .PHONY: run/chrome
-run/chrome: | dep/chrome dep/node  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
+run/chrome: | dep/chrome dep/npx  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Chrome extension with $(CHROME_BIN)...$(RESET)"
-	$(call run_chromium,$(CHROME_BIN),chrome,CHROME_EXTRA_FLAGS)
+	$(call run_chromium,$(CHROME_BIN),chrome,--auto-open-devtools-for-tabs)
 
 .PHONY: run/edge
-run/edge: | dep/edge dep/node  ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
+run/edge: | dep/edge dep/npx  ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Edge extension with $(EDGE_BIN)...$(RESET)"
-	$(call run_chromium,$(EDGE_BIN),edge,EDGE_EXTRA_FLAGS)
+	$(call run_chromium,$(EDGE_BIN),edge,)
 
 .PHONY: run/firefox
 run/firefox: dep/firefox build/firefox  ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
