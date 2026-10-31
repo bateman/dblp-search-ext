@@ -24,7 +24,7 @@ XCRUN_VERSION := $(if $(XCRUN),$(shell $(XCRUN) --version 2> /dev/null),$(NOT_IN
 XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null)
 
 # web-ext version used by test/lint (run through npx)
-WEB_EXT_VERSION := 8.10.0
+WEB_EXT_VERSION := 10.8.0
 
 # Browsers used by the run targets. Each *_BIN can be overridden on the
 # command line, e.g. make run/chrome CHROME_BIN=/path/to/chromium
