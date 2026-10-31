@@ -110,7 +110,7 @@ make test/live         # Run the live tests against the dblp API
 3. Click "Load unpacked" and select the project folder (the one containing `manifest.json`), or a folder where you unzipped the archive from `build/chrome`.
 
 > [!NOTE]
-> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 136+.
+> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 140+ (Firefox for Android 142+).
 
 **Edge**
 

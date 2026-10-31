@@ -43,9 +43,19 @@ describe("manifest.json", () => {
   it("declares the Firefox add-on ID and minimum version", () => {
     const gecko = manifest.browser_specific_settings.gecko;
     expect(gecko.id).toBe("dblpSearch@fcalefato.dev");
-    // Firefox supports background.preferred_environment from version 136
+    // Firefox supports background.preferred_environment from version 136 and
+    // the built-in data consent (data_collection_permissions) from 140
     const major = Number.parseInt(gecko.strict_min_version, 10);
-    expect(major).toBeGreaterThanOrEqual(136);
+    expect(major).toBeGreaterThanOrEqual(140);
+  });
+
+  it("declares the data it transmits for Firefox's built-in consent", () => {
+    // Queries (typed or selected on a page) go to dblp.org; keep PRIVACY.md in sync
+    const consent = manifest.browser_specific_settings.gecko.data_collection_permissions;
+    expect(consent.required).toEqual(["searchTerms", "websiteContent"]);
+    // Firefox for Android supports the key from version 142
+    const android = manifest.browser_specific_settings.gecko_android;
+    expect(Number.parseInt(android.strict_min_version, 10)).toBeGreaterThanOrEqual(142);
   });
 
   it("has the same version as package.json", () => {

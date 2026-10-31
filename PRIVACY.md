@@ -10,4 +10,15 @@ When you copy a BibTeX entry, the extension fetches the public BibTeX record fro
 
 The extension also adds right-click menu items (shown when text is selected) that open a dblp.org search or resolve a selected DOI by opening the corresponding `doi.org` page in a new browser tab. These open public pages and send no data to the developer.
 
+If you use "Save to Zotero", the extension sends the BibTeX entry (public dblp metadata) to the Zotero desktop app running on your own computer (`127.0.0.1`). It does not leave your device.
+
 The extension uses only the permissions needed to provide these features.
+
+## Firefox data collection declaration
+
+Firefox asks every extension to declare the kinds of data it sends outside the browser, to anyone, not only to its developer. dblp Search declares:
+
+- **Search terms**: the queries you type, sent to `dblp.org` when you search.
+- **Website content**: text you select on a web page, sent to `dblp.org` as a search query, or to `doi.org` as a DOI to resolve, when you use the popup or the right-click menu on it.
+
+Both are sent only as the direct result of an action you take, only to the services named above, and without identifiers, cookies, or analytics. Nothing is sent to the developer.
