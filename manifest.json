@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "dblp Search",
-    "version": "3.10.2",
+    "version": "3.11.0",
     "description": "Search academic publications on dblp from everywhere.",
     "minimum_chrome_version": "121",
     "icons": {
