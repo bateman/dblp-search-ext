@@ -46,10 +46,11 @@ The model returns each search's result (it keeps no per-search state), `view.js`
 A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 
 - `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file.
+- `background.preferred_environment: ["service_worker"]` makes Safari use the service worker: with both keys present Safari would otherwise run `scripts` as a background page. Chrome ignores it, and Firefox 128–135 ignore it with a lint warning (Firefox supports it from 136).
 - `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
 - `minimum_chrome_version` is `121` because older Chromium rejects `background.scripts` in an MV3 manifest; Firefox ignores the key.
 - The Firefox release workflow reads the add-on ID from `browser_specific_settings.gecko.id`, so the ID lives only in the manifest.
-- `tests/unit/manifest.test.js` checks these invariants, and `make test/lint-firefox` (run in CI) lints the Firefox package with `web-ext lint`. The `MANIFEST_FIELD_UNSUPPORTED` warning for `background.service_worker` is expected.
+- `tests/unit/manifest.test.js` checks these invariants, and `make test/lint` (run in CI) lints the Firefox package with `web-ext lint`. The lint warnings for `background.service_worker` and `background.preferred_environment` are expected.
 
 ## DBLP API
 

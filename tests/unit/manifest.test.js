@@ -29,6 +29,11 @@ describe("manifest.json", () => {
     expect(background.type).toBe("module");
   });
 
+  it("asks Safari to run the background as a service worker", () => {
+    // With both keys present Safari would otherwise use background.scripts
+    expect(manifest.background.preferred_environment).toEqual(["service_worker"]);
+  });
+
   it("requires a Chromium version that accepts background.scripts", () => {
     // Chromium before 121 rejects an MV3 manifest that has background.scripts
     const major = Number.parseInt(manifest.minimum_chrome_version, 10);

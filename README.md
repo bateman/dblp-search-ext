@@ -90,14 +90,14 @@ make build/chrome      # Build Chrome extension ZIP
 make build/firefox     # Build Firefox XPI addon and sources
 make build/safari      # Build Safari app-extension (macOS + Xcode required)
 make build/edge        # Build Edge extension (same as Chrome)
-make build/all         # Build all extensions
+make build/all         # Build all extensions (Safari is skipped outside macOS)
 make build/clean       # Clean build directory and stamps
 make test              # Run the unit-test suite
 make test/live         # Run the live tests against the dblp API
 ```
 
 > [!NOTE]
-> Safari build will start only on macOS if Xcode is installed.
+> Safari can only be built on macOS with Xcode installed; elsewhere `make build` builds the other extensions and skips Safari.
 
 ### Manual installation
 
@@ -107,10 +107,10 @@ make test/live         # Run the live tests against the dblp API
 
 2. Enable Developer mode by clicking the toggle switch next to "Developer mode".
 
-3. Click "Load unpacked" and select the `build/chrome` directory in your project folder.
+3. Click "Load unpacked" and select the project folder (the one containing `manifest.json`), or a folder where you unzipped the archive from `build/chrome`.
 
 > [!NOTE]
-> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 128+.
+> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox, and `background.preferred_environment` (which makes Safari use the service worker) as unsupported before Firefox 136; Firefox 128–135 ignore it. Requires Chrome/Edge 121+ and Firefox 128+.
 
 **Edge**
 
@@ -122,24 +122,31 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 
 2. Click "This Firefox" and "Load Temporary Add-on...".
 
-3. Navigate to the `build/firefox` directory in your project folder and select it.
+3. Select the `.xpi` file in `build/firefox` (or `manifest.json` in `build/firefox/src/<addon-folder>`).
 
 ### Development Commands
 
 ```bash
-make run/chrome        # Launch Chrome with extension loaded (dev mode)
-make run/firefox       # Launch Firefox Dev Edition with extension
-make run/safari        # Launch Safari with extension
-make run/edge          # Launch Edge with extension
-make info              # Show development environment info
+make run/chrome        # Launch Chrome/Chromium with the extension loaded (dev mode)
+make run/firefox       # Launch Firefox with the extension (via web-ext)
+make run/safari        # Launch Safari with the extension (macOS only)
+make run/edge          # Launch Edge with the extension
+make info              # Show development environment info, including the browsers found
 ```
 
-Use `DEFAULT_URL="https://example.com"` to set the opening page for run commands.
+The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open.
+
+| Variable | Purpose |
+|----------|---------|
+| `DEFAULT_URL="https://example.com"` | Opening page |
+| `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN` | Browser executable to launch (found automatically when unset) |
+| `APPS_DIR` | macOS folder searched for the browser apps (default `/Applications`) |
+| `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Browser must not be running before executing `make run/*` commands
+> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` prefers Chrome for Testing or Chromium (install one with `npx @puppeteer/browsers install chrome@stable`). With branded Chrome, load the extension from `chrome://extensions` → "Load unpacked".
+> * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
-> * For Firefox, the script assumes you have [Firefox Developer Edition](https://www.mozilla.org/it/firefox/developer) installed. You can easily change the name to `Firefox` in the `make` script; it also requires `web-ext` to be installed.
 
 ### Release Workflow
 
@@ -180,7 +187,7 @@ Tests live in `tests/unit/`. Dependencies are installed automatically on first r
 The Firefox package is also checked with Mozilla's [`web-ext lint`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/#web-ext-lint) (run through `npx`, needs network); CI runs it next to the unit tests:
 
 ```bash
-make test/lint-firefox # Build the Firefox addon and lint it (fails on errors)
+make test/lint          # Build the Firefox addon and lint it (fails on errors)
 ```
 
 The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter), and checks that the extension can parse the results and process the BibTeX entry:

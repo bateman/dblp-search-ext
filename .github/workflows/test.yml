@@ -36,4 +36,4 @@ jobs:
             # manifest.json serves every browser; web-ext catches a manifest
             # that Firefox would reject before any release workflow uploads it
             - name: Lint Firefox addon
-              run: make test/lint-firefox
+              run: make test/lint
