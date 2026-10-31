@@ -11,7 +11,7 @@ UNAME_S := $(shell uname -s)
 NOT_INSTALLED := $(shell printf '\033[31mnot installed\033[0m')
 
 # Executables
-MAKE_VERSION := $(shell make --version | head -n 1 2> /dev/null)
+MAKE_VERSION := $(shell $(MAKE) --version 2> /dev/null | head -n 1)
 SED := $(shell command -v sed 2> /dev/null)
 SED_INPLACE := $(shell if $(SED) --version >/dev/null 2>&1; then echo "$(SED) -i"; else echo "$(SED) -i ''"; fi)
 AWK := $(shell command -v awk 2> /dev/null)
@@ -30,8 +30,6 @@ WEB_EXT_VERSION := 8.10.0
 # command line, e.g. make run/chrome CHROME_BIN=/path/to/chromium
 # Chrome: branded Google Chrome ignores --load-extension since version 137,
 # so Chrome for Testing and Chromium are preferred when installed.
-# Detection runs only when a target uses the variable, and only once:
-# `X = $(eval X := <value>)$(X)` turns X into a simple variable on first use.
 SAFARI_APP := Safari.app
 # macOS folder searched for the browser apps (e.g. APPS_DIR=~/Applications;
 # a leading ~ is expanded here because zsh leaves it as is in make arguments)
@@ -51,15 +49,22 @@ CHROME_CANDIDATES := chromium chromium-browser google-chrome google-chrome-stabl
 EDGE_CANDIDATES := microsoft-edge microsoft-edge-stable
 FIREFOX_CANDIDATES := firefox-developer-edition firefox firefox-esr
 endif
+# Look the browsers up only for the goals that use them, so other targets
+# (test, build, ...) spawn no extra shells
+ifneq ($(filter info dep/chrome dep/edge dep/firefox run/chrome run/edge run/firefox,$(MAKECMDGOALS)),)
 ifndef CHROME_BIN
-CHROME_BIN = $(eval CHROME_BIN := $(call find_browser,$(CHROME_CANDIDATES)))$(CHROME_BIN)
+CHROME_BIN := $(call find_browser,$(CHROME_CANDIDATES))
 endif
 ifndef EDGE_BIN
-EDGE_BIN = $(eval EDGE_BIN := $(call find_browser,$(EDGE_CANDIDATES)))$(EDGE_BIN)
+EDGE_BIN := $(call find_browser,$(EDGE_CANDIDATES))
 endif
 ifndef FIREFOX_BIN
-FIREFOX_BIN = $(eval FIREFOX_BIN := $(call find_browser,$(FIREFOX_CANDIDATES)))$(FIREFOX_BIN)
+FIREFOX_BIN := $(call find_browser,$(FIREFOX_CANDIDATES))
 endif
+endif
+CHROME_BIN ?=
+EDGE_BIN ?=
+FIREFOX_BIN ?=
 # Extra flags appended to every browser launched by the run targets
 BROWSER_ARGS ?=
 

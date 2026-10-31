@@ -144,7 +144,7 @@ The run targets work on macOS and Linux. Each browser runs with a throwaway prof
 | `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` prefers Chrome for Testing or Chromium (install one with `npx @puppeteer/browsers install chrome@stable`). With branded Chrome, load the extension from `chrome://extensions` → "Load unpacked".
+> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` prefers Chrome for Testing or Chromium when they are in `/Applications` (or `APPS_DIR`). `npx @puppeteer/browsers install chrome@stable` downloads Chrome for Testing into the current folder: move `Google Chrome for Testing.app` to `/Applications`, or pass its executable as `CHROME_BIN`. With branded Chrome, load `build/chromium-dev` from `chrome://extensions` → "Load unpacked".
 > * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
 
