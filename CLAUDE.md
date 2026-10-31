@@ -145,7 +145,7 @@ No npm packages. Pure vanilla JavaScript with ES6 modules.
 
 Build tools required: `make`, `jq`, `zip`, `git`, and Node.js with `npm`/`npx` (unit tests; `web-ext` for `make test/lint` and `make run/firefox` runs through `npx` at the version pinned in `WEB_EXT_VERSION`, so it needs no global install). For Safari: macOS with Xcode.
 
-The `run/*` targets work on macOS and Linux and find the browsers automatically; `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN`, and `APPS_DIR` override the lookup, and `make info` shows what was found. Releases (`tag/apply`, `tag/push`, `release`) must be run from `main`.
+The `run/*` targets work on macOS and Linux and find the browsers automatically; `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN`, and `APPS_DIR` override the lookup, and `make info` shows what was found. Branded Google Chrome ignores `--load-extension` (Chrome 137+), so `run/chrome` refuses it and uses Chrome for Testing or Chromium; `make install/chrome` downloads Chrome for Testing into `build/browsers` with `@puppeteer/browsers` (pinned in `PUPPETEER_BROWSERS_VERSION`). The Makefile must keep working with GNU Make 3.81, the version macOS ships. Releases (`tag/apply`, `tag/push`, `release`) must be run from `main`.
 
 ## MCP Servers
 

@@ -127,7 +127,8 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 ### Development Commands
 
 ```bash
-make run/chrome        # Launch Chrome/Chromium with the extension loaded (dev mode)
+make install/chrome    # Download Chrome for Testing into build/browsers (once, ~400 MB)
+make run/chrome        # Launch Chrome for Testing/Chromium with the extension loaded (dev mode)
 make run/firefox       # Launch Firefox with the extension (via web-ext)
 make run/safari        # Launch Safari with the extension (macOS only)
 make run/edge          # Launch Edge with the extension
@@ -144,7 +145,7 @@ The run targets work on macOS and Linux. Each browser runs with a throwaway prof
 | `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` prefers Chrome for Testing or Chromium when they are in `/Applications` (or `APPS_DIR`). `npx @puppeteer/browsers install chrome@stable` downloads Chrome for Testing into the current folder: move `Google Chrome for Testing.app` to `/Applications`, or pass its executable as `CHROME_BIN`. With branded Chrome, load `build/chromium-dev` from `chrome://extensions` → "Load unpacked".
+> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` uses Chrome for Testing or Chromium: from `/Applications` (or `APPS_DIR`, or the `PATH` on Linux), or the copy that `make install/chrome` downloads into `build/browsers` (kept by `make build/clean`). If only branded Chrome is installed, `run/chrome` stops and says so; you can also load `build/chromium-dev` from `chrome://extensions` → "Load unpacked".
 > * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
 
