@@ -127,15 +127,14 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 ### Development Commands
 
 ```bash
-make install/chrome    # Download Chrome for Testing into build/browsers (once, ~400 MB)
-make run/chrome        # Launch Chrome for Testing/Chromium with the extension loaded (dev mode)
+make run/chrome        # Launch Chrome with the extension loaded (dev mode)
 make run/firefox       # Launch Firefox with the extension (via web-ext)
 make run/safari        # Launch Safari with the extension (macOS only)
 make run/edge          # Launch Edge with the extension
 make info              # Show development environment info, including the browsers found
 ```
 
-The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes; on macOS they open in the background, on Linux they run in the foreground (Ctrl-C closes them). Firefox runs through `web-ext` in the foreground on every platform, with a fresh profile that is deleted when you close it with Ctrl-C, and reloads the add-on when `make build/firefox` updates it.
+The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. All run targets keep the terminal until the browser is closed; Ctrl-C closes it. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes. Firefox runs through `web-ext` with a fresh profile that is deleted when you close it with Ctrl-C, and reloads the add-on when `make build/firefox` updates it.
 
 | Variable | Purpose |
 |----------|---------|
@@ -145,7 +144,7 @@ The run targets work on macOS and Linux. Each browser runs with a throwaway prof
 | `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Branded Google Chrome ignores `--load-extension` since version 137, so `run/chrome` uses Chrome for Testing or Chromium: from `/Applications` (or `APPS_DIR`, or the `PATH` on Linux), or the copy that `make install/chrome` downloads into `build/browsers` (kept by `make build/clean`). If only branded Chrome is installed, `run/chrome` stops and says so; you can also load `build/chromium-dev` from `chrome://extensions` → "Load unpacked".
+> * Google Chrome ignores the `--load-extension` flag since version 137, so `run/chrome` and `run/edge` load the extension through the DevTools protocol instead (`tools/run-chromium.mjs`, the method Google recommends), much as `web-ext` does for Firefox. Any Chrome works: Google Chrome, Chrome for Testing, or Chromium.
 > * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
 

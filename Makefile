@@ -28,12 +28,7 @@ WEB_EXT_VERSION := 10.8.0
 
 # Browsers used by the run targets. Each *_BIN can be overridden on the
 # command line, e.g. make run/chrome CHROME_BIN=/path/to/chromium
-# Chrome: branded Google Chrome ignores --load-extension since version 137,
-# so Chrome for Testing and Chromium are preferred when installed.
 SAFARI_APP := Safari.app
-# Chrome for Testing downloaded by `make install/chrome` (build/clean keeps it)
-BROWSERS_DIR = $(CURDIR)/build/browsers
-PUPPETEER_BROWSERS_VERSION := 2.13.2
 # macOS folder searched for the browser apps (e.g. APPS_DIR=~/Applications;
 # a leading ~ is expanded here because zsh leaves it as is in make arguments)
 APPS_DIR ?= /Applications
@@ -42,18 +37,13 @@ ifeq ($(UNAME_S),Darwin)
 # First executable among the given app names: $(APPS_PATH)/<name>.app/Contents/MacOS/<binary>
 # Each argument is "<app name>:<binary name>" with spaces written as '+'
 find_browser = $(shell for a in $(1); do a=$$(echo "$$a" | tr '+' ' '); app=$$(echo "$$a" | cut -d: -f1); exe=$$(echo "$$a" | cut -d: -f2); p="$(APPS_PATH)/$$app.app/Contents/MacOS/$$exe"; if [ -x "$$p" ]; then echo "$$p"; break; fi; done)
-CHROME_CANDIDATES := Google+Chrome+for+Testing:Google+Chrome+for+Testing Chromium:Chromium
-CHROME_BRANDED := Google+Chrome:Google+Chrome
-# Executable inside the Chrome for Testing downloaded by `make install/chrome`
-LOCAL_CFT_PATTERN := *.app/Contents/MacOS/Google Chrome for Testing
+CHROME_CANDIDATES := Google+Chrome:Google+Chrome Google+Chrome+for+Testing:Google+Chrome+for+Testing Chromium:Chromium
 EDGE_CANDIDATES := Microsoft+Edge:Microsoft+Edge
 FIREFOX_CANDIDATES := Firefox+Developer+Edition:firefox Firefox:firefox
 else
 # First command found on PATH among the given names
 find_browser = $(firstword $(foreach c,$(1),$(shell command -v $(c) 2> /dev/null)))
-CHROME_CANDIDATES := chromium chromium-browser
-CHROME_BRANDED := google-chrome google-chrome-stable
-LOCAL_CFT_PATTERN := */chrome-linux64/chrome
+CHROME_CANDIDATES := google-chrome google-chrome-stable chromium chromium-browser
 EDGE_CANDIDATES := microsoft-edge microsoft-edge-stable
 FIREFOX_CANDIDATES := firefox-developer-edition firefox firefox-esr
 endif
@@ -61,9 +51,7 @@ endif
 # (test, build, ...) spawn no extra shells
 ifneq ($(filter info dep/chrome dep/edge dep/firefox run/chrome run/edge run/firefox,$(MAKECMDGOALS)),)
 ifndef CHROME_BIN
-# Chrome for Testing or Chromium first, then the copy from `make install/chrome`,
-# and branded Google Chrome last (it cannot load the extension, see run/chrome)
-CHROME_BIN := $(or $(call find_browser,$(CHROME_CANDIDATES)),$(shell find "$(BROWSERS_DIR)/chrome" -type f -path "$(LOCAL_CFT_PATTERN)" 2> /dev/null | sort | tail -n 1),$(call find_browser,$(CHROME_BRANDED)))
+CHROME_BIN := $(call find_browser,$(CHROME_CANDIDATES))
 endif
 ifndef EDGE_BIN
 EDGE_BIN := $(call find_browser,$(EDGE_CANDIDATES))
@@ -189,6 +177,10 @@ dep/xcode: | dep/macos
 		echo -e "$(RED)Xcode is not installed (safari-web-extension-converter not found).$(RESET)"; \
 		exit 1; \
 	fi
+
+.PHONY: dep/node
+dep/node:
+	@command -v node > /dev/null || { echo -e "$(RED)node not found: install Node.js.$(RESET)"; exit 1; }
 
 .PHONY: dep/npx
 dep/npx:
@@ -428,12 +420,6 @@ release: tag/push  ## Triggers the release action - pushes the tag to origin (al
 
 #-- Run
 
-.PHONY: install/chrome
-install/chrome: | dep/npx  ## Download Chrome for Testing into build/browsers, for run/chrome (about 400 MB)
-	@echo -e "$(CYAN)\nDownloading Chrome for Testing into $(BROWSERS_DIR)...$(RESET)"
-	@npx --yes @puppeteer/browsers@$(PUPPETEER_BROWSERS_VERSION) install chrome@stable --path "$(BROWSERS_DIR)"
-	@echo -e "$(GREEN)Done. make run/chrome will use it.$(RESET)"
-
 # Chromium flags shared by run/chrome and run/edge
 CHROMIUM_RUN_FLAGS := \
 	--force-dev-mode-highlighting \
@@ -448,51 +434,37 @@ CHROMIUM_RUN_FLAGS := \
 	--disable-breakpad \
 	--disable-dev-shm-usage \
 	--disable-renderer-backgrounding \
-	--metrics-recording-only \
-	--load-extension="$(CHROMIUM_DEV_DIR)"
+	--metrics-recording-only
 CHROME_EXTRA_FLAGS := --auto-open-devtools-for-tabs
 EDGE_EXTRA_FLAGS :=
 
-# Launches the Chromium-based browser at $(1) with the profile named $(2) and
-# the flags in the variable named $(3). On macOS an executable inside an .app
-# bundle is opened with `open -na`, so make returns at once; elsewhere the
-# browser runs in the foreground (Ctrl-C closes it).
 define make_chromium_dev_dir
 	@rm -rf "$(CHROMIUM_DEV_DIR)"
 	@mkdir -p "$(CHROMIUM_DEV_DIR)"
 	@for f in $(SRC); do ln -s "$(WORK_DIR)/$$f" "$(CHROMIUM_DEV_DIR)/$$f"; done
 endef
 
-define launch_chromium
+# Runs the Chromium-based browser at $(1) with the profile named $(2) and the
+# flags in the variable named $(3). Branded Google Chrome ignores
+# --load-extension since version 137, so tools/run-chromium.mjs loads the
+# extension through the DevTools protocol instead (as web-ext does for
+# Firefox); the browser stays in the foreground until it is closed or Ctrl-C.
+define run_chromium
+	$(make_chromium_dev_dir)
 	@mkdir -p "$(PROFILES_DIR)/$(2)"
-	@bin="$(1)"; \
-	set -- --user-data-dir="$(PROFILES_DIR)/$(2)" $($(3)) $(CHROMIUM_RUN_FLAGS) $(BROWSER_ARGS) $(DEFAULT_URL); \
-	if [ "$(UNAME_S)" = "Darwin" ] && [ "$${bin%.app/Contents/MacOS/*}" != "$$bin" ]; then \
-		open -na "$${bin%/Contents/MacOS/*}" --args "$$@"; \
-	else \
-		"$$bin" "$$@"; \
-	fi
+	@node "$(WORK_DIR)/tools/run-chromium.mjs" "$(1)" "$(CHROMIUM_DEV_DIR)" \
+		--user-data-dir="$(PROFILES_DIR)/$(2)" $($(3)) $(CHROMIUM_RUN_FLAGS) $(BROWSER_ARGS) $(DEFAULT_URL)
 endef
 
 .PHONY: run/chrome
-run/chrome: | dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
-	$(make_chromium_dev_dir)
-	@# Branded Google Chrome ignores --load-extension since version 137, so it
-	@# would open without the extension: stop with the alternatives instead
-	@if "$(CHROME_BIN)" --version 2> /dev/null | grep -q '^Google Chrome [0-9]'; then \
-		echo -e "$(RED)\n$(CHROME_BIN) is branded Google Chrome, which ignores --load-extension since version 137.$(RESET)"; \
-		echo -e "Run $(CYAN)make install/chrome$(RESET) once to download Chrome for Testing into build/browsers (about 400 MB),"; \
-		echo -e "then $(CYAN)make run/chrome$(RESET) again. Or load $(CHROMIUM_DEV_DIR) from chrome://extensions > Load unpacked."; \
-		exit 1; \
-	fi
+run/chrome: | dep/chrome dep/node  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Chrome extension with $(CHROME_BIN)...$(RESET)"
-	$(call launch_chromium,$(CHROME_BIN),chrome,CHROME_EXTRA_FLAGS)
+	$(call run_chromium,$(CHROME_BIN),chrome,CHROME_EXTRA_FLAGS)
 
 .PHONY: run/edge
-run/edge: | dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
+run/edge: | dep/edge dep/node  ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Edge extension with $(EDGE_BIN)...$(RESET)"
-	$(make_chromium_dev_dir)
-	$(call launch_chromium,$(EDGE_BIN),edge,EDGE_EXTRA_FLAGS)
+	$(call run_chromium,$(EDGE_BIN),edge,EDGE_EXTRA_FLAGS)
 
 .PHONY: run/firefox
 run/firefox: dep/firefox build/firefox  ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
