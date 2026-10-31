@@ -23,6 +23,7 @@
     ],
     "background": {
         "service_worker": "js/background.js",
+        "scripts": ["js/background.js"],
         "type": "module"
     },
     "action": {
@@ -32,6 +33,12 @@
     "options_ui": {
         "page": "html/options.html",
         "open_in_tab": true
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "dblpSearch@fcalefato.dev",
+            "strict_min_version": "128.0"
+        }
     },
     "content_security_policy": {
         "extension_pages": "script-src 'self'; object-src 'self'"

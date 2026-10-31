@@ -161,7 +161,7 @@ make release           # Push commits and tag to origin (alias: tag/push)
 make tag/delete        # Delete the tag for the current version
 ```
 
-Version is stored in `manifest.json`, `manifest.firefox.json`, and `package.json` (all three are kept in sync by `make bump/*`).
+Version is stored in `manifest.json` and `package.json` (both are kept in sync by `make bump/*`).
 
 ### Testing
 

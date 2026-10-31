@@ -43,10 +43,10 @@ The model returns each search's result (it keeps no per-search state), `view.js`
 
 ## Browser Differences
 
-- `manifest.json` - Used for Chrome, Edge, Safari
-- `manifest.firefox.json` - Firefox-specific, includes `browser_specific_settings.gecko`
+A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 
-The build process swaps manifests automatically. Both must be kept in sync for version and permissions.
+- `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file.
+- `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
 
 ## DBLP API
 

@@ -27,7 +27,6 @@ SAFARI_APP := Safari.app
 
 # Project variables
 MANIFEST := manifest.json
-MANIFEST_FIREFOX := manifest.firefox.json
 MANIFEST_TMP := manifest.json.tmp
 APP_NAME := $(shell jq -r .name $(MANIFEST) | tr -d '[:space:]' | tr -d '"')
 APP_DESCRIPTION := $(shell jq -r .description $(MANIFEST))
@@ -168,26 +167,11 @@ build: build/all  ## Build all extensions (alias: build/all)
 
 .PHONY: build/firefox
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI
-$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
+$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
-	@# Swap in the Firefox manifest, build, then restore. The swap, build, and
-	@# restore run in a single shell so the EXIT trap always restores the
-	@# manifests even if a build step fails mid-recipe.
-	@restore_manifests() { \
-		if [ -f $(MANIFEST_TMP) ]; then \
-			if [ ! -f $(MANIFEST_FIREFOX) ] && [ -f $(MANIFEST) ]; then \
-				mv $(MANIFEST) $(MANIFEST_FIREFOX); \
-			fi; \
-			mv $(MANIFEST_TMP) $(MANIFEST); \
-		fi; \
-	}; \
-	trap restore_manifests EXIT; \
-	mv $(MANIFEST) $(MANIFEST_TMP); \
-	mv $(MANIFEST_FIREFOX) $(MANIFEST); \
-	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store; \
-	cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION); \
-	cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
+	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store
+	@cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
@@ -241,8 +225,6 @@ define update_version
     echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1)$(RESET)" && \
     cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) $(MANIFEST) && \
-    cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
     cat package.json | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
     mv $(MANIFEST_TMP) package.json && \
     echo -e "$(GREEN)Version updated.$(RESET)"
