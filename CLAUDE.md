@@ -51,6 +51,7 @@ A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 - `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
 - `minimum_chrome_version` is `121` because older Chromium rejects `background.scripts` in an MV3 manifest; Firefox ignores the key.
 - The Firefox release workflow reads the add-on ID from `browser_specific_settings.gecko.id`, so the ID lives only in the manifest.
+- Safari has no `downloads` API and ignores `<a download>` in extension pages (it opens the file in a new tab), so `popup.js` offers "Download BibTeX" (row button, `D` key, context menu item, keyboard hint) only when `downloadsSupported` is true.
 - `tests/unit/manifest.test.js` checks these invariants, and `make test/lint` (run in CI) lints the Firefox package with `web-ext lint`. The lint warning for `background.service_worker` is expected.
 
 ## DBLP API
