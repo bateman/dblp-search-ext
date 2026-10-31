@@ -110,7 +110,7 @@ make test/live         # Run the live tests against the dblp API
 3. Click "Load unpacked" and select the project folder (the one containing `manifest.json`), or a folder where you unzipped the archive from `build/chrome`.
 
 > [!NOTE]
-> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox, and `background.preferred_environment` (which makes Safari use the service worker) as unsupported before Firefox 136; Firefox 128–135 ignore it. Requires Chrome/Edge 121+ and Firefox 128+.
+> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 136+.
 
 **Edge**
 
@@ -134,13 +134,13 @@ make run/edge          # Launch Edge with the extension
 make info              # Show development environment info, including the browsers found
 ```
 
-The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open.
+The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes. On macOS the browsers open in the background as before; on Linux they run in the foreground (Ctrl-C closes them).
 
 | Variable | Purpose |
 |----------|---------|
 | `DEFAULT_URL="https://example.com"` | Opening page |
 | `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN` | Browser executable to launch (found automatically when unset) |
-| `APPS_DIR` | macOS folder searched for the browser apps (default `/Applications`) |
+| `APPS_DIR` | macOS folder searched for the browser apps (default `/Applications`, e.g. `APPS_DIR=~/Applications`) |
 | `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]

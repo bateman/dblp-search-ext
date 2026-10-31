@@ -46,11 +46,11 @@ The model returns each search's result (it keeps no per-search state), `view.js`
 A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 
 - `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file.
-- `background.preferred_environment: ["service_worker"]` makes Safari use the service worker: with both keys present Safari would otherwise run `scripts` as a background page. Chrome ignores it, and Firefox 128–135 ignore it with a lint warning (Firefox supports it from 136).
+- `background.preferred_environment: ["service_worker"]` makes Safari use the service worker: with both keys present Safari would otherwise run `scripts` as a background page. Chrome ignores it; Firefox supports it from 136, hence `strict_min_version: "136.0"`.
 - `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
 - `minimum_chrome_version` is `121` because older Chromium rejects `background.scripts` in an MV3 manifest; Firefox ignores the key.
 - The Firefox release workflow reads the add-on ID from `browser_specific_settings.gecko.id`, so the ID lives only in the manifest.
-- `tests/unit/manifest.test.js` checks these invariants, and `make test/lint` (run in CI) lints the Firefox package with `web-ext lint`. The lint warnings for `background.service_worker` and `background.preferred_environment` are expected.
+- `tests/unit/manifest.test.js` checks these invariants, and `make test/lint` (run in CI) lints the Firefox package with `web-ext lint`. The lint warning for `background.service_worker` is expected.
 
 ## DBLP API
 
@@ -142,7 +142,9 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 
 No npm packages. Pure vanilla JavaScript with ES6 modules.
 
-Build tools required: `jq`, `zip`, `git`. For Firefox: `web-ext`. For Safari: Xcode.
+Build tools required: `make`, `jq`, `zip`, `git`, and Node.js with `npm`/`npx` (unit tests; `web-ext` for `make test/lint` and `make run/firefox` runs through `npx` at the version pinned in `WEB_EXT_VERSION`, so it needs no global install). For Safari: macOS with Xcode.
+
+The `run/*` targets work on macOS and Linux and find the browsers automatically; `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN`, and `APPS_DIR` override the lookup, and `make info` shows what was found. Releases (`tag/apply`, `tag/push`, `release`) must be run from `main`.
 
 ## MCP Servers
 

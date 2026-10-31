@@ -43,9 +43,9 @@ describe("manifest.json", () => {
   it("declares the Firefox add-on ID and minimum version", () => {
     const gecko = manifest.browser_specific_settings.gecko;
     expect(gecko.id).toBe("dblpSearch@fcalefato.dev");
-    // Firefox before 121 does not accept service_worker next to scripts
+    // Firefox supports background.preferred_environment from version 136
     const major = Number.parseInt(gecko.strict_min_version, 10);
-    expect(major).toBeGreaterThanOrEqual(121);
+    expect(major).toBeGreaterThanOrEqual(136);
   });
 
   it("has the same version as package.json", () => {
