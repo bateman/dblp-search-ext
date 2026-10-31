@@ -134,7 +134,7 @@ make run/edge          # Launch Edge with the extension
 make info              # Show development environment info, including the browsers found
 ```
 
-The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes. On macOS the browsers open in the background as before; on Linux they run in the foreground (Ctrl-C closes them).
+The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes; on macOS they open in the background, on Linux they run in the foreground (Ctrl-C closes them). Firefox runs through `web-ext` in the foreground on every platform, with a fresh profile that is deleted when you close it with Ctrl-C, and reloads the add-on when `make build/firefox` updates it.
 
 | Variable | Purpose |
 |----------|---------|

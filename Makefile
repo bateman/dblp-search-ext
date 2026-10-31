@@ -470,12 +470,12 @@ run/edge: | dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the o
 .PHONY: run/firefox
 run/firefox: dep/firefox build/firefox  ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
 	@echo -e "$(CYAN)\nRunning Firefox addon with $(FIREFOX_BIN)...$(RESET)"
-	@# The profile is kept across runs; -allow-downgrade lets an older Firefox
-	@# (e.g. release after Developer Edition) reuse it
+	@# web-ext runs Firefox on a fresh temporary profile, deleted on exit. TMPDIR
+	@# puts it in the project rather than /tmp, which snap-packaged Firefox
+	@# cannot read. (A kept profile, --keep-profile-changes, is avoided: web-ext
+	@# then reads the user's own profiles.ini, which macOS may refuse with EPERM.)
 	@mkdir -p "$(PROFILES_DIR)/firefox"
-	@npx --yes web-ext@$(WEB_EXT_VERSION) run --firefox="$(FIREFOX_BIN)" \
-		--firefox-profile="$(PROFILES_DIR)/firefox" --profile-create-if-missing --keep-profile-changes \
-		--arg=-allow-downgrade \
+	@TMPDIR="$(PROFILES_DIR)/firefox" npx --yes web-ext@$(WEB_EXT_VERSION) run --firefox="$(FIREFOX_BIN)" \
 		--source-dir="$(FIREFOX_SRC_DIR)" \
 		--start-url=$(DEFAULT_URL) \
 		$(foreach a,$(BROWSER_ARGS),--arg=$(a))
