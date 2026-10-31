@@ -1471,9 +1471,19 @@ function hideContextMenu() {
   contextMenuTargetRow = null;
 }
 
-// Dismiss the context menu on scroll, window resize, or the Escape key
+// Dismiss the context menu on scroll, window resize, or the Escape key.
+// Firefox fires "resize" in extension popups whenever it re-measures the
+// popup, even when the size stays the same (as it does right after the menu
+// opens), so only an actual change of the viewport size closes the menu.
+let lastViewportSize = window.innerWidth + "x" + window.innerHeight;
 window.addEventListener("scroll", hideContextMenu, true);
-window.addEventListener("resize", hideContextMenu);
+window.addEventListener("resize", function () {
+  const viewportSize = window.innerWidth + "x" + window.innerHeight;
+  if (viewportSize !== lastViewportSize) {
+    lastViewportSize = viewportSize;
+    hideContextMenu();
+  }
+});
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") {
     hideContextMenu();
