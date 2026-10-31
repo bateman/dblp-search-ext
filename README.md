@@ -109,6 +109,9 @@ make test/live         # Run the live tests against the dblp API
 
 3. Click "Load unpacked" and select the `build/chrome` directory in your project folder.
 
+> [!NOTE]
+> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 128+.
+
 **Edge**
 
 Same as above, the only difference is that you need to navigate to `edge://extensions`.
@@ -173,6 +176,12 @@ make test/watch        # Run the unit tests in watch mode
 ```
 
 Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm ci`).
+
+The Firefox package is also checked with Mozilla's [`web-ext lint`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/#web-ext-lint) (run through `npx`, needs network); CI runs it next to the unit tests:
+
+```bash
+make test/lint-firefox # Build the Firefox addon and lint it (fails on errors)
+```
 
 The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter), and checks that the extension can parse the results and process the BibTeX entry:
 

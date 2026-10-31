@@ -19,6 +19,9 @@ XCRUN := $(shell command -v xcrun 2> /dev/null)
 XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
 XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || printf '\033[31mnot installed\033[0m')
 
+# web-ext version used by test/lint-firefox (run through npx)
+WEB_EXT_VERSION := 8.10.0
+
 # Apps
 CHROME_APP := Google Chrome.app
 FIREFOX_APP := Firefox Developer Edition.app
@@ -27,7 +30,6 @@ SAFARI_APP := Safari.app
 
 # Project variables
 MANIFEST := manifest.json
-MANIFEST_TMP := manifest.json.tmp
 APP_NAME := $(shell jq -r .name $(MANIFEST) | tr -d '[:space:]' | tr -d '"')
 APP_DESCRIPTION := $(shell jq -r .description $(MANIFEST))
 APP_VERSION := $(shell jq -r .version $(MANIFEST))
@@ -44,6 +46,7 @@ BUILD_DIR := $(WORK_DIR)/build
 SAFARI_DIR := safari
 CHROME_DIR := chrome
 FIREFOX_DIR := firefox
+FIREFOX_SRC_DIR = $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
 CSS := css
 JS := js
 IMAGES := images
@@ -52,6 +55,11 @@ HTML := html
 # Files
 SRC := $(CSS) $(JS) $(IMAGES) $(HTML) $(MANIFEST)
 SRC_FILES := $(shell find $(SRC) -type f)
+
+# Package the extension sources into the archive given as $(1). The same
+# manifest.json serves every browser, so Chrome, Edge, and Firefox packages
+# share this step.
+zip_sources = zip -r -FS $(1) $(SRC) -x \*.DS_Store
 
 # Stamp files
 CHROME_BUILD_TIMESTAMP := .chrome.stamp
@@ -150,6 +158,12 @@ test: node_modules  ## Run unit tests
 	@npx vitest run
 	@echo -e "$(GREEN)Done.$(RESET)"
 
+.PHONY: test/lint-firefox
+test/lint-firefox: build/firefox  ## Lint the Firefox addon with web-ext (fails on errors)
+	@echo -e "$(CYAN)\nLinting Firefox addon...$(RESET)"
+	@npx --yes web-ext@$(WEB_EXT_VERSION) lint --source-dir $(FIREFOX_SRC_DIR)
+	@echo -e "$(GREEN)Done.$(RESET)"
+
 .PHONY: test/watch
 test/watch: node_modules  ## Run unit tests in watch mode
 	@npx vitest
@@ -169,15 +183,18 @@ build: build/all  ## Build all extensions (alias: build/all)
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI
 $(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
-	@zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store
-	@cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
+	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR) > /dev/null
+	@$(call zip_sources,$(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi)
+	@# Recreate the unpacked copy so files removed from the sources do not linger
+	@rm -rf $(FIREFOX_SRC_DIR)
+	@mkdir -p $(FIREFOX_SRC_DIR)
+	@cp -r $(SRC) $(FIREFOX_SRC_DIR)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 .PHONY: build/safari
 build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
-$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
+$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR) > /dev/null
 	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
@@ -196,10 +213,10 @@ $(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
 
 .PHONY: build/chrome
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
-$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
+$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
-	@zip -r -FS $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(SRC) -x \*.DS_Store
+	@$(call zip_sources,$(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip)
 	@touch $(CHROME_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done$(RESET)"
 
@@ -223,10 +240,7 @@ build/clean:  ## Clean up build directory and remove all timestamps
 
 define update_version
     echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1)$(RESET)" && \
-    cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) $(MANIFEST) && \
-    cat package.json | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) package.json && \
+    $(SED_INPLACE) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" $(MANIFEST) package.json && \
     echo -e "$(GREEN)Version updated.$(RESET)"
 endef
 
