@@ -276,6 +276,11 @@ $(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
 	@$(call zip_sources,$(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip)
+	@# Edge Add-ons rejects background.scripts in MV3 (only Firefox needs it): swap in a manifest without it
+	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR)/manifest
+	@jq 'del(.background.scripts)' $(MANIFEST) > $(BUILD_DIR)/$(CHROME_DIR)/manifest/$(MANIFEST)
+	@cd $(BUILD_DIR)/$(CHROME_DIR)/manifest && zip -q $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(MANIFEST)
+	@unzip -p $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(MANIFEST) | jq -e '.background.scripts == null' > /dev/null
 	@touch $(CHROME_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done$(RESET)"
 

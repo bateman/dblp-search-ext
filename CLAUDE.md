@@ -45,7 +45,7 @@ The model returns each search's result (it keeps no per-search state), `view.js`
 
 A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 
-- `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file.
+- `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file. The Edge Add-ons validator rejects `background.scripts` in MV3, so `make build/chrome` (the package for Chrome and Edge) replaces the manifest in the zip with one without it.
 - `background.preferred_environment: ["service_worker"]` makes Safari use the service worker: with both keys present Safari would otherwise run `scripts` as a background page. Chrome ignores it; Firefox supports it from 136.
 - `browser_specific_settings.gecko.data_collection_permissions` declares, for Firefox's built-in data consent, what the extension sends outside the browser: `required: ["searchTerms", "websiteContent"]` (typed queries and selected page text sent to dblp.org/doi.org). This covers transmission to any third party, not only to the developer, and must stay in sync with `PRIVACY.md`. The key needs Firefox 140 (Android 142), hence `gecko.strict_min_version: "140.0"` and `gecko_android.strict_min_version: "142.0"`.
 - `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
