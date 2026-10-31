@@ -6,29 +6,68 @@ SHELL := /bin/bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+# Platform
+UNAME_S := $(shell uname -s)
+NOT_INSTALLED := $(shell printf '\033[31mnot installed\033[0m')
+
 # Executables
-MAKE_VERSION := $(shell make --version | head -n 1 2> /dev/null)
+MAKE_VERSION := $(shell $(MAKE) --version 2> /dev/null | head -n 1)
 SED := $(shell command -v sed 2> /dev/null)
 SED_INPLACE := $(shell if $(SED) --version >/dev/null 2>&1; then echo "$(SED) -i"; else echo "$(SED) -i ''"; fi)
 AWK := $(shell command -v awk 2> /dev/null)
 GIT := $(shell command -v git 2> /dev/null)
-GIT_VERSION := $(shell $(GIT) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
+GIT_VERSION := $(if $(GIT),$(shell $(GIT) --version 2> /dev/null),$(NOT_INSTALLED))
 NPM := $(shell command -v npm 2> /dev/null)
-NPM_VERSION := $(shell npm --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
+NPM_VERSION := $(if $(NPM),$(shell $(NPM) --version 2> /dev/null),$(NOT_INSTALLED))
 XCRUN := $(shell command -v xcrun 2> /dev/null)
-XCRUN_VERSION := $(shell $(XCRUN) --version 2> /dev/null || printf '\033[31mnot installed\033[0m')
-XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null || printf '\033[31mnot installed\033[0m')
+XCRUN_VERSION := $(if $(XCRUN),$(shell $(XCRUN) --version 2> /dev/null),$(NOT_INSTALLED))
+XCODEBUILD := $(shell command -v xcodebuild 2> /dev/null)
 
-# Apps
-CHROME_APP := Google Chrome.app
-FIREFOX_APP := Firefox Developer Edition.app
-EDGE_APP := Microsoft Edge.app
+# web-ext version used by test/lint (run through npx)
+WEB_EXT_VERSION := 10.8.0
+
+# Browsers used by the run targets. Each *_BIN can be overridden on the
+# command line, e.g. make run/chrome CHROME_BIN=/path/to/chromium
 SAFARI_APP := Safari.app
+# macOS folder searched for the browser apps (e.g. APPS_DIR=~/Applications;
+# a leading ~ is expanded here because zsh leaves it as is in make arguments)
+APPS_DIR ?= /Applications
+APPS_PATH = $(patsubst ~%,$(HOME)%,$(APPS_DIR))
+ifeq ($(UNAME_S),Darwin)
+# First executable among the given app names: $(APPS_PATH)/<name>.app/Contents/MacOS/<binary>
+# Each argument is "<app name>:<binary name>" with spaces written as '+'
+find_browser = $(shell for a in $(1); do a=$$(echo "$$a" | tr '+' ' '); app=$$(echo "$$a" | cut -d: -f1); exe=$$(echo "$$a" | cut -d: -f2); p="$(APPS_PATH)/$$app.app/Contents/MacOS/$$exe"; if [ -x "$$p" ]; then echo "$$p"; break; fi; done)
+CHROME_CANDIDATES := Google+Chrome:Google+Chrome Google+Chrome+for+Testing:Google+Chrome+for+Testing Chromium:Chromium
+EDGE_CANDIDATES := Microsoft+Edge:Microsoft+Edge
+FIREFOX_CANDIDATES := Firefox+Developer+Edition:firefox Firefox:firefox
+else
+# First command found on PATH among the given names
+find_browser = $(firstword $(foreach c,$(1),$(shell command -v $(c) 2> /dev/null)))
+CHROME_CANDIDATES := google-chrome google-chrome-stable chromium chromium-browser
+EDGE_CANDIDATES := microsoft-edge microsoft-edge-stable
+FIREFOX_CANDIDATES := firefox-developer-edition firefox firefox-esr
+endif
+# Look the browsers up only for the goals that use them, so other targets
+# (test, build, ...) spawn no extra shells
+ifneq ($(filter info dep/chrome dep/edge dep/firefox run/chrome run/edge run/firefox,$(MAKECMDGOALS)),)
+ifndef CHROME_BIN
+CHROME_BIN := $(call find_browser,$(CHROME_CANDIDATES))
+endif
+ifndef EDGE_BIN
+EDGE_BIN := $(call find_browser,$(EDGE_CANDIDATES))
+endif
+ifndef FIREFOX_BIN
+FIREFOX_BIN := $(call find_browser,$(FIREFOX_CANDIDATES))
+endif
+endif
+CHROME_BIN ?=
+EDGE_BIN ?=
+FIREFOX_BIN ?=
+# Extra flags appended to every browser launched by the run targets
+BROWSER_ARGS ?=
 
 # Project variables
 MANIFEST := manifest.json
-MANIFEST_FIREFOX := manifest.firefox.json
-MANIFEST_TMP := manifest.json.tmp
 APP_NAME := $(shell jq -r .name $(MANIFEST) | tr -d '[:space:]' | tr -d '"')
 APP_DESCRIPTION := $(shell jq -r .description $(MANIFEST))
 APP_VERSION := $(shell jq -r .version $(MANIFEST))
@@ -45,6 +84,16 @@ BUILD_DIR := $(WORK_DIR)/build
 SAFARI_DIR := safari
 CHROME_DIR := chrome
 FIREFOX_DIR := firefox
+FIREFOX_SRC_DIR = $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
+SAFARI_SRC_DIR = $(BUILD_DIR)/$(SAFARI_DIR)/src
+# Folder loaded by run/chrome and run/edge: symlinks to the sources, so it
+# holds only the extension (no node_modules, tests or browser profiles) while
+# a reload in the browser still picks up source changes
+CHROMIUM_DEV_DIR = $(BUILD_DIR)/chromium-dev
+# Throwaway browser profiles for the run targets, so they work even while
+# the user's own browser is open. Kept in the project (not in /tmp or a
+# hidden folder) because snap-packaged browsers cannot read those.
+PROFILES_DIR = $(BUILD_DIR)/profiles
 CSS := css
 JS := js
 IMAGES := images
@@ -52,7 +101,14 @@ HTML := html
 
 # Files
 SRC := $(CSS) $(JS) $(IMAGES) $(HTML) $(MANIFEST)
-SRC_FILES := $(shell find $(SRC) -type f)
+# Directories are listed too: deleting or renaming a file updates its
+# directory's mtime, so the packages are rebuilt without it
+SRC_FILES := $(shell find $(SRC) -type f) $(shell find $(SRC) -type d)
+
+# Package the extension sources into the archive given as $(1). The same
+# manifest.json serves every browser, so Chrome, Edge, and Firefox packages
+# share this step.
+zip_sources = zip -r -FS $(1) $(SRC) -x \*.DS_Store
 
 # Stamp files
 CHROME_BUILD_TIMESTAMP := .chrome.stamp
@@ -89,7 +145,11 @@ info:  ## Show development environment info
 	@echo -e "  $(CYAN)Git:$(RESET) $(GIT_VERSION)"
 	@echo -e "  $(CYAN)npm:$(RESET) $(NPM_VERSION)"
 	@echo -e "  $(CYAN)xcrun:$(RESET) $(XCRUN_VERSION)"
-	@echo -e "  $(CYAN)xcodebuild:$(RESET) $(XCODEBUILD)"
+	@echo -e "  $(CYAN)xcodebuild:$(RESET) $(or $(XCODEBUILD),$(NOT_INSTALLED))"
+	@echo -e "$(MAGENTA)Browsers:$(RESET)"
+	@echo -e "  $(CYAN)Chrome:$(RESET) $(or $(CHROME_BIN),$(NOT_INSTALLED))"
+	@echo -e "  $(CYAN)Edge:$(RESET) $(or $(EDGE_BIN),$(NOT_INSTALLED))"
+	@echo -e "  $(CYAN)Firefox:$(RESET) $(or $(FIREFOX_BIN),$(NOT_INSTALLED))"
 	@echo -e "$(MAGENTA)Project:$(RESET)"
 	@echo -e "  $(CYAN)Project name:$(RESET) $(APP_NAME)"
 	@echo -e "  $(CYAN)Project description:$(RESET) $(APP_DESCRIPTION)"
@@ -106,37 +166,45 @@ info:  ## Show development environment info
 dep/git:
 	@if [ -z "$(GIT)" ]; then echo -e "$(RED)Git not found.$(RESET)" && exit 1; fi
 
-.PHONY: dep/xcode
-dep/xcode:
-	@echo -e "$(CYAN)\nChecking if Xcode is installed...$(RESET)"
-	@xcode-select -p || echo 'Xcode is not installed.'
-
 .PHONY: dep/macos
 dep/macos:
-	@echo -e "$(CYAN)\nChecking if OS is MacOS...$(RESET)"
-	@uname -s | grep "Darwin" || echo 'Run targets are only available on MacOS.'
+	@if [ "$(UNAME_S)" != "Darwin" ]; then echo -e "$(RED)This target needs macOS (found $(UNAME_S)).$(RESET)"; exit 1; fi
+
+.PHONY: dep/xcode
+dep/xcode: | dep/macos
+	@# xcrun and xcodebuild exist on every Mac as shims; the converter ships only with Xcode
+	@if [ -z "$(XCRUN)" ] || ! "$(XCRUN)" --find safari-web-extension-converter > /dev/null 2>&1; then \
+		echo -e "$(RED)Xcode is not installed (safari-web-extension-converter not found).$(RESET)"; \
+		exit 1; \
+	fi
+
+.PHONY: dep/npx
+dep/npx:
+	@command -v npx > /dev/null || { echo -e "$(RED)npx not found: install Node.js.$(RESET)"; exit 1; }
+
+# Fails with a hint when the browser executable given as $(2) is missing
+define check_browser
+	@if [ -z "$(2)" ] || [ ! -x "$(2)" ]; then \
+		echo -e "$(RED)$(1) not found. Install it or pass $(3)=/path/to/executable.$(RESET)"; \
+		exit 1; \
+	fi
+endef
 
 .PHONY: dep/chrome
-dep/chrome: | dep/macos
-	@echo -e "$(CYAN)\nChecking if Google Chrome is installed...$(RESET)"
-	@ls /Applications | grep -x "$(CHROME_APP)" || { echo -e "$(RED)Google Chrome is not installed.$(RESET)"; exit 1; }
+dep/chrome:
+	$(call check_browser,Chrome or Chromium,$(CHROME_BIN),CHROME_BIN)
 
 .PHONY: dep/firefox
-dep/firefox: | dep/macos
-	@echo -e "$(CYAN)\nChecking if Firefox Developer Edition is installed...$(RESET)"
-	@ls /Applications | grep -x "$(FIREFOX_APP)" || { echo -e "$(RED)Firefox Developer Edition is not installed.$(RESET)"; exit 1; }
-	@echo -e "$(CYAN)\nChecking if web-ext is installed...$(RESET)"
-	@web-ext --version || { echo -e "$(RED)web-ext is not installed.$(RESET)"; exit 1; }
+dep/firefox: | dep/npx
+	$(call check_browser,Firefox,$(FIREFOX_BIN),FIREFOX_BIN)
 
 .PHONY: dep/edge
-dep/edge: | dep/macos
-	@echo -e "$(CYAN)\nChecking if Microsoft Edge is installed...$(RESET)"
-	@ls /Applications | grep -x "$(EDGE_APP)" || { echo -e "$(RED)Microsoft Edge is not installed.$(RESET)"; exit 1; }
+dep/edge:
+	$(call check_browser,Microsoft Edge,$(EDGE_BIN),EDGE_BIN)
 
 .PHONY: dep/safari
 dep/safari: | dep/macos
-	@echo -e "$(CYAN)\nChecking if Safari is installed...$(RESET)"
-	@ls /Applications | grep -x "$(SAFARI_APP)" || { echo -e "$(RED)Safari is not installed.$(RESET)"; exit 1; }
+	@[ -d "/Applications/$(SAFARI_APP)" ] || [ -d "$(APPS_PATH)/$(SAFARI_APP)" ] || { echo -e "$(RED)Safari is not installed.$(RESET)"; exit 1; }
 
 #-- Test
 
@@ -149,6 +217,12 @@ node_modules: package.json package-lock.json
 test: node_modules  ## Run unit tests
 	@echo -e "$(CYAN)\nRunning unit tests...$(RESET)"
 	@npx vitest run
+	@echo -e "$(GREEN)Done.$(RESET)"
+
+.PHONY: test/lint
+test/lint: build/firefox | dep/npx  ## Lint the Firefox addon with web-ext (fails on errors)
+	@echo -e "$(CYAN)\nLinting Firefox addon...$(RESET)"
+	@npx --yes web-ext@$(WEB_EXT_VERSION) lint --source-dir $(FIREFOX_SRC_DIR)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 .PHONY: test/watch
@@ -168,62 +242,57 @@ build: build/all  ## Build all extensions (alias: build/all)
 
 .PHONY: build/firefox
 build/firefox: $(FIREFOX_BUILD_TIMESTAMP)  ## Build Firefox addon XPI
-$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST_FIREFOX)
+$(FIREFOX_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Firefox addon...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION) > /dev/null
-	@# Swap in the Firefox manifest, build, then restore. The swap, build, and
-	@# restore run in a single shell so the EXIT trap always restores the
-	@# manifests even if a build step fails mid-recipe.
-	@restore_manifests() { \
-		if [ -f $(MANIFEST_TMP) ]; then \
-			if [ ! -f $(MANIFEST_FIREFOX) ] && [ -f $(MANIFEST) ]; then \
-				mv $(MANIFEST) $(MANIFEST_FIREFOX); \
-			fi; \
-			mv $(MANIFEST_TMP) $(MANIFEST); \
-		fi; \
-	}; \
-	trap restore_manifests EXIT; \
-	mv $(MANIFEST) $(MANIFEST_TMP); \
-	mv $(MANIFEST_FIREFOX) $(MANIFEST); \
-	zip -r -FS $(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi $(SRC) -x \*.DS_Store; \
-	cp -r $(SRC) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION); \
-	cp $(MANIFEST) $(BUILD_DIR)/$(FIREFOX_DIR)/src/$(APP_NAME)-addon-$(APP_VERSION)
+	@mkdir -p $(BUILD_DIR)/$(FIREFOX_DIR) > /dev/null
+	@$(call zip_sources,$(BUILD_DIR)/$(FIREFOX_DIR)/$(APP_NAME)-addon-$(APP_VERSION).xpi)
+	@# Recreate the unpacked copy so files removed from the sources do not linger
+	@rm -rf $(FIREFOX_SRC_DIR)
+	@mkdir -p $(FIREFOX_SRC_DIR)
+	@cp -r $(SRC) $(FIREFOX_SRC_DIR)
 	@touch $(FIREFOX_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 .PHONY: build/safari
-build/safari: dep/macos $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension
-$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
+build/safari: $(SAFARI_BUILD_TIMESTAMP)  ## Build Safari app-extension (macOS with Xcode only)
+$(SAFARI_BUILD_TIMESTAMP): $(SRC_FILES) | dep/xcode
 	@echo -e "$(CYAN)\nBuilding Safari app extension...$(RESET)"
-	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR) > /dev/null
-	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/build > /dev/null
-	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/src > /dev/null
-	@mkdir -p $(BUILD_DIR)/$(SAFARI_DIR)/pkg > /dev/null
-	@cp $(MANIFEST) $(BUILD_DIR)/$(SAFARI_DIR)/src
-	@cp -r $(HTML) $(BUILD_DIR)/$(SAFARI_DIR)/src
-	@cp -r $(IMAGES) $(BUILD_DIR)/$(SAFARI_DIR)/src
-	@cp -r $(JS) $(BUILD_DIR)/$(SAFARI_DIR)/src
-	@cp -r $(CSS) $(BUILD_DIR)/$(SAFARI_DIR)/src
-	@$(XCRUN) safari-web-extension-converter $(BUILD_DIR)/$(SAFARI_DIR)/src --app-name "$(APP_NAME)" --bundle-identifier "dev.fcalefato.$(APP_NAME)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
+	@# Recreate the sources copy so files removed from the sources do not linger
+	@rm -rf $(SAFARI_SRC_DIR)
+	@mkdir -p $(SAFARI_SRC_DIR)
+	@cp -r $(SRC) $(SAFARI_SRC_DIR)
+	@$(XCRUN) safari-web-extension-converter $(SAFARI_SRC_DIR) --app-name "$(APP_NAME)" --bundle-identifier "$(SAFARI_DEV_ID)" --project-location $(BUILD_DIR)/$(SAFARI_DIR) --no-prompt --no-open --force --macos-only
 	@cd $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME) && $(XCODEBUILD) -quiet -target $(APP_NAME) -configuration Release clean build
-	@zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)-appex-$(APP_VERSION).zip $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app
+	@# ditto keeps the bundle's symlinks and metadata (and so its signature);
+	@# --keepParent puts $(APP_NAME).app at the root of the archive
+	@rm -f $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)-appex-$(APP_VERSION).zip
+	@ditto -c -k --keepParent $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)-appex-$(APP_VERSION).zip
 	@touch $(SAFARI_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
 .PHONY: build/chrome
 build/chrome: $(CHROME_BUILD_TIMESTAMP)  ## Build Chrome extension zip
-$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES) $(MANIFEST)
+$(CHROME_BUILD_TIMESTAMP): $(SRC_FILES)
 	@echo -e "$(CYAN)\nBuilding Chrome extension...$(RESET)"
 	@mkdir -p $(BUILD_DIR)/$(CHROME_DIR) > /dev/null
-	@zip -r -FS $(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip $(SRC) -x \*.DS_Store
+	@$(call zip_sources,$(BUILD_DIR)/$(CHROME_DIR)/$(APP_NAME)-ext-$(APP_VERSION).zip)
 	@touch $(CHROME_BUILD_TIMESTAMP)
 	@echo -e "$(GREEN)Done$(RESET)"
 
 .PHONY: build/edge
 build/edge: build/chrome  ## Build Edge extension zip (same as Chrome)
 
+# Safari needs macOS and Xcode, so build/all skips it elsewhere
+BUILD_ALL := build/chrome build/firefox
+ifeq ($(UNAME_S),Darwin)
+BUILD_ALL += build/safari
+endif
+
 .PHONY: build/all
-build/all: build/chrome build/firefox build/safari  ## Build all extensions (alias: build)
+build/all: $(BUILD_ALL)  ## Build all extensions (Safari only on macOS) (alias: build)
+ifneq ($(UNAME_S),Darwin)
+	@echo -e "$(ORANGE)\nSkipped Safari: it can only be built on macOS with Xcode.$(RESET)"
+endif
 	@echo -e "$(CYAN)\nAll extensions built.$(RESET)"
 
 .PHONY: build/clean
@@ -232,6 +301,8 @@ build/clean:  ## Clean up build directory and remove all timestamps
 	@rm -rf $(BUILD_DIR)/$(FIREFOX_DIR)
 	@rm -rf $(BUILD_DIR)/$(SAFARI_DIR)
 	@rm -rf $(BUILD_DIR)/$(CHROME_DIR)
+	@rm -rf $(CHROMIUM_DEV_DIR)
+	@rm -rf $(PROFILES_DIR)
 	@rm -f $(STAMP_FILES)
 	@echo -e "$(GREEN)Done.$(RESET)"
 
@@ -239,12 +310,7 @@ build/clean:  ## Clean up build directory and remove all timestamps
 
 define update_version
     echo -e "$(CYAN)\nBump version from $(APP_VERSION) to $(1)$(RESET)" && \
-    cat $(MANIFEST) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) $(MANIFEST) && \
-    cat $(MANIFEST_FIREFOX) | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) $(MANIFEST_FIREFOX) && \
-    cat package.json | $(SED) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" > $(MANIFEST_TMP) && \
-    mv $(MANIFEST_TMP) package.json && \
+    $(SED_INPLACE) -E "s/\"version\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version\": \"$(1)\"/" $(MANIFEST) package.json && \
     echo -e "$(GREEN)Version updated.$(RESET)"
 endef
 
@@ -272,8 +338,19 @@ bump/major: | release/check  ## Bump major version (e.g., 1.0.0 -> 2.0.0)
 		$(call update_version,$$NEW_VERSION) ; \
 	fi
 
+# Releases are cut from this branch only: tag/push pushes it with the tag
+RELEASE_BRANCH := main
+
+.PHONY: dep/release-branch
+dep/release-branch: | dep/git
+	@BRANCH=$$($(GIT) branch --show-current); \
+	if [ "$$BRANCH" != "$(RELEASE_BRANCH)" ]; then \
+		echo -e "$(RED)Releases are made from $(RELEASE_BRANCH), but the current branch is $${BRANCH:-a detached HEAD}.$(RESET)"; \
+		exit 1; \
+	fi
+
 .PHONY: tag/apply
-tag/apply: | dep/git  ## Create local tag from manifest version
+tag/apply: | dep/release-branch  ## Create local tag from manifest version
 	@$(eval TAG := v$(APP_VERSION))
 	@if $(GIT) rev-parse $(TAG) >/dev/null 2>&1; then \
 		echo -e "$(ORANGE)\nTag $(TAG) already exists.$(RESET)"; \
@@ -284,14 +361,13 @@ tag/apply: | dep/git  ## Create local tag from manifest version
 	fi
 
 .PHONY: tag/push
-tag/push: | dep/git tag/apply  ## Push local tag to origin (triggers release action)
-	@$(eval TAG := $(shell echo v$(APP_VERSION)))
-	@$(eval REMOTE_TAGS := $(shell $(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'))
-	@if echo $(REMOTE_TAGS) | grep -q $(TAG); then \
+tag/push: | dep/release-branch tag/apply  ## Push local tag to origin (triggers release action)
+	@$(eval TAG := v$(APP_VERSION))
+	@if [ -n "$$($(GIT) ls-remote --tags origin "refs/tags/$(TAG)")" ]; then \
 		echo -e "$(ORANGE)\nNothing to push: tag $(TAG) already exists on origin.$(RESET)"; \
 	else \
 		echo -e "$(CYAN)\nPushing pending commits to origin...$(RESET)" ; \
-		$(GIT) push origin main ; \
+		$(GIT) push origin $(RELEASE_BRANCH) ; \
 		echo -e "$(CYAN)\nPushing tag $(TAG) to origin...$(RESET)" ; \
 		$(GIT) push origin $(TAG) ; \
 		echo -e "$(GREEN)Done.$(RESET)" ; \
@@ -310,7 +386,12 @@ tag/delete: | dep/git  ## Delete the tag for the current version
 
 .PHONY: release/check
 release/check: | dep/git  ## Check if a new release is needed
-	@TAG=$$($(GIT) describe --tags --abbrev=0); \
+	@TAG=$$($(GIT) describe --tags --abbrev=0 2> /dev/null || true); \
+	if [ -z "$$TAG" ]; then \
+		echo -e "$(ORANGE)\nNo tags found: a release is needed.$(RESET)"; \
+		echo "true" > $(RELEASE_STAMP); \
+		exit 0; \
+	fi; \
 	BEHIND_AHEAD=$$($(GIT) rev-list --left-right --count $$TAG...HEAD); \
 	REMOTE_TAGS=$$($(GIT) ls-remote --tags origin | $(AWK) '{print $$2}'); \
 	if echo "$$REMOTE_TAGS" | grep -q "refs/tags/$$TAG$$"; then TAG_ON_REMOTE="true"; else TAG_ON_REMOTE="false"; fi; \
@@ -335,59 +416,52 @@ release: tag/push  ## Triggers the release action - pushes the tag to origin (al
 
 #-- Run
 
+define make_chromium_dev_dir
+	@rm -rf "$(CHROMIUM_DEV_DIR)"
+	@mkdir -p "$(CHROMIUM_DEV_DIR)"
+	@for f in $(SRC); do ln -s "$(WORK_DIR)/$$f" "$(CHROMIUM_DEV_DIR)/$$f"; done
+endef
+
+# Runs the Chromium-based browser at $(1) through web-ext, as run/firefox does
+# for Firefox, with a temporary profile under $(PROFILES_DIR)/$(2) and the
+# extra browser flags $(3). Branded Google Chrome ignores --load-extension
+# since version 137; web-ext loads the extension through the DevTools protocol
+# instead, and keeps the browser in the foreground until it is closed or Ctrl-C.
+define run_chromium
+	$(make_chromium_dev_dir)
+	@mkdir -p "$(PROFILES_DIR)/$(2)"
+	@TMPDIR="$(PROFILES_DIR)/$(2)" npx --yes web-ext@$(WEB_EXT_VERSION) run --target=chromium \
+		--chromium-binary="$(1)" \
+		--source-dir="$(CHROMIUM_DEV_DIR)" \
+		--start-url=$(DEFAULT_URL) \
+		$(foreach a,$(3) $(BROWSER_ARGS),--arg=$(a))
+endef
+
 .PHONY: run/chrome
-run/chrome: | dep/chrome  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)\nRunning Chrome extension...$(RESET)"
-	@echo -e "${ORANGE}Make sure Chrome is not already running.${RESET}"
-	@open -a "$(CHROME_APP)" --args \
-		--auto-open-devtools-for-tabs \
-		--force-dev-mode-highlighting \
-		--no-first-run \
-		--no-default-browser-check \
-		--disable-sync \
-		--disable-default-apps \
-		--disable-client-side-phishing-detection \
-		--disable-background-networking \
-		--disable-background-timer-throttling \
-		--disable-backgrounding-occluded-windows \
-		--disable-breakpad \
-		--disable-dev-shm-usage \
-		--disable-renderer-backgrounding \
-		--metrics-recording-only \
-		--load-extension=$(WORK_DIR) \
-		$(DEFAULT_URL)
+run/chrome: | dep/chrome dep/npx  ## Run Chrome extension in development mode (use DEFAULT_URL="..." to set the opening page)
+	@echo -e "$(CYAN)\nRunning Chrome extension with $(CHROME_BIN)...$(RESET)"
+	$(call run_chromium,$(CHROME_BIN),chrome,--auto-open-devtools-for-tabs)
 
 .PHONY: run/edge
-run/edge: | dep/edge   ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)\nOpening Edge extension...$(RESET)"
-	@echo -e "${ORANGE}Make sure Edge is not already running. (Note: Edge does not support development mode for extensions).${RESET}"
-	@open -a "$(EDGE_APP)" --args \
-		--force-dev-mode-highlighting \
-		--no-first-run \
-		--no-default-browser-check \
-		--disable-sync \
-		--disable-default-apps \
-		--disable-client-side-phishing-detection \
-		--disable-background-networking \
-		--disable-background-timer-throttling \
-		--disable-backgrounding-occluded-windows \
-		--disable-breakpad \
-		--disable-dev-shm-usage \
-		--disable-renderer-backgrounding \
-		--metrics-recording-only \
-		--load-extension=$(WORK_DIR) \
-		$(DEFAULT_URL)
+run/edge: | dep/edge dep/npx  ## Run Edge extension (use DEFAULT_URL="..." to set the opening page)
+	@echo -e "$(CYAN)\nRunning Edge extension with $(EDGE_BIN)...$(RESET)"
+	$(call run_chromium,$(EDGE_BIN),edge,)
 
 .PHONY: run/firefox
-run/firefox: | dep/firefox build/firefox ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
-	@echo -e "$(CYAN)\nRunning Firefox addon...$(RESET)"
-	@cd $(BUILD_DIR)/$(FIREFOX_DIR)/src && web-ext run --firefox="/Applications/$(FIREFOX_APP)/Contents/MacOS/firefox" \
-		--source-dir=$(APP_NAME)-addon-$(APP_VERSION) \
-		--start-url=$(DEFAULT_URL)
+run/firefox: dep/firefox build/firefox  ## Run Firefox addon in development mode (use DEFAULT_URL="..." to set the opening page)
+	@echo -e "$(CYAN)\nRunning Firefox addon with $(FIREFOX_BIN)...$(RESET)"
+	@# web-ext runs Firefox on a fresh temporary profile, deleted on exit. TMPDIR
+	@# puts it in the project rather than /tmp, which snap-packaged Firefox
+	@# cannot read. (A kept profile, --keep-profile-changes, is avoided: web-ext
+	@# then reads the user's own profiles.ini, which macOS may refuse with EPERM.)
+	@mkdir -p "$(PROFILES_DIR)/firefox"
+	@TMPDIR="$(PROFILES_DIR)/firefox" npx --yes web-ext@$(WEB_EXT_VERSION) run --firefox="$(FIREFOX_BIN)" \
+		--source-dir="$(FIREFOX_SRC_DIR)" \
+		--start-url=$(DEFAULT_URL) \
+		$(foreach a,$(BROWSER_ARGS),--arg=$(a))
 
 .PHONY: run/safari
-run/safari: | dep/safari build/safari  ## Run Safari app-extension 
+run/safari: build/safari | dep/safari  ## Run Safari app-extension (macOS only)
 	@echo -e "$(CYAN)\nRunning Safari app-extension...$(RESET)"
 	@echo -e "${ORANGE}Note that the extension is not signed, you need to go to 'Settings' > Select 'Developer' tab > Check the 'Allow unsigned extensions' box.${RESET}"
-	@open -a $(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app
-	
+	@open -a "$(BUILD_DIR)/$(SAFARI_DIR)/$(APP_NAME)/build/Release/$(APP_NAME).app"

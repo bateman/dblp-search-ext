@@ -43,10 +43,16 @@ The model returns each search's result (it keeps no per-search state), `view.js`
 
 ## Browser Differences
 
-- `manifest.json` - Used for Chrome, Edge, Safari
-- `manifest.firefox.json` - Firefox-specific, includes `browser_specific_settings.gecko`
+A single `manifest.json` serves Chrome, Edge, Firefox, and Safari:
 
-The build process swaps manifests automatically. Both must be kept in sync for version and permissions.
+- `background` declares both `service_worker` (used by Chrome, Edge, Safari) and `scripts` (used by Firefox). Chrome 121+ and Firefox 121+ accept both keys and use the one they support; keep the two pointing at the same file.
+- `background.preferred_environment: ["service_worker"]` makes Safari use the service worker: with both keys present Safari would otherwise run `scripts` as a background page. Chrome ignores it; Firefox supports it from 136.
+- `browser_specific_settings.gecko.data_collection_permissions` declares, for Firefox's built-in data consent, what the extension sends outside the browser: `required: ["searchTerms", "websiteContent"]` (typed queries and selected page text sent to dblp.org/doi.org). This covers transmission to any third party, not only to the developer, and must stay in sync with `PRIVACY.md`. The key needs Firefox 140 (Android 142), hence `gecko.strict_min_version: "140.0"` and `gecko_android.strict_min_version: "142.0"`.
+- `browser_specific_settings.gecko` holds the Firefox add-on ID and `strict_min_version`; Chromium browsers ignore it with a warning in `chrome://extensions`.
+- `minimum_chrome_version` is `121` because older Chromium rejects `background.scripts` in an MV3 manifest; Firefox ignores the key.
+- The Firefox release workflow reads the add-on ID from `browser_specific_settings.gecko.id`, so the ID lives only in the manifest.
+- Safari has no `downloads` API and ignores `<a download>` in extension pages (it opens the file in a new tab), so `popup.js` offers "Download BibTeX" (row button, `D` key, context menu item, keyboard hint) only when `downloadsSupported` is true.
+- `tests/unit/manifest.test.js` checks these invariants, and `make test/lint` (run in CI) lints the Firefox package with `web-ext lint`. The lint warning for `background.service_worker` is expected.
 
 ## DBLP API
 
@@ -138,7 +144,9 @@ Code is evaluated by CodeFactor (A+) and Codacy (A). Changes must follow these p
 
 No npm packages. Pure vanilla JavaScript with ES6 modules.
 
-Build tools required: `jq`, `zip`, `git`. For Firefox: `web-ext`. For Safari: Xcode.
+Build tools required: `make`, `jq`, `zip`, `git`, and Node.js with `npm`/`npx` (unit tests; `web-ext` for `make test/lint` and `make run/firefox` runs through `npx` at the version pinned in `WEB_EXT_VERSION`, so it needs no global install). For Safari: macOS with Xcode.
+
+The `run/*` targets work on macOS and Linux and find the browsers automatically; `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN`, and `APPS_DIR` override the lookup, and `make info` shows what was found. All three run targets use `web-ext run` (`--target=chromium` for Chrome and Edge): branded Google Chrome ignores `--load-extension` since version 137, and web-ext loads the extension with the DevTools protocol instead; the targets stay in the foreground until the browser is closed or Ctrl-C. The Makefile must keep working with GNU Make 3.81, the version macOS ships. Releases (`tag/apply`, `tag/push`, `release`) must be run from `main`.
 
 ## MCP Servers
 

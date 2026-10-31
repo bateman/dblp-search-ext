@@ -45,6 +45,13 @@ let originalPublications = [];
 // which run synchronously and cannot wait for a storage read.
 let zoteroEnabled = true;
 
+// Safari does not offer extensions the downloads API, and ignores the download
+// attribute of links in extension pages (it opens the file in a new tab
+// instead), so "Download BibTeX" is offered only where the API exists.
+const downloadsSupported = Boolean(
+  browser.downloads && typeof browser.downloads.download === "function"
+);
+
 // Fallback timeout (ms) for the search spinner. The spinner normally clears as
 // soon as a search response arrives; this is only a safety net so it can never
 // hang forever if a response message is lost. The model aborts after 10s, so
@@ -581,11 +588,13 @@ function createBibtexCell(bibtexLink) {
       bibtexLink, "copyBibtexButton", "Copy BibTeX", "../images/copy.png"
     )
   );
-  cell.appendChild(
-    createBibtexButton(
-      bibtexLink, "downloadBibtexButton", "Download BibTeX", "../images/download.png"
-    )
-  );
+  if (downloadsSupported) {
+    cell.appendChild(
+      createBibtexButton(
+        bibtexLink, "downloadBibtexButton", "Download BibTeX", "../images/download.png"
+      )
+    );
+  }
   const zoteroButton = createBibtexButton(
     bibtexLink, "saveZoteroButton", "Save to Zotero", "../images/zotero.png"
   );
@@ -1244,10 +1253,14 @@ function copySelectedRowBibtex(row) {
 }
 
 /**
- * Downloads BibTeX for the selected row (silently does nothing when it has none)
+ * Downloads BibTeX for the selected row (silently does nothing when it has
+ * none, or when the browser cannot download, as in Safari)
  * @param {HTMLTableRowElement} row - The selected row element
  */
 function downloadSelectedRowBibtex(row) {
+  if (!downloadsSupported) {
+    return;
+  }
   const bibtexUrl = row.dataset.bibtexUrl;
   if (bibtexUrl && isValidURL(bibtexUrl)) {
     window.downloadBibtex(bibtexUrl, row.querySelector(".downloadBibtexButton"));
@@ -1397,7 +1410,9 @@ function buildContextMenu() {
   menu.id = "context-menu";
   menu.className = "context-menu";
   CONTEXT_MENU_ITEMS.forEach(function (item) {
-    menu.appendChild(createContextMenuItem(item));
+    if (item.action !== "download" || downloadsSupported) {
+      menu.appendChild(createContextMenuItem(item));
+    }
   });
   document.body.appendChild(menu);
   return menu;
@@ -1471,9 +1486,19 @@ function hideContextMenu() {
   contextMenuTargetRow = null;
 }
 
-// Dismiss the context menu on scroll, window resize, or the Escape key
+// Dismiss the context menu on scroll, window resize, or the Escape key.
+// Firefox fires "resize" in extension popups whenever it re-measures the
+// popup, even when the size stays the same (as it does right after the menu
+// opens), so only an actual change of the viewport size closes the menu.
+let lastViewportSize = window.innerWidth + "x" + window.innerHeight;
 window.addEventListener("scroll", hideContextMenu, true);
-window.addEventListener("resize", hideContextMenu);
+window.addEventListener("resize", function () {
+  const viewportSize = window.innerWidth + "x" + window.innerHeight;
+  if (viewportSize !== lastViewportSize) {
+    lastViewportSize = viewportSize;
+    hideContextMenu();
+  }
+});
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") {
     hideContextMenu();
@@ -1679,22 +1704,6 @@ function downloadViaApi(blobUrl, filename) {
 }
 
 /**
- * Saves a blob via a temporary anchor click. Fallback for browsers without the
- * downloads API (Safari does not implement browser.downloads).
- * @param {string} blobUrl - Object URL of the blob to save
- * @param {string} filename - Suggested filename
- */
-function downloadViaAnchor(blobUrl, filename) {
-  const link = document.createElement("a");
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  revokeBlobUrlLater(blobUrl);
-}
-
-/**
  * Fetches BibTeX from URL, applies user options, and downloads it as a .bib
  * file named after the citation key.
  * @param {string} url - URL to fetch BibTeX from
@@ -1706,15 +1715,7 @@ window.downloadBibtex = function (url, button) {
     .then(({ data, citationKey }) => {
       const filename = buildBibtexFilename(citationKey);
       const blob = new Blob([data], { type: "application/x-bibtex" });
-      const blobUrl = URL.createObjectURL(blob);
-
-      // Prefer the downloads API where available (Chrome, Edge, Firefox); fall
-      // back to an anchor click on Safari, which does not implement it.
-      if (browser.downloads && typeof browser.downloads.download === "function") {
-        return downloadViaApi(blobUrl, filename);
-      }
-      downloadViaAnchor(blobUrl, filename);
-      return true;
+      return downloadViaApi(URL.createObjectURL(blob), filename);
     })
     .then((saved) => finishButtonFeedback(button, saved))
     .catch((err) => {
@@ -1732,14 +1733,17 @@ window.downloadBibtex = function (url, button) {
 let zoteroSaveInFlight = false;
 
 /**
- * Builds the keyboard hint shown above the results table, mentioning the Z
- * shortcut only while saving to Zotero is enabled.
+ * Builds the keyboard hint shown above the results table, mentioning the D
+ * shortcut only where downloads work and the Z shortcut only while saving to
+ * Zotero is enabled.
  * @returns {string} The hint text
  */
 function buildKeyboardHint() {
+  const downloadPart = downloadsSupported ? "D to download, " : "";
   const zoteroPart = zoteroEnabled ? "Z to save to Zotero, " : "";
   return (
-    "Tip: Use ↑↓ to navigate, C to copy BibTeX, D to download, " +
+    "Tip: Use ↑↓ to navigate, C to copy BibTeX, " +
+    downloadPart +
     zoteroPart +
     "B for DBLP, O for DOI — or right-click a row for actions"
   );

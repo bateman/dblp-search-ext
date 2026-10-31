@@ -54,7 +54,7 @@ A simple cross-browser extension to ease the process of searching publications o
 
 - **Search Papers**: Enter the paper's title in the input field or highlight any text on the current web page, then click the search button. The extension will search dblp.org for matching publications and display the results.
 - **Copy BibTeX Entries**: Next to each search result, there's a 'Copy BibTeX' button. Click this button to copy the BibTeX entry for the corresponding publication to your clipboard.
-- **Download BibTeX Entries**: Next to the copy button, a 'Download BibTeX' button saves the entry as a `.bib` file named after its citation key.
+- **Download BibTeX Entries**: Next to the copy button, a 'Download BibTeX' button saves the entry as a `.bib` file named after its citation key. Not available in Safari, which does not let extensions save files (the button, the `D` key, and the menu item are hidden there).
 - **Save to Zotero**: A 'Save to Zotero' button imports the entry directly into the [Zotero](https://www.zotero.org) desktop app through Zotero's local connector API. By default the entry goes to the library or collection currently selected in the Zotero window (the status message names it); in Options you can instead pin a fixed destination — any of your editable libraries (personal or group) or collections, listed live from Zotero. Zotero must be running; on first use, the browser asks for permission to connect to Zotero on your computer (127.0.0.1). The button can be hidden in Options. The imported entry honors your citation-key and field-removal settings, so add-ons like Better BibTeX pick up the same citation key you would have copied.
 - **Sort & Filter Results**: Click the Authors, Year, or Venue column headers to sort, the Title header to restore the default order, and the Type header to filter results by publication type.
 - **Color-Coded Entries**: Results are color-coded by publication type (proceedings, books, journals, etc.), matching the dblp.org scheme.
@@ -90,14 +90,14 @@ make build/chrome      # Build Chrome extension ZIP
 make build/firefox     # Build Firefox XPI addon and sources
 make build/safari      # Build Safari app-extension (macOS + Xcode required)
 make build/edge        # Build Edge extension (same as Chrome)
-make build/all         # Build all extensions
+make build/all         # Build all extensions (Safari is skipped outside macOS)
 make build/clean       # Clean build directory and stamps
 make test              # Run the unit-test suite
 make test/live         # Run the live tests against the dblp API
 ```
 
 > [!NOTE]
-> Safari build will start only on macOS if Xcode is installed.
+> Safari can only be built on macOS with Xcode installed; elsewhere `make build` builds the other extensions and skips Safari.
 
 ### Manual installation
 
@@ -107,7 +107,10 @@ make test/live         # Run the live tests against the dblp API
 
 2. Enable Developer mode by clicking the toggle switch next to "Developer mode".
 
-3. Click "Load unpacked" and select the `build/chrome` directory in your project folder.
+3. Click "Load unpacked" and select the project folder (the one containing `manifest.json`), or a folder where you unzipped the archive from `build/chrome`.
+
+> [!NOTE]
+> A single `manifest.json` serves every browser, so Chrome lists two expected manifest warnings under "Errors": the unrecognized `browser_specific_settings` key (Firefox-only) and the ignored `background.scripts` key (Firefox uses it instead of `service_worker`). Likewise, `web-ext lint` reports `background.service_worker` as unsupported in Firefox. Requires Chrome/Edge 121+ and Firefox 140+ (Firefox for Android 142+).
 
 **Edge**
 
@@ -119,24 +122,31 @@ Same as above, the only difference is that you need to navigate to `edge://exten
 
 2. Click "This Firefox" and "Load Temporary Add-on...".
 
-3. Navigate to the `build/firefox` directory in your project folder and select it.
+3. Select the `.xpi` file in `build/firefox` (or `manifest.json` in `build/firefox/src/<addon-folder>`).
 
 ### Development Commands
 
 ```bash
-make run/chrome        # Launch Chrome with extension loaded (dev mode)
-make run/firefox       # Launch Firefox Dev Edition with extension
-make run/safari        # Launch Safari with extension
-make run/edge          # Launch Edge with extension
-make info              # Show development environment info
+make run/chrome        # Launch Chrome with the extension loaded (dev mode)
+make run/firefox       # Launch Firefox with the extension (via web-ext)
+make run/safari        # Launch Safari with the extension (macOS only)
+make run/edge          # Launch Edge with the extension
+make info              # Show development environment info, including the browsers found
 ```
 
-Use `DEFAULT_URL="https://example.com"` to set the opening page for run commands.
+The run targets work on macOS and Linux. Each browser runs with a throwaway profile in `build/profiles`, so your own browser can stay open; `make build/clean` deletes the profiles. All run targets keep the terminal until the browser is closed; Ctrl-C closes it. Chrome and Edge load `build/chromium-dev`, a folder of symlinks to the sources, so reloading the extension in the browser picks up your changes. Firefox runs through `web-ext` with a fresh profile that is deleted when you close it with Ctrl-C, and reloads the add-on when `make build/firefox` updates it.
+
+| Variable | Purpose |
+|----------|---------|
+| `DEFAULT_URL="https://example.com"` | Opening page |
+| `CHROME_BIN`, `EDGE_BIN`, `FIREFOX_BIN` | Browser executable to launch (found automatically when unset) |
+| `APPS_DIR` | macOS folder searched for the browser apps (default `/Applications`, e.g. `APPS_DIR=~/Applications`) |
+| `BROWSER_ARGS="..."` | Extra flags passed to the browser |
 
 > [!NOTE]
-> * Browser must not be running before executing `make run/*` commands
+> * `run/chrome` and `run/edge` also run through `web-ext` (`--target=chromium`), which loads the extension with the DevTools protocol: Google Chrome ignores the `--load-extension` flag since version 137. Any Chrome works: Google Chrome, Chrome for Testing, or Chromium.
+> * On macOS, Firefox Developer Edition is preferred over Firefox. `web-ext` runs through `npx`, so it needs no global install.
 > * Unlike Chrome, Edge does not run in development mode
-> * For Firefox, the script assumes you have [Firefox Developer Edition](https://www.mozilla.org/it/firefox/developer) installed. You can easily change the name to `Firefox` in the `make` script; it also requires `web-ext` to be installed.
 
 ### Release Workflow
 
@@ -161,7 +171,7 @@ make release           # Push commits and tag to origin (alias: tag/push)
 make tag/delete        # Delete the tag for the current version
 ```
 
-Version is stored in `manifest.json`, `manifest.firefox.json`, and `package.json` (all three are kept in sync by `make bump/*`).
+Version is stored in `manifest.json` and `package.json` (both are kept in sync by `make bump/*`).
 
 ### Testing
 
@@ -173,6 +183,12 @@ make test/watch        # Run the unit tests in watch mode
 ```
 
 Tests live in `tests/unit/`. Dependencies are installed automatically on first run (`npm ci`).
+
+The Firefox package is also checked with Mozilla's [`web-ext lint`](https://extensionworkshop.com/documentation/develop/web-ext-command-reference/#web-ext-lint) (run through `npx`, needs network); CI runs it next to the unit tests:
+
+```bash
+make test/lint          # Build the Firefox addon and lint it (fails on errors)
+```
 
 The unit tests mock every network request, so they cannot notice when dblp itself changes. A small live suite in `tests/live/` runs the real search and BibTeX download against dblp.org (2 requests, spaced by the extension's rate limiter), and checks that the extension can parse the results and process the BibTeX entry:
 

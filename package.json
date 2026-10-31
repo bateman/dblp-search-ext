@@ -2,6 +2,7 @@
   "name": "dblp-search-ext",
   "version": "3.10.2",
   "private": true,
+  "type": "module",
   "description": "Cross-browser extension for searching publications on dblp.org",
   "scripts": {
     "test": "vitest run",
