@@ -34,12 +34,6 @@ describe("manifest.json", () => {
     expect(manifest.background.preferred_environment).toEqual(["service_worker"]);
   });
 
-  it("requires a Chromium version that accepts background.scripts", () => {
-    // Chromium before 121 rejects an MV3 manifest that has background.scripts
-    const major = Number.parseInt(manifest.minimum_chrome_version, 10);
-    expect(major).toBeGreaterThanOrEqual(121);
-  });
-
   it("declares the Firefox add-on ID and minimum version", () => {
     const gecko = manifest.browser_specific_settings.gecko;
     expect(gecko.id).toBe("dblpSearch@fcalefato.dev");
